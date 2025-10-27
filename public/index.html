@@ -3,298 +3,545 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Enrollment System - POC</title>
+    <title>WPL Library Circulation Console</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+            background: linear-gradient(135deg, #142850 0%, #00909e 100%);
             min-height: 100vh;
-            padding: 20px;
+            padding: 24px;
+            color: #0d1b2a;
         }
         .container { max-width: 1200px; margin: 0 auto; }
-        h1 { color: white; text-align: center; margin-bottom: 10px; font-size: 2.5em; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
-        .subtitle { color: white; text-align: center; margin-bottom: 30px; font-size: 1.1em; opacity: 0.9; }
-        .card { background: white; border-radius: 10px; padding: 25px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-        .card h2 { margin-bottom: 15px; color: #2193b0; border-bottom: 2px solid #6dd5ed; padding-bottom: 10px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; color: #333; font-weight: 600; }
-        input[type="text"], input[type="email"], input[type="number"], select {
-            width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; transition: border-color 0.3s;
+        h1 {
+            color: #f4faff;
+            text-align: center;
+            margin-bottom: 8px;
+            font-size: 2.6em;
+            text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.35);
         }
-        input:focus, select:focus { outline: none; border-color: #2193b0; }
+        .subtitle {
+            color: #d8e3f2;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.05em;
+            opacity: 0.95;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 14px 36px rgba(8, 28, 41, 0.25);
+        }
+        .card h2 {
+            margin-bottom: 16px;
+            color: #27496d;
+            border-bottom: 2px solid rgba(0, 144, 158, 0.2);
+            padding-bottom: 8px;
+        }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; }
+        .info-box {
+            background: rgba(0, 144, 158, 0.08);
+            border-left: 4px solid #00a8cc;
+            padding: 16px;
+            border-radius: 8px;
+        }
+        .info-box h3 { color: #142850; margin-bottom: 8px; }
+        .info-box p { color: #385170; line-height: 1.55; }
+        .form-group { margin-bottom: 16px; }
+        label { display: block; margin-bottom: 6px; font-weight: 600; color: #27496d; }
+        input[type="text"], input[type="email"], select {
+            width: 100%;
+            padding: 11px 12px;
+            border: 2px solid #d9e2ec;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.25s;
+        }
+        input:focus, select:focus { outline: none; border-color: #00a8cc; }
         button {
-            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
-            color: white; border: none; padding: 12px 30px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600;
-            transition: transform 0.2s, box-shadow 0.2s; width: 100%;
+            background: linear-gradient(135deg, #142850 0%, #00a8cc 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
         }
-        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(33, 147, 176, 0.4); }
+        button:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(14, 59, 94, 0.35); }
         button:active { transform: translateY(0); }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e0e0e0; }
-        th { background: #f8f9fa; font-weight: 600; color: #2193b0; }
-        tr:hover { background: #f8f9fa; }
-        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
-        .badge-grade { background: #d4edda; color: #155724; }
-        .badge-credits { background: #cce5ff; color: #004085; }
-        .empty-state { text-align: center; padding: 30px; color: #999; }
-        .info-box { background: #e7f3ff; border-left: 4px solid #2193b0; padding: 15px; margin-bottom: 20px; border-radius: 4px; }
-        .info-box h3 { color: #2193b0; margin-bottom: 5px; }
-        .info-box p { color: #555; line-height: 1.6; }
+        table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e0e7ff; }
+        th { background: #f1f5fd; font-weight: 600; color: #27496d; }
+        tr:hover { background: #f9fbff; }
+        .badge {
+            display: inline-block;
+            padding: 4px 9px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-policy { background: rgba(0, 168, 204, 0.15); color: #005377; }
+        .badge-alert { background: rgba(214, 69, 69, 0.15); color: #8b1d1d; }
+        .empty-state { text-align: center; padding: 30px; color: #7b8794; font-style: italic; }
+        .status-panel {
+            background: #f1f5fd;
+            border-radius: 8px;
+            padding: 16px;
+            border: 1px dashed rgba(0, 144, 158, 0.4);
+            margin-bottom: 16px;
+            color: #27496d;
+        }
+        .status-panel ul { margin-left: 18px; margin-top: 8px; }
+        .status-panel li { margin-bottom: 6px; }
+        .message {
+            margin-top: 12px;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        .message.success { background: rgba(76, 175, 80, 0.12); color: #1b5e20; border: 1px solid rgba(76, 175, 80, 0.35); }
+        .message.error { background: rgba(214, 69, 69, 0.12); color: #8b1d1d; border: 1px solid rgba(214, 69, 69, 0.35); }
+        .loan-meta { color: #385170; font-size: 0.92em; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎓 Student Enrollment System</h1>
-        <p class="subtitle">Many-to-Many Relationship Proof of Concept</p>
+        <h1>📚 WPL Library Circulation Console</h1>
+        <p class="subtitle">Sprint 1 focus: checkout, return intake, and reshelving guardrails using the Sprint 0 PHP + SQLite demo stack.</p>
 
         <div class="card">
             <div class="info-box">
-                <h3>📊 Database Schema (Three Tables)</h3>
-                <p>
-                    <strong>Students</strong> (id, name, email) ↔ 
-                    <strong>Enrollments</strong> (id, student_id, course_id, grade) ↔ 
-                    <strong>Courses</strong> (id, course_name, course_code, credits)
-                </p>
-                <p style="margin-top: 8px;">
-                    This demonstrates a <strong>many-to-many relationship</strong>: 
-                    Students can enroll in multiple courses, and courses can have multiple students.
-                </p>
+                <h3>Many-to-Many Core Reused for Circulation</h3>
+                <p><strong>Patrons</strong>, <strong>Items</strong>, and <strong>Loans</strong> now have dedicated endpoints that mirror the repurposed many-to-many structure. The wireframe highlights Sprint&nbsp;1 rules: card validity (US&nbsp;1.3), checkout limits and fines (US&nbsp;2.3, US&nbsp;2.7), check-in/reshelving (US&nbsp;3.1, US&nbsp;3.7), and logging (US&nbsp;3.5).</p>
             </div>
         </div>
 
         <div class="grid">
             <div class="card">
-                <h2>➕ Add Student</h2>
-                <form id="student-form">
+                <h2>🪪 Register Patron</h2>
+                <p class="loan-meta">Collect a patron name and email when issuing a card. New demo patrons default to active cards with no fines.</p>
+                <form id="patron-form">
                     <div class="form-group">
-                        <label for="student-name">Student Name *</label>
-                        <input type="text" id="student-name" required>
+                        <label for="patron-name">Patron Name *</label>
+                        <input type="text" id="patron-name" required>
                     </div>
                     <div class="form-group">
-                        <label for="student-email">Email *</label>
-                        <input type="email" id="student-email" required>
+                        <label for="patron-email">Email *</label>
+                        <input type="email" id="patron-email" required>
                     </div>
-                    <button type="submit">Add Student</button>
+                    <button type="submit">Add Patron</button>
                 </form>
             </div>
 
             <div class="card">
-                <h2>➕ Add Course</h2>
-                <form id="course-form">
+                <h2>🏷️ Catalog Item</h2>
+                <p class="loan-meta">Add an item barcode and title, then choose the loan duration policy enforced during checkout.</p>
+                <form id="item-form">
                     <div class="form-group">
-                        <label for="course-name">Course Name *</label>
-                        <input type="text" id="course-name" required>
+                        <label for="item-title">Item Title *</label>
+                        <input type="text" id="item-title" required>
                     </div>
                     <div class="form-group">
-                        <label for="course-code">Course Code *</label>
-                        <input type="text" id="course-code" required>
+                        <label for="item-barcode">Barcode *</label>
+                        <input type="text" id="item-barcode" required>
                     </div>
                     <div class="form-group">
-                        <label for="credits">Credits *</label>
-                        <input type="number" id="credits" min="1" max="6" required>
+                        <label for="loan-policy">Loan Duration *</label>
+                        <select id="loan-policy" required>
+                            <option value="">-- Select Duration --</option>
+                            <option value="28">Book · 4 weeks</option>
+                            <option value="7">Movie · 1 week</option>
+                            <option value="3">New Movie · 3 days</option>
+                        </select>
                     </div>
-                    <button type="submit">Add Course</button>
+                    <button type="submit">Add Item</button>
                 </form>
             </div>
 
             <div class="card">
-                <h2>📝 Enroll Student in Course</h2>
-                <form id="enrollment-form">
+                <h2>📦 Checkout Session</h2>
+                <div id="patron-status" class="status-panel">
+                    Scan a patron card to review expiration, fines, and loan counts before adding items to the basket.
+                </div>
+                <form id="checkout-form">
                     <div class="form-group">
-                        <label for="enroll-student">Select Student *</label>
-                        <select id="enroll-student" required>
-                            <option value="">-- Select Student --</option>
+                        <label for="checkout-patron">Patron *</label>
+                        <select id="checkout-patron" required>
+                            <option value="">-- Scan / Select Patron --</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="enroll-course">Select Course *</label>
-                        <select id="enroll-course" required>
-                            <option value="">-- Select Course --</option>
+                        <label for="checkout-item">Item *</label>
+                        <select id="checkout-item" required>
+                            <option value="">-- Scan Item Barcode --</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label for="enroll-grade">Grade (Optional)</label>
-                        <select id="enroll-grade">
-                            <option value="">-- No Grade Yet --</option>
-                            <option value="A">A</option>
-                            <option value="A-">A-</option>
-                            <option value="B+">B+</option>
-                            <option value="B">B</option>
-                            <option value="B-">B-</option>
-                            <option value="C+">C+</option>
-                            <option value="C">C</option>
-                            <option value="C-">C-</option>
-                            <option value="D">D</option>
-                            <option value="F">F</option>
-                        </select>
-                    </div>
-                    <button type="submit">Enroll Student</button>
+                    <div id="due-preview" class="loan-meta">Select a patron and item to preview the due date and policy checks.</div>
+                    <button type="submit">Confirm Checkout</button>
+                    <div id="checkout-message"></div>
                 </form>
             </div>
         </div>
 
         <div class="card">
-            <h2>📚 Current Enrollments (JOIN of All Three Tables)</h2>
-            <div id="enrollments-table"></div>
+            <h2>🔄 Active Loans, Returns, &amp; Reshelving Queue</h2>
+            <p class="loan-meta">Incoming returns appear here for inspection. Items flagged as reshelved illustrate US&nbsp;3.7, while overdue status drives late fee discussions for US&nbsp;3.1 and logging for US&nbsp;3.5.</p>
+            <div id="loans-table"></div>
         </div>
 
         <div class="grid">
             <div class="card">
-                <h2>👥 All Students</h2>
-                <div id="students-table"></div>
+                <h2>👥 Patron Directory</h2>
+                <div id="patrons-table"></div>
             </div>
             <div class="card">
-                <h2>📖 All Courses</h2>
-                <div id="courses-table"></div>
+                <h2>📘 Collection Inventory</h2>
+                <div id="items-table"></div>
             </div>
         </div>
     </div>
 
     <script>
         const API_BASE = '../api';
+        const patronsSelect = document.getElementById('checkout-patron');
+        const itemsSelect = document.getElementById('checkout-item');
+        const statusPanel = document.getElementById('patron-status');
+        const duePreview = document.getElementById('due-preview');
+        const checkoutMessage = document.getElementById('checkout-message');
+
+        let patrons = [];
+        let items = [];
+        let loans = [];
+
+        const DEMO_PATRON_PROFILES = {
+            1: { cardExpires: '2025-11-15', fines: 0, notes: 'Faculty demo account' },
+            2: { cardExpires: '2024-12-01', fines: 12.50, notes: 'Outstanding movie fine' },
+            3: { cardExpires: '2023-09-30', fines: 0, notes: 'Expired card example' }
+        };
+
+        const POLICY_LABELS = {
+            28: 'Book · 4 weeks',
+            7: 'Movie · 1 week',
+            3: 'New Movie · 3 days'
+        };
 
         loadAllData();
 
-        document.getElementById('student-form').addEventListener('submit', async (e) => {
+        document.getElementById('patron-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData();
-            formData.append('name', document.getElementById('student-name').value);
-            formData.append('email', document.getElementById('student-email').value);
-            await fetch(`${API_BASE}/students.php`, { method: 'POST', body: formData });
-            document.getElementById('student-form').reset();
+            formData.append('name', document.getElementById('patron-name').value);
+            formData.append('email', document.getElementById('patron-email').value);
+            await fetch(`${API_BASE}/patrons.php`, { method: 'POST', body: formData });
+            e.target.reset();
+            checkoutMessage.textContent = '';
             loadAllData();
         });
 
-        document.getElementById('course-form').addEventListener('submit', async (e) => {
+        document.getElementById('item-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData();
-            formData.append('course_name', document.getElementById('course-name').value);
-            formData.append('course_code', document.getElementById('course-code').value);
-            formData.append('credits', document.getElementById('credits').value);
-            await fetch(`${API_BASE}/courses.php`, { method: 'POST', body: formData });
-            document.getElementById('course-form').reset();
+            formData.append('title', document.getElementById('item-title').value);
+            formData.append('barcode', document.getElementById('item-barcode').value);
+            formData.append('loan_duration_days', document.getElementById('loan-policy').value);
+            await fetch(`${API_BASE}/items.php`, { method: 'POST', body: formData });
+            e.target.reset();
+            checkoutMessage.textContent = '';
             loadAllData();
         });
 
-        document.getElementById('enrollment-form').addEventListener('submit', async (e) => {
+        document.getElementById('checkout-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const patronId = Number(patronsSelect.value);
+            const itemId = Number(itemsSelect.value);
+            if (!patronId || !itemId) {
+                showCheckoutMessage('Select a patron and item to complete the checkout.', false);
+                return;
+            }
+
+            const eligibility = describeEligibility(patronId);
+            if (eligibility.expired || eligibility.hasFines || eligibility.atLimit) {
+                showCheckoutMessage('Checkout blocked: resolve card status, fines, or item limit before proceeding.', false);
+                return;
+            }
+
+            const item = items.find(i => i.id === itemId);
+            const dueDate = calculateDueDate(item.loan_duration_days);
+
             const formData = new FormData();
-            formData.append('student_id', document.getElementById('enroll-student').value);
-            formData.append('course_id', document.getElementById('enroll-course').value);
-            formData.append('grade', document.getElementById('enroll-grade').value);
-            await fetch(`${API_BASE}/enrollments.php`, { method: 'POST', body: formData });
-            document.getElementById('enrollment-form').reset();
+            formData.append('patron_id', patronId);
+            formData.append('item_id', itemId);
+            formData.append('due_date', dueDate);
+            await fetch(`${API_BASE}/loans.php`, { method: 'POST', body: formData });
+            showCheckoutMessage(`Checkout recorded. Item is due on ${formatDisplayDate(dueDate)}.`, true);
             loadAllData();
+            e.target.reset();
+            duePreview.textContent = 'Select a patron and item to preview the due date and policy checks.';
         });
+
+        patronsSelect.addEventListener('change', () => {
+            updatePatronStatus();
+            updateDueDatePreview();
+        });
+
+        itemsSelect.addEventListener('change', updateDueDatePreview);
 
         async function loadAllData() {
-            await Promise.all([loadStudents(), loadCourses(), loadEnrollments()]);
+            await Promise.all([loadPatrons(), loadItems(), loadLoans()]);
+            updatePatronStatus();
+            updateDueDatePreview();
         }
 
-        async function loadStudents() {
-            const response = await fetch(`${API_BASE}/students.php`);
-            const students = await response.json();
-            const table = document.getElementById('students-table');
-            if (students.length === 0) {
-                table.innerHTML = '<div class="empty-state">No students yet</div>';
+        async function loadPatrons() {
+            const response = await fetch(`${API_BASE}/patrons.php`);
+            patrons = await response.json();
+
+            const table = document.getElementById('patrons-table');
+            if (patrons.length === 0) {
+                table.innerHTML = '<div class="empty-state">No patrons registered yet.</div>';
             } else {
                 table.innerHTML = `
                     <table>
                         <thead>
                             <tr>
-                                <th>ID</th>
+                                <th>Library Card #</th>
                                 <th>Name</th>
                                 <th>Email</th>
+                                <th>Card Expires</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${students.map(s => `
-                                <tr>
-                                    <td>${s.id}</td>
-                                    <td>${escapeHtml(s.name)}</td>
-                                    <td>${escapeHtml(s.email)}</td>
-                                </tr>
-                            `).join('')}
+                            ${patrons.map(renderPatronRow).join('')}
                         </tbody>
                     </table>
                 `;
             }
-            const select = document.getElementById('enroll-student');
-            select.innerHTML = '<option value="">-- Select Student --</option>' +
-                students.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+
+            patronsSelect.innerHTML = '<option value="">-- Scan / Select Patron --</option>' +
+                patrons.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
         }
 
-        async function loadCourses() {
-            const response = await fetch(`${API_BASE}/courses.php`);
-            const courses = await response.json();
-            const table = document.getElementById('courses-table');
-            if (courses.length === 0) {
-                table.innerHTML = '<div class="empty-state">No courses yet</div>';
+        async function loadItems() {
+            const response = await fetch(`${API_BASE}/items.php`);
+            const rawItems = await response.json();
+            items = rawItems.map(item => ({
+                ...item,
+                loan_duration_days: Number(item.loan_duration_days) || 0
+            }));
+
+            const table = document.getElementById('items-table');
+            if (items.length === 0) {
+                table.innerHTML = '<div class="empty-state">No items cataloged yet.</div>';
             } else {
                 table.innerHTML = `
                     <table>
                         <thead>
                             <tr>
-                                <th>Code</th>
-                                <th>Course Name</th>
-                                <th>Credits</th>
+                                <th>Barcode</th>
+                                <th>Title</th>
+                                <th>Loan Policy</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${courses.map(c => `
-                                <tr>
-                                    <td><strong>${escapeHtml(c.course_code)}</strong></td>
-                                    <td>${escapeHtml(c.course_name)}</td>
-                                    <td><span class="badge badge-credits">${c.credits} credits</span></td>
-                                </tr>
-                            `).join('')}
+                            ${items.map(renderItemRow).join('')}
                         </tbody>
                     </table>
                 `;
             }
-            const select = document.getElementById('enroll-course');
-            select.innerHTML = '<option value="">-- Select Course --</option>' +
-                courses.map(c => `<option value="${c.id}">${escapeHtml(c.course_code)} - ${escapeHtml(c.course_name)}</option>`).join('');
+
+            itemsSelect.innerHTML = '<option value="">-- Scan Item Barcode --</option>' +
+                items.map(item => `<option value="${item.id}" data-days="${item.loan_duration_days}">${escapeHtml(item.barcode)} · ${escapeHtml(item.title)}</option>`).join('');
         }
 
-        async function loadEnrollments() {
-            const response = await fetch(`${API_BASE}/enrollments.php`);
-            const enrollments = await response.json();
-            const table = document.getElementById('enrollments-table');
-            if (enrollments.length === 0) {
-                table.innerHTML = '<div class="empty-state">No enrollments yet</div>';
+        async function loadLoans() {
+            const response = await fetch(`${API_BASE}/loans.php`);
+            const rawLoans = await response.json();
+            loans = rawLoans.map(loan => ({
+                ...loan,
+                loan_duration_days: Number(loan.loan_duration_days) || 0,
+                due_date: parseDueDate(loan.due_date)
+            }));
+
+            const table = document.getElementById('loans-table');
+            if (loans.length === 0) {
+                table.innerHTML = '<div class="empty-state">No active loans. Returns will appear here for reshelving.</div>';
             } else {
                 table.innerHTML = `
                     <table>
                         <thead>
                             <tr>
-                                <th>Student</th>
-                                <th>Email</th>
-                                <th>Course Code</th>
-                                <th>Course Name</th>
-                                <th>Credits</th>
-                                <th>Grade</th>
-                                <th>Enrolled Date</th>
+                                <th>Patron</th>
+                                <th>Item</th>
+                                <th>Checked Out</th>
+                                <th>Due</th>
+                                <th>Status</th>
+                                <th>Next Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${enrollments.map(e => `
-                                <tr>
-                                    <td><strong>${escapeHtml(e.student_name)}</strong></td>
-                                    <td>${escapeHtml(e.student_email)}</td>
-                                    <td>${escapeHtml(e.course_code)}</td>
-                                    <td>${escapeHtml(e.course_name)}</td>
-                                    <td><span class="badge badge-credits">${e.credits}</span></td>
-                                    <td>${e.grade ? `<span class="badge badge-grade">${escapeHtml(e.grade)}</span>` : '-'}</td>
-                                    <td>${new Date(e.enrollment_date).toLocaleDateString()}</td>
-                                </tr>
-                            `).join('')}
+                            ${loans.map(renderLoanRow).join('')}
                         </tbody>
                     </table>
                 `;
             }
+        }
+
+        function renderPatronRow(patron) {
+            const profile = getProfileForPatron(patron.id);
+            return `
+                <tr>
+                    <td>${patron.id.toString().padStart(6, '0')}</td>
+                    <td>${escapeHtml(patron.name)}</td>
+                    <td>${escapeHtml(patron.email)}</td>
+                    <td>${profile.cardExpires ? formatDisplayDate(profile.cardExpires) : 'Set when card is issued'}</td>
+                </tr>
+            `;
+        }
+
+        function renderItemRow(item) {
+            const policy = POLICY_LABELS[item.loan_duration_days] || `${item.loan_duration_days || '—'} day loan`;
+            return `
+                <tr>
+                    <td><strong>${escapeHtml(item.barcode)}</strong></td>
+                    <td>${escapeHtml(item.title)}</td>
+                    <td><span class="badge badge-policy">${policy}</span></td>
+                </tr>
+            `;
+        }
+
+        function renderLoanRow(loan) {
+            const dueDisplay = loan.due_date ? formatDisplayDate(loan.due_date) : 'Set during checkout';
+            const status = loan.due_date ? describeDueStatus(loan.due_date) : 'Pending due date';
+            const policy = POLICY_LABELS[loan.loan_duration_days] || `${loan.loan_duration_days || '—'} day loan`;
+            return `
+                <tr>
+                    <td><strong>${escapeHtml(loan.patron_name)}</strong><br><span class="loan-meta">${escapeHtml(loan.patron_email)}</span></td>
+                    <td><strong>${escapeHtml(loan.item_title)}</strong><br><span class="loan-meta">${escapeHtml(loan.item_barcode)} · ${policy}</span></td>
+                    <td>${formatDisplayDate(loan.loaned_at)}</td>
+                    <td>${dueDisplay}</td>
+                    <td>${status}</td>
+                    <td><span class="badge badge-policy">Scan to check in ➜ reshelve</span></td>
+                </tr>
+            `;
+        }
+
+        function updatePatronStatus() {
+            const patronId = Number(patronsSelect.value);
+            if (!patronId) {
+                statusPanel.innerHTML = 'Scan a patron card to review expiration, fines, and loan counts before adding items to the basket.';
+                return;
+            }
+            const eligibility = describeEligibility(patronId);
+            const lines = [
+                `<strong>Card expiration:</strong> ${eligibility.expired ? '<span class="badge badge-alert">Expired</span>' : formatDisplayDate(eligibility.cardExpires)}`,
+                `<strong>Outstanding fines:</strong> ${eligibility.hasFines ? `<span class="badge badge-alert">$${eligibility.fines.toFixed(2)}</span>` : 'None'}`,
+                `<strong>Items checked out:</strong> ${eligibility.loanCount} / 20`
+            ];
+            statusPanel.innerHTML = `
+                <div>${lines.join('<br>')}</div>
+                <ul>
+                    <li>${eligibility.expired ? 'Renew card before checkout (US 1.3).' : 'Card valid for checkout.'}</li>
+                    <li>${eligibility.hasFines ? 'Collect payment before proceeding (US 2.2).' : 'No fines blocking checkout.'}</li>
+                    <li>${eligibility.atLimit ? 'Limit reached — stop checkout (US 2.3).' : 'Within 20-item limit.'}</li>
+                </ul>
+            `;
+        }
+
+        function updateDueDatePreview() {
+            const patronId = Number(patronsSelect.value);
+            const itemId = Number(itemsSelect.value);
+            if (!patronId || !itemId) {
+                duePreview.textContent = 'Select a patron and item to preview the due date and policy checks.';
+                return;
+            }
+            const item = items.find(i => i.id === itemId);
+            const eligibility = describeEligibility(patronId);
+            const due = calculateDueDate(item.loan_duration_days);
+            const policy = POLICY_LABELS[item.loan_duration_days] || `${item.loan_duration_days || '—'} day loan`;
+            const warnings = [];
+            if (eligibility.expired) warnings.push('Card expired');
+            if (eligibility.hasFines) warnings.push('Outstanding fines');
+            if (eligibility.atLimit) warnings.push('At 20-item limit');
+            duePreview.textContent = `Due ${formatDisplayDate(due)} (${policy}). ${warnings.length ? 'Resolve: ' + warnings.join(', ') + '.' : 'Ready to finalize checkout.'}`;
+        }
+
+        function describeEligibility(patronId) {
+            const profile = getProfileForPatron(patronId);
+            const cardExpires = profile.cardExpires ? new Date(profile.cardExpires) : null;
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const expired = cardExpires ? cardExpires < today : false;
+            const loanCount = loans.filter(loan => loan.patron_id === patronId).length;
+            const fines = profile.fines ?? 0;
+            return {
+                cardExpires,
+                expired,
+                fines,
+                hasFines: fines > 0.009,
+                loanCount,
+                atLimit: loanCount >= 20
+            };
+        }
+
+        function getProfileForPatron(patronId) {
+            if (DEMO_PATRON_PROFILES[patronId]) {
+                return DEMO_PATRON_PROFILES[patronId];
+            }
+            const fallbackDate = new Date();
+            fallbackDate.setFullYear(fallbackDate.getFullYear() + 1);
+            return {
+                cardExpires: fallbackDate.toISOString().split('T')[0],
+                fines: 0,
+                notes: 'New patron — profile defaults to active card with no fines.'
+            };
+        }
+
+        function calculateDueDate(days) {
+            const base = new Date();
+            base.setHours(0,0,0,0);
+            base.setDate(base.getDate() + (Number(days) || 0));
+            return base.toISOString().split('T')[0];
+        }
+
+        function parseDueDate(value) {
+            if (!value) return null;
+            if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+                return value;
+            }
+            return null;
+        }
+
+        function describeDueStatus(dueDate) {
+            const due = new Date(dueDate);
+            const today = new Date();
+            due.setHours(0,0,0,0);
+            today.setHours(0,0,0,0);
+            if (due < today) {
+                return '<span class="badge badge-alert">Overdue — assess late fee</span>';
+            }
+            if (due.getTime() === today.getTime()) {
+                return '<span class="badge badge-alert">Due today</span>';
+            }
+            return '<span class="badge badge-policy">On loan</span>';
+        }
+
+        function showCheckoutMessage(message, success) {
+            checkoutMessage.textContent = message;
+            checkoutMessage.className = success ? 'message success' : 'message error';
+        }
+
+        function formatDisplayDate(value) {
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) {
+                return value;
+            }
+            return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
         }
 
         function escapeHtml(text) {
@@ -305,5 +552,3 @@
     </script>
 </body>
 </html>
-
-

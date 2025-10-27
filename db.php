@@ -9,55 +9,53 @@ function get_db(): SQLite3 {
         return $db;
     }
 
-    $db = new SQLite3(__DIR__ . '/school.db');
+    $db = new SQLite3(__DIR__ . '/library.db');
 
     // Ensure tables exist
-    $db->exec('CREATE TABLE IF NOT EXISTS students (
+    $db->exec('CREATE TABLE IF NOT EXISTS patrons (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         email TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )');
 
-    $db->exec('CREATE TABLE IF NOT EXISTS courses (
+    $db->exec('CREATE TABLE IF NOT EXISTS items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        course_name TEXT NOT NULL,
-        course_code TEXT NOT NULL,
-        credits INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        barcode TEXT NOT NULL,
+        loan_duration_days INTEGER NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )');
 
-    $db->exec('CREATE TABLE IF NOT EXISTS enrollments (
+    $db->exec('CREATE TABLE IF NOT EXISTS loans (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        student_id INTEGER NOT NULL,
-        course_id INTEGER NOT NULL,
-        enrollment_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-        grade TEXT,
-        FOREIGN KEY (student_id) REFERENCES students(id),
-        FOREIGN KEY (course_id) REFERENCES courses(id)
+        patron_id INTEGER NOT NULL,
+        item_id INTEGER NOT NULL,
+        loaned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        due_date TEXT,
+        FOREIGN KEY (patron_id) REFERENCES patrons(id),
+        FOREIGN KEY (item_id) REFERENCES items(id)
     )');
 
     // Seed once if empty
-    $studentCount = (int)$db->querySingle('SELECT COUNT(*) FROM students');
-    if ($studentCount === 0) {
-        $db->exec("INSERT INTO students (name, email) VALUES 
-            ('Alice Johnson', 'alice@email.com'),
-            ('Bob Smith', 'bob@email.com'),
-            ('Carol Davis', 'carol@email.com')");
+    $patronCount = (int)$db->querySingle('SELECT COUNT(*) FROM patrons');
+    if ($patronCount === 0) {
+        $db->exec("INSERT INTO patrons (name, email) VALUES
+            ('Avery Morgan', 'avery.morgan@example.com'),
+            ('Jordan Ellis', 'jordan.ellis@example.com'),
+            ('Taylor Bennett', 'taylor.bennett@example.com')");
 
-        $db->exec("INSERT INTO courses (course_name, course_code, credits) VALUES 
-            ('Introduction to Programming', 'CS101', 3),
-            ('Database Systems', 'CS202', 4),
-            ('Web Development', 'CS305', 3),
-            ('Data Structures', 'CS201', 4)");
+        $db->exec("INSERT INTO items (title, barcode, loan_duration_days) VALUES
+            ('The Night Library', 'BK-1001', 28),
+            ('City Histories Documentary', 'DVD-2001', 7),
+            ('New Release Thriller', 'DVD-3005', 3),
+            ('STEM Explorers: Robotics', 'BK-1042', 28)");
 
-        $db->exec("INSERT INTO enrollments (student_id, course_id, grade) VALUES 
-            (1, 1, 'A'),
-            (1, 2, 'B+'),
-            (2, 1, 'A-'),
-            (2, 3, 'B'),
-            (3, 2, 'A'),
-            (3, 3, 'A-')");
+        $db->exec("INSERT INTO loans (patron_id, item_id, due_date) VALUES
+            (1, 1, date('now', '+28 days')),
+            (1, 2, date('now', '+7 days')),
+            (2, 3, date('now', '+3 days')),
+            (3, 4, date('now', '+28 days'))");
     }
 
     return $db;
@@ -68,6 +66,3 @@ function json_response($data, int $statusCode = 200): void {
     header('Content-Type: application/json');
     echo json_encode($data);
 }
-
-
-

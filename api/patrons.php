@@ -6,7 +6,7 @@ require_once __DIR__ . '/../db.php';
 $db = get_db();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $results = $db->query('SELECT * FROM students ORDER BY name');
+    $results = $db->query('SELECT * FROM patrons ORDER BY name');
     $data = [];
     while ($row = $results->fetchArray(SQLITE3_ASSOC)) {
         $data[] = $row;
@@ -16,10 +16,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name = $_POST['name'] ?? '';
-    $email = $_POST['email'] ?? '';
+    $name = trim($_POST['name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
 
-    $stmt = $db->prepare('INSERT INTO students (name, email) VALUES (:name, :email)');
+    $stmt = $db->prepare('INSERT INTO patrons (name, email) VALUES (:name, :email)');
     $stmt->bindValue(':name', $name, SQLITE3_TEXT);
     $stmt->bindValue(':email', $email, SQLITE3_TEXT);
     $stmt->execute();
@@ -29,6 +29,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 json_response(['error' => 'Method Not Allowed'], 405);
-
-
-
