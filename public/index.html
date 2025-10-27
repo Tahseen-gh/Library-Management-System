@@ -279,6 +279,7 @@
             formData.append('item_id', itemId);
             formData.append('due_date', dueDate);
             await fetch(`${API_BASE}/loans.php`, { method: 'POST', body: formData });
+
             showCheckoutMessage(`Checkout recorded. Item is due on ${formatDisplayDate(dueDate)}.`, true);
             loadAllData();
             e.target.reset();
