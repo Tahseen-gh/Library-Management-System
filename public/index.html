@@ -3,307 +3,451 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Enrollment System - POC</title>
+    <title>Library Circulation Wireframe</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            color-scheme: light;
+            --ink: #1f2933;
+            --muted: #52606d;
+            --border: #cbd2d9;
+            --canvas: #f5f7fa;
+            --panel: #ffffff;
+            --accent: #3f8efc;
+            --alert: #d64545;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
-            min-height: 100vh;
-            padding: 20px;
+            margin: 0;
+            background: var(--canvas);
+            font-family: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--ink);
         }
-        .container { max-width: 1200px; margin: 0 auto; }
-        h1 { color: white; text-align: center; margin-bottom: 10px; font-size: 2.5em; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
-        .subtitle { color: white; text-align: center; margin-bottom: 30px; font-size: 1.1em; opacity: 0.9; }
-        .card { background: white; border-radius: 10px; padding: 25px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-        .card h2 { margin-bottom: 15px; color: #2193b0; border-bottom: 2px solid #6dd5ed; padding-bottom: 10px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; color: #333; font-weight: 600; }
-        input[type="text"], input[type="email"], input[type="number"], select {
-            width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; transition: border-color 0.3s;
+
+        header {
+            padding: 32px 24px 16px;
+            background: linear-gradient(135deg, #1c2840 0%, #27446d 100%);
+            color: #f0f4f8;
         }
-        input:focus, select:focus { outline: none; border-color: #2193b0; }
-        button {
-            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
-            color: white; border: none; padding: 12px 30px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600;
-            transition: transform 0.2s, box-shadow 0.2s; width: 100%;
+
+        header h1 {
+            margin: 0 0 8px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
         }
-        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(33, 147, 176, 0.4); }
-        button:active { transform: translateY(0); }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e0e0e0; }
-        th { background: #f8f9fa; font-weight: 600; color: #2193b0; }
-        tr:hover { background: #f8f9fa; }
-        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
-        .badge-grade { background: #d4edda; color: #155724; }
-        .badge-credits { background: #cce5ff; color: #004085; }
-        .empty-state { text-align: center; padding: 30px; color: #999; }
-        .info-box { background: #e7f3ff; border-left: 4px solid #2193b0; padding: 15px; margin-bottom: 20px; border-radius: 4px; }
-        .info-box h3 { color: #2193b0; margin-bottom: 5px; }
-        .info-box p { color: #555; line-height: 1.6; }
+
+        header p {
+            margin: 0;
+            max-width: 720px;
+            line-height: 1.6;
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 24px 72px;
+        }
+
+        .badge-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .badge {
+            border: 1px dashed rgba(255, 255, 255, 0.45);
+            border-radius: 999px;
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            letter-spacing: 0.2px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            font-weight: 600;
+            font-size: 0.7rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 2px dashed var(--border);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+            min-height: 160px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .panel h2 {
+            margin: 0;
+            font-size: 1.25rem;
+        }
+
+        .panel h3 {
+            margin: 0;
+            font-size: 1.05rem;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .panel p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+        .panel ul {
+            margin: 0;
+            padding-left: 20px;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 999px;
+            padding: 4px 12px;
+            border: 1px dashed var(--border);
+            background: rgba(63, 142, 252, 0.08);
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .tag.alert {
+            background: rgba(214, 69, 69, 0.08);
+            border-color: rgba(214, 69, 69, 0.45);
+            color: #9b1c1c;
+        }
+
+        .placeholder {
+            border: 1px dashed var(--border);
+            border-radius: 14px;
+            padding: 14px 16px;
+            background: rgba(203, 210, 217, 0.12);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .placeholder span {
+            height: 10px;
+            border-radius: 999px;
+            background: rgba(203, 210, 217, 0.55);
+        }
+
+        .placeholder .wide { width: 100%; }
+        .placeholder .mid { width: 70%; }
+        .placeholder .short { width: 40%; }
+
+        .lane {
+            border-top: 1px dashed rgba(82, 96, 109, 0.35);
+            padding-top: 18px;
+        }
+
+        .lane + .lane {
+            margin-top: 18px;
+        }
+
+        .lane-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .policy-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .policy-card {
+            border: 1px dashed var(--border);
+            border-radius: 14px;
+            padding: 12px 14px;
+            background: rgba(63, 142, 252, 0.06);
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .mini-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .stream {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .stream-item {
+            border: 1px dashed var(--border);
+            border-radius: 12px;
+            padding: 12px 14px;
+            background: rgba(203, 210, 217, 0.14);
+            line-height: 1.45;
+        }
+
+        footer {
+            margin-top: 56px;
+            padding: 24px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 1024px) {
+            .grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 28px 20px 14px;
+            }
+
+            .page {
+                padding: 28px 20px 56px;
+            }
+
+            .grid {
+                grid-template-columns: repeat(1, minmax(0, 1fr));
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🎓 Student Enrollment System</h1>
-        <p class="subtitle">Many-to-Many Relationship Proof of Concept</p>
+    <header>
+        <h1>Wilmington Public Library · Circulation Console Wireframe</h1>
+        <div class="badge-row">
+            <div class="badge"><span>1</span>US&nbsp;2.7 – Checkout workflow</div>
+            <div class="badge"><span>2</span>US&nbsp;1.3 – Card expiration</div>
+            <div class="badge"><span>3</span>US&nbsp;2.3 – Limit &amp; fines</div>
+            <div class="badge"><span>4</span>US&nbsp;3.1 – Returns</div>
+            <div class="badge"><span>5</span>US&nbsp;3.7 – Reshelve</div>
+            <div class="badge"><span>6</span>US&nbsp;3.5 – Return log</div>
+        </div>
+        <p>
+            Low-fidelity scaffolding that shows how librarians intake a patron, validate policy
+            guardrails, scan items for checkout, process returns, and capture audit activity. Each panel
+            represents a functional cluster the team will flesh out with real data services in
+            subsequent sprints.
+        </p>
+    </header>
 
-        <div class="card">
-            <div class="info-box">
-                <h3>📊 Database Schema (Three Tables)</h3>
+    <main class="page">
+        <section class="grid" aria-label="Circulation wireframe layout">
+            <article class="panel" style="grid-column: span 4;" aria-label="Patron validation">
+                <h2>Patron Intake &amp; Validation</h2>
                 <p>
-                    <strong>Students</strong> (id, name, email) ↔ 
-                    <strong>Enrollments</strong> (id, student_id, course_id, grade) ↔ 
-                    <strong>Courses</strong> (id, course_name, course_code, credits)
+                    Card scan kicks off every visit. The console confirms patron identity, card status,
+                    and policy blockers before any items are touched.
                 </p>
-                <p style="margin-top: 8px;">
-                    This demonstrates a <strong>many-to-many relationship</strong>: 
-                    Students can enroll in multiple courses, and courses can have multiple students.
+                <div class="lane">
+                    <div class="lane-title">Scan / Lookup</div>
+                    <div class="placeholder" aria-hidden="true">
+                        <span class="wide"></span>
+                        <span class="mid"></span>
+                    </div>
+                    <p class="tag alert">Alert shown if card expired (US&nbsp;1.3)</p>
+                </div>
+                <div class="lane">
+                    <div class="lane-title">Account Snapshot</div>
+                    <div class="mini-grid">
+                        <div class="placeholder" aria-hidden="true">
+                            <span class="short"></span>
+                            <span class="mid"></span>
+                            <span class="wide"></span>
+                        </div>
+                        <div class="placeholder" aria-hidden="true">
+                            <span class="wide"></span>
+                            <span class="mid"></span>
+                            <span class="short"></span>
+                        </div>
+                    </div>
+                    <ul>
+                        <li>Outstanding balance highlighted in red if present.</li>
+                        <li>Active loan count displays <strong>20 item limit</strong> status (US&nbsp;2.3).</li>
+                    </ul>
+                </div>
+                <div class="lane">
+                    <div class="lane-title">Next Actions</div>
+                    <p class="tag">Proceed to Checkout</p>
+                    <p class="tag alert">Hold until fines resolved</p>
+                </div>
+            </article>
+
+            <article class="panel" style="grid-column: span 5;" aria-label="Checkout flow">
+                <h2>Checkout Session</h2>
+                <p>
+                    Items are staged in a queue as they are scanned. Due dates and warnings appear in-line
+                    so librarians can resolve issues before finalizing.
                 </p>
-            </div>
-        </div>
-
-        <div class="grid">
-            <div class="card">
-                <h2>➕ Add Student</h2>
-                <form id="student-form">
-                    <div class="form-group">
-                        <label for="student-name">Student Name *</label>
-                        <input type="text" id="student-name" required>
+                <div class="lane">
+                    <div class="lane-title">Item Scan Queue</div>
+                    <div class="placeholder" aria-hidden="true">
+                        <span class="wide"></span>
+                        <span class="wide"></span>
+                        <span class="wide"></span>
                     </div>
-                    <div class="form-group">
-                        <label for="student-email">Email *</label>
-                        <input type="email" id="student-email" required>
+                    <p class="tag">Auto calculates due date by format (US&nbsp;2.7)</p>
+                </div>
+                <div class="lane">
+                    <div class="lane-title">Policy Guardrails</div>
+                    <div class="policy-grid">
+                        <div class="policy-card">Fines &gt; $0 → block checkout (US&nbsp;2.3)</div>
+                        <div class="policy-card">20 item cap → show counter + stop new scans (US&nbsp;2.3)</div>
+                        <div class="policy-card">Loan durations: Books 4w · Movies 1w · New movies 3d</div>
                     </div>
-                    <button type="submit">Add Student</button>
-                </form>
-            </div>
-
-            <div class="card">
-                <h2>➕ Add Course</h2>
-                <form id="course-form">
-                    <div class="form-group">
-                        <label for="course-name">Course Name *</label>
-                        <input type="text" id="course-name" required>
+                </div>
+                <div class="lane">
+                    <div class="lane-title">Completion</div>
+                    <div class="mini-grid">
+                        <div>
+                            <p class="tag">Print receipt / email summary</p>
+                        </div>
+                        <div>
+                            <p class="tag">Offer hold / renewal prompts</p>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="course-code">Course Code *</label>
-                        <input type="text" id="course-code" required>
+                </div>
+            </article>
+
+            <article class="panel" style="grid-column: span 3;" aria-label="Quick tools">
+                <h2>Quick Tools</h2>
+                <div class="lane">
+                    <div class="lane-title">Search</div>
+                    <div class="placeholder" aria-hidden="true">
+                        <span class="wide"></span>
+                        <span class="mid"></span>
                     </div>
-                    <div class="form-group">
-                        <label for="credits">Credits *</label>
-                        <input type="number" id="credits" min="1" max="6" required>
+                    <p>Surface item availability to assist with patron questions.</p>
+                </div>
+                <div class="lane">
+                    <div class="lane-title">Reservations</div>
+                    <p class="tag">Place hold for patron</p>
+                    <p class="tag">View active holds</p>
+                </div>
+                <div class="lane">
+                    <div class="lane-title">Account Maintenance</div>
+                    <p class="tag alert">Resolve fines / renew card</p>
+                </div>
+            </article>
+
+            <article class="panel" style="grid-column: span 4;" aria-label="Return processing">
+                <h2>Return Processing</h2>
+                <p>
+                    Returns follow the same scanning pattern but emphasize condition checks, late fees,
+                    and routing to the correct bin.
+                </p>
+                <div class="lane">
+                    <div class="lane-title">Scan Returned Item</div>
+                    <div class="placeholder" aria-hidden="true">
+                        <span class="wide"></span>
+                        <span class="mid"></span>
                     </div>
-                    <button type="submit">Add Course</button>
-                </form>
-            </div>
-
-            <div class="card">
-                <h2>📝 Enroll Student in Course</h2>
-                <form id="enrollment-form">
-                    <div class="form-group">
-                        <label for="enroll-student">Select Student *</label>
-                        <select id="enroll-student" required>
-                            <option value="">-- Select Student --</option>
-                        </select>
+                    <p class="tag">Auto lookup patron + loan history (US&nbsp;3.1)</p>
+                </div>
+                <div class="lane">
+                    <div class="lane-title">Late Fee Evaluation</div>
+                    <ul>
+                        <li>Compare return timestamp vs. due date.</li>
+                        <li>Calculate fine from policy table (Books 0.25/day, Movies 1.00/day sample).</li>
+                        <li>Flag waived / collected status for audit (US&nbsp;3.5).</li>
+                    </ul>
+                </div>
+                <div class="lane">
+                    <div class="lane-title">Routing</div>
+                    <div class="mini-grid">
+                        <div class="placeholder" aria-hidden="true">
+                            <span class="mid"></span>
+                            <span class="short"></span>
+                            <span class="wide"></span>
+                        </div>
+                        <div>
+                            <p class="tag">Reshelve – change to available (US&nbsp;3.7)</p>
+                            <p class="tag">Transfer bin</p>
+                            <p class="tag">Error bin</p>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="enroll-course">Select Course *</label>
-                        <select id="enroll-course" required>
-                            <option value="">-- Select Course --</option>
-                        </select>
+                </div>
+            </article>
+
+            <article class="panel" style="grid-column: span 5;" aria-label="Activity logging">
+                <h2>Return Log &amp; Activity Stream</h2>
+                <p>
+                    Automatic audit trail aggregates circulation events for reporting and daily spot
+                    checks. Librarians can drill into a line to resolve disputes.
+                </p>
+                <div class="mini-grid">
+                    <div>
+                        <h3>Return Log (US&nbsp;3.5)</h3>
+                        <div class="stream" aria-hidden="true">
+                            <div class="stream-item">[10:12] B1007 returned · 2 days late · $0.50 fine added</div>
+                            <div class="stream-item">[09:48] M2021 returned on time · routed to transfer bin</div>
+                            <div class="stream-item">[09:32] B1044 error bin – unreadable barcode</div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="enroll-grade">Grade (Optional)</label>
-                        <select id="enroll-grade">
-                            <option value="">-- No Grade Yet --</option>
-                            <option value="A">A</option>
-                            <option value="A-">A-</option>
-                            <option value="B+">B+</option>
-                            <option value="B">B</option>
-                            <option value="B-">B-</option>
-                            <option value="C+">C+</option>
-                            <option value="C">C</option>
-                            <option value="C-">C-</option>
-                            <option value="D">D</option>
-                            <option value="F">F</option>
-                        </select>
+                    <div>
+                        <h3>Daily Snapshot</h3>
+                        <ul>
+                            <li>Checkouts today: 68</li>
+                            <li>Returns processed: 54</li>
+                            <li>Fines collected: $37.25</li>
+                        </ul>
+                        <p class="tag">Export to reporting</p>
                     </div>
-                    <button type="submit">Enroll Student</button>
-                </form>
-            </div>
-        </div>
+                </div>
+            </article>
 
-        <div class="card">
-            <h2>📚 Current Enrollments (JOIN of All Three Tables)</h2>
-            <div id="enrollments-table"></div>
-        </div>
+            <article class="panel" style="grid-column: span 3;" aria-label="Guided workflow">
+                <h2>Session Checklist</h2>
+                <ol>
+                    <li>Scan patron ID → resolve blockers.</li>
+                    <li>Scan items for checkout → verify due dates.</li>
+                    <li>Collect fines or renew card if flagged.</li>
+                    <li>Finalize receipt and offer holds/renewals.</li>
+                    <li>Process returns → apply fines → route items.</li>
+                    <li>Confirm reshelved status before session end.</li>
+                </ol>
+                <p class="tag">Supports onboarding &amp; QA</p>
+            </article>
+        </section>
+    </main>
 
-        <div class="grid">
-            <div class="card">
-                <h2>👥 All Students</h2>
-                <div id="students-table"></div>
-            </div>
-            <div class="card">
-                <h2>📖 All Courses</h2>
-                <div id="courses-table"></div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const API_BASE = '../api';
-
-        loadAllData();
-
-        document.getElementById('student-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData();
-            formData.append('name', document.getElementById('student-name').value);
-            formData.append('email', document.getElementById('student-email').value);
-            await fetch(`${API_BASE}/students.php`, { method: 'POST', body: formData });
-            document.getElementById('student-form').reset();
-            loadAllData();
-        });
-
-        document.getElementById('course-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData();
-            formData.append('course_name', document.getElementById('course-name').value);
-            formData.append('course_code', document.getElementById('course-code').value);
-            formData.append('credits', document.getElementById('credits').value);
-            await fetch(`${API_BASE}/courses.php`, { method: 'POST', body: formData });
-            document.getElementById('course-form').reset();
-            loadAllData();
-        });
-
-        document.getElementById('enrollment-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData();
-            formData.append('student_id', document.getElementById('enroll-student').value);
-            formData.append('course_id', document.getElementById('enroll-course').value);
-            formData.append('grade', document.getElementById('enroll-grade').value);
-            await fetch(`${API_BASE}/enrollments.php`, { method: 'POST', body: formData });
-            document.getElementById('enrollment-form').reset();
-            loadAllData();
-        });
-
-        async function loadAllData() {
-            await Promise.all([loadStudents(), loadCourses(), loadEnrollments()]);
-        }
-
-        async function loadStudents() {
-            const response = await fetch(`${API_BASE}/students.php`);
-            const students = await response.json();
-            const table = document.getElementById('students-table');
-            if (students.length === 0) {
-                table.innerHTML = '<div class="empty-state">No students yet</div>';
-            } else {
-                table.innerHTML = `
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Name</th>
-                                <th>Email</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${students.map(s => `
-                                <tr>
-                                    <td>${s.id}</td>
-                                    <td>${escapeHtml(s.name)}</td>
-                                    <td>${escapeHtml(s.email)}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                `;
-            }
-            const select = document.getElementById('enroll-student');
-            select.innerHTML = '<option value="">-- Select Student --</option>' +
-                students.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
-        }
-
-        async function loadCourses() {
-            const response = await fetch(`${API_BASE}/courses.php`);
-            const courses = await response.json();
-            const table = document.getElementById('courses-table');
-            if (courses.length === 0) {
-                table.innerHTML = '<div class="empty-state">No courses yet</div>';
-            } else {
-                table.innerHTML = `
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Code</th>
-                                <th>Course Name</th>
-                                <th>Credits</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${courses.map(c => `
-                                <tr>
-                                    <td><strong>${escapeHtml(c.course_code)}</strong></td>
-                                    <td>${escapeHtml(c.course_name)}</td>
-                                    <td><span class="badge badge-credits">${c.credits} credits</span></td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                `;
-            }
-            const select = document.getElementById('enroll-course');
-            select.innerHTML = '<option value="">-- Select Course --</option>' +
-                courses.map(c => `<option value="${c.id}">${escapeHtml(c.course_code)} - ${escapeHtml(c.course_name)}</option>`).join('');
-        }
-
-        async function loadEnrollments() {
-            const response = await fetch(`${API_BASE}/enrollments.php`);
-            const enrollments = await response.json();
-            const table = document.getElementById('enrollments-table');
-            if (enrollments.length === 0) {
-                table.innerHTML = '<div class="empty-state">No enrollments yet</div>';
-            } else {
-                table.innerHTML = `
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Student</th>
-                                <th>Email</th>
-                                <th>Course Code</th>
-                                <th>Course Name</th>
-                                <th>Credits</th>
-                                <th>Grade</th>
-                                <th>Enrolled Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${enrollments.map(e => `
-                                <tr>
-                                    <td><strong>${escapeHtml(e.student_name)}</strong></td>
-                                    <td>${escapeHtml(e.student_email)}</td>
-                                    <td>${escapeHtml(e.course_code)}</td>
-                                    <td>${escapeHtml(e.course_name)}</td>
-                                    <td><span class="badge badge-credits">${e.credits}</span></td>
-                                    <td>${e.grade ? `<span class="badge badge-grade">${escapeHtml(e.grade)}</span>` : '-'}</td>
-                                    <td>${new Date(e.enrollment_date).toLocaleDateString()}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                `;
-            }
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-    </script>
+    <footer>
+        Sprint 1 focus: deliver validated circulation flows before layering cataloging, patron onboarding,
+        and financial integrations.
+    </footer>
 </body>
 </html>
-
-
