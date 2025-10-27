@@ -4,11 +4,18 @@ CSC 565 Group 3 Project
 
 ## Overview
 
-This repository now showcases a **Sprint 1 circulation console** that still runs on the Sprint 0 PHP + SQLite proof-of-concept. The PHP endpoints and database tables have been renamed to match Wilmington Public Library terminology—students → patrons, courses → items, and enrollments → loans—so the demo reads like a circulation workflow while staying within the same lightweight architecture.
+This repository now showcases a **Sprint 1 circulation console** that still runs on
+the Sprint 0 PHP + SQLite proof-of-concept. The PHP endpoints and database tables
+have been renamed to match Wilmington Public Library terminology—students →
+patrons, courses → items, and enrollments → loans—so the demo reads like a
+circulation workflow while staying within the same lightweight architecture.
 
 ## Sprint 1 Circulation Demo
 
-Launch the demo UI by opening `public/index.html`. The layout mirrors the original enrollment proof-of-concept but is rethemed for circulation staff. Client-side logic overlays policy checks that map directly to the highest-priority Sprint 1 user stories:
+Launch the demo UI by opening `public/index.html`. The layout mirrors the original
+enrollment proof-of-concept but is rethemed for circulation staff. Client-side
+logic overlays policy checks that map directly to the highest-priority Sprint 1
+user stories:
 
 - **US 1.3 – Card expiration validation**: Patron cards include demo expiration dates, and the checkout form blocks transactions when the card is expired.
 - **US 2.3 – Enforce item limits and fines**: The patron status panel counts active loans (limit of 20) and surfaces outstanding demo fines that must be resolved before checkout.
