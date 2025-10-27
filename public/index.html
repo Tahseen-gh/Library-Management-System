@@ -3,451 +3,552 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Library Circulation Wireframe</title>
+    <title>WPL Library Circulation Console</title>
     <style>
-        :root {
-            color-scheme: light;
-            --ink: #1f2933;
-            --muted: #52606d;
-            --border: #cbd2d9;
-            --canvas: #f5f7fa;
-            --panel: #ffffff;
-            --accent: #3f8efc;
-            --alert: #d64545;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            margin: 0;
-            background: var(--canvas);
-            font-family: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-            color: var(--ink);
-        }
-
-        header {
-            padding: 32px 24px 16px;
-            background: linear-gradient(135deg, #1c2840 0%, #27446d 100%);
-            color: #f0f4f8;
-        }
-
-        header h1 {
-            margin: 0 0 8px;
-            font-weight: 700;
-            letter-spacing: 0.4px;
-        }
-
-        header p {
-            margin: 0;
-            max-width: 720px;
-            line-height: 1.6;
-            font-size: 1rem;
-            color: rgba(255, 255, 255, 0.9);
-        }
-
-        .page {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 32px 24px 72px;
-        }
-
-        .badge-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 24px;
-        }
-
-        .badge {
-            border: 1px dashed rgba(255, 255, 255, 0.45);
-            border-radius: 999px;
-            padding: 6px 14px;
-            font-size: 0.8rem;
-            letter-spacing: 0.2px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .badge span {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 18px;
-            height: 18px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            font-weight: 600;
-            font-size: 0.7rem;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(12, 1fr);
-            gap: 24px;
-        }
-
-        .panel {
-            background: var(--panel);
-            border: 2px dashed var(--border);
-            border-radius: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #142850 0%, #00909e 100%);
+            min-height: 100vh;
             padding: 24px;
-            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
-            min-height: 160px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
+            color: #0d1b2a;
         }
-
-        .panel h2 {
-            margin: 0;
-            font-size: 1.25rem;
-        }
-
-        .panel h3 {
-            margin: 0;
-            font-size: 1.05rem;
-            color: var(--muted);
-            font-weight: 600;
-        }
-
-        .panel p {
-            margin: 0;
-            color: var(--muted);
-            line-height: 1.55;
-        }
-
-        .panel ul {
-            margin: 0;
-            padding-left: 20px;
-            color: var(--muted);
-            line-height: 1.55;
-        }
-
-        .tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            border-radius: 999px;
-            padding: 4px 12px;
-            border: 1px dashed var(--border);
-            background: rgba(63, 142, 252, 0.08);
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--ink);
-        }
-
-        .tag.alert {
-            background: rgba(214, 69, 69, 0.08);
-            border-color: rgba(214, 69, 69, 0.45);
-            color: #9b1c1c;
-        }
-
-        .placeholder {
-            border: 1px dashed var(--border);
-            border-radius: 14px;
-            padding: 14px 16px;
-            background: rgba(203, 210, 217, 0.12);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .placeholder span {
-            height: 10px;
-            border-radius: 999px;
-            background: rgba(203, 210, 217, 0.55);
-        }
-
-        .placeholder .wide { width: 100%; }
-        .placeholder .mid { width: 70%; }
-        .placeholder .short { width: 40%; }
-
-        .lane {
-            border-top: 1px dashed rgba(82, 96, 109, 0.35);
-            padding-top: 18px;
-        }
-
-        .lane + .lane {
-            margin-top: 18px;
-        }
-
-        .lane-title {
-            font-size: 0.85rem;
-            font-weight: 700;
-            letter-spacing: 0.4px;
-            text-transform: uppercase;
-            color: var(--muted);
-        }
-
-        .policy-grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 12px;
-        }
-
-        .policy-card {
-            border: 1px dashed var(--border);
-            border-radius: 14px;
-            padding: 12px 14px;
-            background: rgba(63, 142, 252, 0.06);
-            font-size: 0.85rem;
-            line-height: 1.5;
-        }
-
-        .mini-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px;
-        }
-
-        .stream {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .stream-item {
-            border: 1px dashed var(--border);
-            border-radius: 12px;
-            padding: 12px 14px;
-            background: rgba(203, 210, 217, 0.14);
-            line-height: 1.45;
-        }
-
-        footer {
-            margin-top: 56px;
-            padding: 24px;
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 {
+            color: #f4faff;
             text-align: center;
-            color: var(--muted);
-            font-size: 0.85rem;
+            margin-bottom: 8px;
+            font-size: 2.6em;
+            text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.35);
         }
-
-        @media (max-width: 1024px) {
-            .grid {
-                grid-template-columns: repeat(6, 1fr);
-            }
+        .subtitle {
+            color: #d8e3f2;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.05em;
+            opacity: 0.95;
         }
-
-        @media (max-width: 768px) {
-            header {
-                padding: 28px 20px 14px;
-            }
-
-            .page {
-                padding: 28px 20px 56px;
-            }
-
-            .grid {
-                grid-template-columns: repeat(1, minmax(0, 1fr));
-            }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 14px 36px rgba(8, 28, 41, 0.25);
         }
+        .card h2 {
+            margin-bottom: 16px;
+            color: #27496d;
+            border-bottom: 2px solid rgba(0, 144, 158, 0.2);
+            padding-bottom: 8px;
+        }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; }
+        .info-box {
+            background: rgba(0, 144, 158, 0.08);
+            border-left: 4px solid #00a8cc;
+            padding: 16px;
+            border-radius: 8px;
+        }
+        .info-box h3 { color: #142850; margin-bottom: 8px; }
+        .info-box p { color: #385170; line-height: 1.55; }
+        .form-group { margin-bottom: 16px; }
+        label { display: block; margin-bottom: 6px; font-weight: 600; color: #27496d; }
+        input[type="text"], input[type="email"], select {
+            width: 100%;
+            padding: 11px 12px;
+            border: 2px solid #d9e2ec;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.25s;
+        }
+        input:focus, select:focus { outline: none; border-color: #00a8cc; }
+        button {
+            background: linear-gradient(135deg, #142850 0%, #00a8cc 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(14, 59, 94, 0.35); }
+        button:active { transform: translateY(0); }
+        table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e0e7ff; }
+        th { background: #f1f5fd; font-weight: 600; color: #27496d; }
+        tr:hover { background: #f9fbff; }
+        .badge {
+            display: inline-block;
+            padding: 4px 9px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-policy { background: rgba(0, 168, 204, 0.15); color: #005377; }
+        .badge-alert { background: rgba(214, 69, 69, 0.15); color: #8b1d1d; }
+        .empty-state { text-align: center; padding: 30px; color: #7b8794; font-style: italic; }
+        .status-panel {
+            background: #f1f5fd;
+            border-radius: 8px;
+            padding: 16px;
+            border: 1px dashed rgba(0, 144, 158, 0.4);
+            margin-bottom: 16px;
+            color: #27496d;
+        }
+        .status-panel ul { margin-left: 18px; margin-top: 8px; }
+        .status-panel li { margin-bottom: 6px; }
+        .message {
+            margin-top: 12px;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        .message.success { background: rgba(76, 175, 80, 0.12); color: #1b5e20; border: 1px solid rgba(76, 175, 80, 0.35); }
+        .message.error { background: rgba(214, 69, 69, 0.12); color: #8b1d1d; border: 1px solid rgba(214, 69, 69, 0.35); }
+        .loan-meta { color: #385170; font-size: 0.92em; }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Wilmington Public Library · Circulation Console Wireframe</h1>
-        <div class="badge-row">
-            <div class="badge"><span>1</span>US&nbsp;2.7 – Checkout workflow</div>
-            <div class="badge"><span>2</span>US&nbsp;1.3 – Card expiration</div>
-            <div class="badge"><span>3</span>US&nbsp;2.3 – Limit &amp; fines</div>
-            <div class="badge"><span>4</span>US&nbsp;3.1 – Returns</div>
-            <div class="badge"><span>5</span>US&nbsp;3.7 – Reshelve</div>
-            <div class="badge"><span>6</span>US&nbsp;3.5 – Return log</div>
+    <div class="container">
+        <h1>📚 WPL Library Circulation Console</h1>
+        <p class="subtitle">Sprint 1 focus: checkout, return intake, and reshelving guardrails using the Sprint 0 PHP + SQLite demo stack.</p>
+
+        <div class="card">
+            <div class="info-box">
+                <h3>Many-to-Many Core Reused for Circulation</h3>
+                <p><strong>Patrons</strong> map to the previous students table, <strong>Items</strong> map to courses, and <strong>Loans</strong> map to enrollments. We reuse the existing endpoints while the UI highlights Sprint&nbsp;1 rules: card validity (US&nbsp;1.3), checkout limits and fines (US&nbsp;2.3, US&nbsp;2.7), check-in/reshelving (US&nbsp;3.1, US&nbsp;3.7), and logging (US&nbsp;3.5).</p>
+            </div>
         </div>
-        <p>
-            Low-fidelity scaffolding that shows how librarians intake a patron, validate policy
-            guardrails, scan items for checkout, process returns, and capture audit activity. Each panel
-            represents a functional cluster the team will flesh out with real data services in
-            subsequent sprints.
-        </p>
-    </header>
 
-    <main class="page">
-        <section class="grid" aria-label="Circulation wireframe layout">
-            <article class="panel" style="grid-column: span 4;" aria-label="Patron validation">
-                <h2>Patron Intake &amp; Validation</h2>
-                <p>
-                    Card scan kicks off every visit. The console confirms patron identity, card status,
-                    and policy blockers before any items are touched.
-                </p>
-                <div class="lane">
-                    <div class="lane-title">Scan / Lookup</div>
-                    <div class="placeholder" aria-hidden="true">
-                        <span class="wide"></span>
-                        <span class="mid"></span>
+        <div class="grid">
+            <div class="card">
+                <h2>🪪 Register Patron</h2>
+                <p class="loan-meta">Collect a patron name and email when issuing a card. New demo patrons default to active cards with no fines.</p>
+                <form id="patron-form">
+                    <div class="form-group">
+                        <label for="patron-name">Patron Name *</label>
+                        <input type="text" id="patron-name" required>
                     </div>
-                    <p class="tag alert">Alert shown if card expired (US&nbsp;1.3)</p>
-                </div>
-                <div class="lane">
-                    <div class="lane-title">Account Snapshot</div>
-                    <div class="mini-grid">
-                        <div class="placeholder" aria-hidden="true">
-                            <span class="short"></span>
-                            <span class="mid"></span>
-                            <span class="wide"></span>
-                        </div>
-                        <div class="placeholder" aria-hidden="true">
-                            <span class="wide"></span>
-                            <span class="mid"></span>
-                            <span class="short"></span>
-                        </div>
+                    <div class="form-group">
+                        <label for="patron-email">Email *</label>
+                        <input type="email" id="patron-email" required>
                     </div>
-                    <ul>
-                        <li>Outstanding balance highlighted in red if present.</li>
-                        <li>Active loan count displays <strong>20 item limit</strong> status (US&nbsp;2.3).</li>
-                    </ul>
-                </div>
-                <div class="lane">
-                    <div class="lane-title">Next Actions</div>
-                    <p class="tag">Proceed to Checkout</p>
-                    <p class="tag alert">Hold until fines resolved</p>
-                </div>
-            </article>
+                    <button type="submit">Add Patron</button>
+                </form>
+            </div>
 
-            <article class="panel" style="grid-column: span 5;" aria-label="Checkout flow">
-                <h2>Checkout Session</h2>
-                <p>
-                    Items are staged in a queue as they are scanned. Due dates and warnings appear in-line
-                    so librarians can resolve issues before finalizing.
-                </p>
-                <div class="lane">
-                    <div class="lane-title">Item Scan Queue</div>
-                    <div class="placeholder" aria-hidden="true">
-                        <span class="wide"></span>
-                        <span class="wide"></span>
-                        <span class="wide"></span>
+            <div class="card">
+                <h2>🏷️ Catalog Item</h2>
+                <p class="loan-meta">Add an item barcode and title, then choose the loan duration policy enforced during checkout.</p>
+                <form id="item-form">
+                    <div class="form-group">
+                        <label for="item-title">Item Title *</label>
+                        <input type="text" id="item-title" required>
                     </div>
-                    <p class="tag">Auto calculates due date by format (US&nbsp;2.7)</p>
-                </div>
-                <div class="lane">
-                    <div class="lane-title">Policy Guardrails</div>
-                    <div class="policy-grid">
-                        <div class="policy-card">Fines &gt; $0 → block checkout (US&nbsp;2.3)</div>
-                        <div class="policy-card">20 item cap → show counter + stop new scans (US&nbsp;2.3)</div>
-                        <div class="policy-card">Loan durations: Books 4w · Movies 1w · New movies 3d</div>
+                    <div class="form-group">
+                        <label for="item-barcode">Barcode *</label>
+                        <input type="text" id="item-barcode" required>
                     </div>
-                </div>
-                <div class="lane">
-                    <div class="lane-title">Completion</div>
-                    <div class="mini-grid">
-                        <div>
-                            <p class="tag">Print receipt / email summary</p>
-                        </div>
-                        <div>
-                            <p class="tag">Offer hold / renewal prompts</p>
-                        </div>
+                    <div class="form-group">
+                        <label for="loan-policy">Loan Duration *</label>
+                        <select id="loan-policy" required>
+                            <option value="">-- Select Duration --</option>
+                            <option value="28">Book · 4 weeks</option>
+                            <option value="7">Movie · 1 week</option>
+                            <option value="3">New Movie · 3 days</option>
+                        </select>
                     </div>
-                </div>
-            </article>
+                    <button type="submit">Add Item</button>
+                </form>
+            </div>
 
-            <article class="panel" style="grid-column: span 3;" aria-label="Quick tools">
-                <h2>Quick Tools</h2>
-                <div class="lane">
-                    <div class="lane-title">Search</div>
-                    <div class="placeholder" aria-hidden="true">
-                        <span class="wide"></span>
-                        <span class="mid"></span>
+            <div class="card">
+                <h2>📦 Checkout Session</h2>
+                <div id="patron-status" class="status-panel">
+                    Scan a patron card to review expiration, fines, and loan counts before adding items to the basket.
+                </div>
+                <form id="checkout-form">
+                    <div class="form-group">
+                        <label for="checkout-patron">Patron *</label>
+                        <select id="checkout-patron" required>
+                            <option value="">-- Scan / Select Patron --</option>
+                        </select>
                     </div>
-                    <p>Surface item availability to assist with patron questions.</p>
-                </div>
-                <div class="lane">
-                    <div class="lane-title">Reservations</div>
-                    <p class="tag">Place hold for patron</p>
-                    <p class="tag">View active holds</p>
-                </div>
-                <div class="lane">
-                    <div class="lane-title">Account Maintenance</div>
-                    <p class="tag alert">Resolve fines / renew card</p>
-                </div>
-            </article>
+                    <div class="form-group">
+                        <label for="checkout-item">Item *</label>
+                        <select id="checkout-item" required>
+                            <option value="">-- Scan Item Barcode --</option>
+                        </select>
+                    </div>
+                    <div id="due-preview" class="loan-meta">Select a patron and item to preview the due date and policy checks.</div>
+                    <button type="submit">Confirm Checkout</button>
+                    <div id="checkout-message"></div>
+                </form>
+            </div>
+        </div>
 
-            <article class="panel" style="grid-column: span 4;" aria-label="Return processing">
-                <h2>Return Processing</h2>
-                <p>
-                    Returns follow the same scanning pattern but emphasize condition checks, late fees,
-                    and routing to the correct bin.
-                </p>
-                <div class="lane">
-                    <div class="lane-title">Scan Returned Item</div>
-                    <div class="placeholder" aria-hidden="true">
-                        <span class="wide"></span>
-                        <span class="mid"></span>
-                    </div>
-                    <p class="tag">Auto lookup patron + loan history (US&nbsp;3.1)</p>
-                </div>
-                <div class="lane">
-                    <div class="lane-title">Late Fee Evaluation</div>
-                    <ul>
-                        <li>Compare return timestamp vs. due date.</li>
-                        <li>Calculate fine from policy table (Books 0.25/day, Movies 1.00/day sample).</li>
-                        <li>Flag waived / collected status for audit (US&nbsp;3.5).</li>
-                    </ul>
-                </div>
-                <div class="lane">
-                    <div class="lane-title">Routing</div>
-                    <div class="mini-grid">
-                        <div class="placeholder" aria-hidden="true">
-                            <span class="mid"></span>
-                            <span class="short"></span>
-                            <span class="wide"></span>
-                        </div>
-                        <div>
-                            <p class="tag">Reshelve – change to available (US&nbsp;3.7)</p>
-                            <p class="tag">Transfer bin</p>
-                            <p class="tag">Error bin</p>
-                        </div>
-                    </div>
-                </div>
-            </article>
+        <div class="card">
+            <h2>🔄 Active Loans, Returns, &amp; Reshelving Queue</h2>
+            <p class="loan-meta">Incoming returns appear here for inspection. Items flagged as reshelved illustrate US&nbsp;3.7, while overdue status drives late fee discussions for US&nbsp;3.1 and logging for US&nbsp;3.5.</p>
+            <div id="loans-table"></div>
+        </div>
 
-            <article class="panel" style="grid-column: span 5;" aria-label="Activity logging">
-                <h2>Return Log &amp; Activity Stream</h2>
-                <p>
-                    Automatic audit trail aggregates circulation events for reporting and daily spot
-                    checks. Librarians can drill into a line to resolve disputes.
-                </p>
-                <div class="mini-grid">
-                    <div>
-                        <h3>Return Log (US&nbsp;3.5)</h3>
-                        <div class="stream" aria-hidden="true">
-                            <div class="stream-item">[10:12] B1007 returned · 2 days late · $0.50 fine added</div>
-                            <div class="stream-item">[09:48] M2021 returned on time · routed to transfer bin</div>
-                            <div class="stream-item">[09:32] B1044 error bin – unreadable barcode</div>
-                        </div>
-                    </div>
-                    <div>
-                        <h3>Daily Snapshot</h3>
-                        <ul>
-                            <li>Checkouts today: 68</li>
-                            <li>Returns processed: 54</li>
-                            <li>Fines collected: $37.25</li>
-                        </ul>
-                        <p class="tag">Export to reporting</p>
-                    </div>
-                </div>
-            </article>
+        <div class="grid">
+            <div class="card">
+                <h2>👥 Patron Directory</h2>
+                <div id="patrons-table"></div>
+            </div>
+            <div class="card">
+                <h2>📘 Collection Inventory</h2>
+                <div id="items-table"></div>
+            </div>
+        </div>
+    </div>
 
-            <article class="panel" style="grid-column: span 3;" aria-label="Guided workflow">
-                <h2>Session Checklist</h2>
-                <ol>
-                    <li>Scan patron ID → resolve blockers.</li>
-                    <li>Scan items for checkout → verify due dates.</li>
-                    <li>Collect fines or renew card if flagged.</li>
-                    <li>Finalize receipt and offer holds/renewals.</li>
-                    <li>Process returns → apply fines → route items.</li>
-                    <li>Confirm reshelved status before session end.</li>
-                </ol>
-                <p class="tag">Supports onboarding &amp; QA</p>
-            </article>
-        </section>
-    </main>
+    <script>
+        const API_BASE = '../api';
+        const patronsSelect = document.getElementById('checkout-patron');
+        const itemsSelect = document.getElementById('checkout-item');
+        const statusPanel = document.getElementById('patron-status');
+        const duePreview = document.getElementById('due-preview');
+        const checkoutMessage = document.getElementById('checkout-message');
 
-    <footer>
-        Sprint 1 focus: deliver validated circulation flows before layering cataloging, patron onboarding,
-        and financial integrations.
-    </footer>
+        let patrons = [];
+        let items = [];
+        let loans = [];
+
+        const DEMO_PATRON_PROFILES = {
+            1: { cardExpires: '2025-11-15', fines: 0, notes: 'Faculty demo account' },
+            2: { cardExpires: '2024-12-01', fines: 12.50, notes: 'Outstanding movie fine' },
+            3: { cardExpires: '2023-09-30', fines: 0, notes: 'Expired card example' }
+        };
+
+        const POLICY_LABELS = {
+            28: 'Book · 4 weeks',
+            7: 'Movie · 1 week',
+            3: 'New Movie · 3 days'
+        };
+
+        loadAllData();
+
+        document.getElementById('patron-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('name', document.getElementById('patron-name').value);
+            formData.append('email', document.getElementById('patron-email').value);
+            await fetch(`${API_BASE}/students.php`, { method: 'POST', body: formData });
+            e.target.reset();
+            checkoutMessage.textContent = '';
+            loadAllData();
+        });
+
+        document.getElementById('item-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('course_name', document.getElementById('item-title').value);
+            formData.append('course_code', document.getElementById('item-barcode').value);
+            formData.append('credits', document.getElementById('loan-policy').value);
+            await fetch(`${API_BASE}/courses.php`, { method: 'POST', body: formData });
+            e.target.reset();
+            checkoutMessage.textContent = '';
+            loadAllData();
+        });
+
+        document.getElementById('checkout-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const patronId = Number(patronsSelect.value);
+            const itemId = Number(itemsSelect.value);
+            if (!patronId || !itemId) {
+                showCheckoutMessage('Select a patron and item to complete the checkout.', false);
+                return;
+            }
+
+            const eligibility = describeEligibility(patronId);
+            if (eligibility.expired || eligibility.hasFines || eligibility.atLimit) {
+                showCheckoutMessage('Checkout blocked: resolve card status, fines, or item limit before proceeding.', false);
+                return;
+            }
+
+            const item = items.find(i => i.id === itemId);
+            const dueDate = calculateDueDate(item.loan_days);
+
+            const formData = new FormData();
+            formData.append('student_id', patronId);
+            formData.append('course_id', itemId);
+            formData.append('grade', dueDate);
+            await fetch(`${API_BASE}/enrollments.php`, { method: 'POST', body: formData });
+            showCheckoutMessage(`Checkout recorded. Item is due on ${formatDisplayDate(dueDate)}.`, true);
+            loadAllData();
+            e.target.reset();
+            duePreview.textContent = 'Select a patron and item to preview the due date and policy checks.';
+        });
+
+        patronsSelect.addEventListener('change', () => {
+            updatePatronStatus();
+            updateDueDatePreview();
+        });
+
+        itemsSelect.addEventListener('change', updateDueDatePreview);
+
+        async function loadAllData() {
+            await Promise.all([loadPatrons(), loadItems(), loadLoans()]);
+            updatePatronStatus();
+            updateDueDatePreview();
+        }
+
+        async function loadPatrons() {
+            const response = await fetch(`${API_BASE}/students.php`);
+            patrons = await response.json();
+
+            const table = document.getElementById('patrons-table');
+            if (patrons.length === 0) {
+                table.innerHTML = '<div class="empty-state">No patrons registered yet.</div>';
+            } else {
+                table.innerHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Library Card #</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Card Expires</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${patrons.map(renderPatronRow).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
+
+            patronsSelect.innerHTML = '<option value="">-- Scan / Select Patron --</option>' +
+                patrons.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+        }
+
+        async function loadItems() {
+            const response = await fetch(`${API_BASE}/courses.php`);
+            const rawItems = await response.json();
+            items = rawItems.map(item => ({
+                ...item,
+                loan_days: Number(item.credits) || 0
+            }));
+
+            const table = document.getElementById('items-table');
+            if (items.length === 0) {
+                table.innerHTML = '<div class="empty-state">No items cataloged yet.</div>';
+            } else {
+                table.innerHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Barcode</th>
+                                <th>Title</th>
+                                <th>Loan Policy</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${items.map(renderItemRow).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
+
+            itemsSelect.innerHTML = '<option value="">-- Scan Item Barcode --</option>' +
+                items.map(item => `<option value="${item.id}" data-days="${item.loan_days}">${escapeHtml(item.course_code)} · ${escapeHtml(item.course_name)}</option>`).join('');
+        }
+
+        async function loadLoans() {
+            const response = await fetch(`${API_BASE}/enrollments.php`);
+            const rawLoans = await response.json();
+            loans = rawLoans.map(loan => ({
+                ...loan,
+                loan_days: Number(loan.credits) || 0,
+                due_date: parseDueDate(loan.grade)
+            }));
+
+            const table = document.getElementById('loans-table');
+            if (loans.length === 0) {
+                table.innerHTML = '<div class="empty-state">No active loans. Returns will appear here for reshelving.</div>';
+            } else {
+                table.innerHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Patron</th>
+                                <th>Item</th>
+                                <th>Checked Out</th>
+                                <th>Due</th>
+                                <th>Status</th>
+                                <th>Next Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${loans.map(renderLoanRow).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
+        }
+
+        function renderPatronRow(patron) {
+            const profile = getProfileForPatron(patron.id);
+            return `
+                <tr>
+                    <td>${patron.id.toString().padStart(6, '0')}</td>
+                    <td>${escapeHtml(patron.name)}</td>
+                    <td>${escapeHtml(patron.email)}</td>
+                    <td>${profile.cardExpires ? formatDisplayDate(profile.cardExpires) : 'Set at enrollment'}</td>
+                </tr>
+            `;
+        }
+
+        function renderItemRow(item) {
+            const policy = POLICY_LABELS[item.loan_days] || `${item.loan_days || '—'} day loan`;
+            return `
+                <tr>
+                    <td><strong>${escapeHtml(item.course_code)}</strong></td>
+                    <td>${escapeHtml(item.course_name)}</td>
+                    <td><span class="badge badge-policy">${policy}</span></td>
+                </tr>
+            `;
+        }
+
+        function renderLoanRow(loan) {
+            const dueDisplay = loan.due_date ? formatDisplayDate(loan.due_date) : 'Set during checkout';
+            const status = loan.due_date ? describeDueStatus(loan.due_date) : 'Pending due date';
+            const policy = POLICY_LABELS[loan.loan_days] || `${loan.loan_days || '—'} day loan`;
+            return `
+                <tr>
+                    <td><strong>${escapeHtml(loan.student_name)}</strong><br><span class="loan-meta">${escapeHtml(loan.student_email)}</span></td>
+                    <td><strong>${escapeHtml(loan.course_name)}</strong><br><span class="loan-meta">${escapeHtml(loan.course_code)} · ${policy}</span></td>
+                    <td>${formatDisplayDate(loan.enrollment_date)}</td>
+                    <td>${dueDisplay}</td>
+                    <td>${status}</td>
+                    <td><span class="badge badge-policy">Scan to check in ➜ reshelve</span></td>
+                </tr>
+            `;
+        }
+
+        function updatePatronStatus() {
+            const patronId = Number(patronsSelect.value);
+            if (!patronId) {
+                statusPanel.innerHTML = 'Scan a patron card to review expiration, fines, and loan counts before adding items to the basket.';
+                return;
+            }
+            const eligibility = describeEligibility(patronId);
+            const lines = [
+                `<strong>Card expiration:</strong> ${eligibility.expired ? '<span class="badge badge-alert">Expired</span>' : formatDisplayDate(eligibility.cardExpires)}`,
+                `<strong>Outstanding fines:</strong> ${eligibility.hasFines ? `<span class="badge badge-alert">$${eligibility.fines.toFixed(2)}</span>` : 'None'}`,
+                `<strong>Items checked out:</strong> ${eligibility.loanCount} / 20`
+            ];
+            statusPanel.innerHTML = `
+                <div>${lines.join('<br>')}</div>
+                <ul>
+                    <li>${eligibility.expired ? 'Renew card before checkout (US 1.3).' : 'Card valid for checkout.'}</li>
+                    <li>${eligibility.hasFines ? 'Collect payment before proceeding (US 2.2).' : 'No fines blocking checkout.'}</li>
+                    <li>${eligibility.atLimit ? 'Limit reached — stop checkout (US 2.3).' : 'Within 20-item limit.'}</li>
+                </ul>
+            `;
+        }
+
+        function updateDueDatePreview() {
+            const patronId = Number(patronsSelect.value);
+            const itemId = Number(itemsSelect.value);
+            if (!patronId || !itemId) {
+                duePreview.textContent = 'Select a patron and item to preview the due date and policy checks.';
+                return;
+            }
+            const item = items.find(i => i.id === itemId);
+            const eligibility = describeEligibility(patronId);
+            const due = calculateDueDate(item.loan_days);
+            const policy = POLICY_LABELS[item.loan_days] || `${item.loan_days || '—'} day loan`;
+            const warnings = [];
+            if (eligibility.expired) warnings.push('Card expired');
+            if (eligibility.hasFines) warnings.push('Outstanding fines');
+            if (eligibility.atLimit) warnings.push('At 20-item limit');
+            duePreview.textContent = `Due ${formatDisplayDate(due)} (${policy}). ${warnings.length ? 'Resolve: ' + warnings.join(', ') + '.' : 'Ready to finalize checkout.'}`;
+        }
+
+        function describeEligibility(patronId) {
+            const profile = getProfileForPatron(patronId);
+            const cardExpires = profile.cardExpires ? new Date(profile.cardExpires) : null;
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const expired = cardExpires ? cardExpires < today : false;
+            const loanCount = loans.filter(loan => loan.student_id === patronId).length;
+            const fines = profile.fines ?? 0;
+            return {
+                cardExpires,
+                expired,
+                fines,
+                hasFines: fines > 0.009,
+                loanCount,
+                atLimit: loanCount >= 20
+            };
+        }
+
+        function getProfileForPatron(patronId) {
+            if (DEMO_PATRON_PROFILES[patronId]) {
+                return DEMO_PATRON_PROFILES[patronId];
+            }
+            const fallbackDate = new Date();
+            fallbackDate.setFullYear(fallbackDate.getFullYear() + 1);
+            return {
+                cardExpires: fallbackDate.toISOString().split('T')[0],
+                fines: 0,
+                notes: 'New patron — profile defaults to active card with no fines.'
+            };
+        }
+
+        function calculateDueDate(days) {
+            const base = new Date();
+            base.setHours(0,0,0,0);
+            base.setDate(base.getDate() + (Number(days) || 0));
+            return base.toISOString().split('T')[0];
+        }
+
+        function parseDueDate(value) {
+            if (!value) return null;
+            if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+                return value;
+            }
+            return null;
+        }
+
+        function describeDueStatus(dueDate) {
+            const due = new Date(dueDate);
+            const today = new Date();
+            due.setHours(0,0,0,0);
+            today.setHours(0,0,0,0);
+            if (due < today) {
+                return '<span class="badge badge-alert">Overdue — assess late fee</span>';
+            }
+            if (due.getTime() === today.getTime()) {
+                return '<span class="badge badge-alert">Due today</span>';
+            }
+            return '<span class="badge badge-policy">On loan</span>';
+        }
+
+        function showCheckoutMessage(message, success) {
+            checkoutMessage.textContent = message;
+            checkoutMessage.className = success ? 'message success' : 'message error';
+        }
+
+        function formatDisplayDate(value) {
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) {
+                return value;
+            }
+            return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
 </body>
 </html>

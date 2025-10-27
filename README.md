@@ -4,51 +4,39 @@ CSC 565 Group 3 Project
 
 ## Overview
 
-This repository houses a low-fidelity **library circulation console wireframe** that runs on top of
-our Sprint&nbsp;0 PHP + SQLite proof-of-concept. The UI illustrates how the team will evolve the former
-student-enrollment demo into a Wilmington Public Library circulation workflow while we continue to
-use the existing stack for quick iteration.
+This repository now showcases a **Sprint 1 circulation console** that still runs on the Sprint 0 PHP + SQLite proof-of-concept. We intentionally reuse the original student enrollment endpoints while renaming them to match Wilmington Public Library terminology: students → patrons, courses → items, and enrollments → loans. The goal is to demonstrate how the existing many-to-many structure powers the prioritized checkout and return workflows without introducing new backend complexity yet.
 
-The backend endpoints and many-to-many schema (students ↔ courses ↔ enrollments) remain unchanged so
-we can continue experimenting with the environment set up during Sprint&nbsp;0. The new front end maps
-that foundation to library terminology and Sprint&nbsp;1 priorities without requiring additional server
-work yet.
+## Sprint 1 Circulation Demo
 
-## Sprint 1 Circulation Wireframe
+Launch the demo UI by opening `public/index.html`. The layout mirrors the original enrollment proof-of-concept but is rethemed for circulation staff. Client-side logic overlays policy checks that map directly to the highest-priority Sprint 1 user stories:
 
-Open `public/index.html` to review the wireframe layout for checkout, return, and reshelving tasks.
-Each panel on the page represents the widgets the team plans to build as we connect live data.
+- **US 1.3 – Card expiration validation**: Patron cards include demo expiration dates, and the checkout form blocks transactions when the card is expired.
+- **US 2.3 – Enforce item limits and fines**: The patron status panel counts active loans (limit of 20) and surfaces outstanding demo fines that must be resolved before checkout.
+- **US 2.7 – Checkout guardrails and due dates**: Loan policies (books: 28 days, movies: 7 days, new movies: 3 days) determine the due date preview and the due date stored with each loan record.
+- **US 3.1 & US 3.7 – Returns and reshelving**: The Active Loans card doubles as a return queue, flagging overdue items for fee assessment and reminding staff to reshelve once scanned back in.
+- **US 3.5 – Activity logging**: Each checkout records its due date inside the existing loan row, illustrating the audit trail we will later expose in reports.
 
-### Primary Panels &amp; Linked User Stories
+### How the Wireframe Reuses the POC Stack
 
-- **Patron Intake &amp; Validation** – Displays scanned card details, expiration warnings, fine balance,
-  and the active-loan counter so we can satisfy **US&nbsp;1.3** and **US&nbsp;2.3** before checkout begins.
-- **Checkout Session** – Shows a staged queue of scanned barcodes, due-date calculations by item
-  format, and policy guardrails tied to **US&nbsp;2.7** and **US&nbsp;2.3**.
-- **Return Processing** – Highlights scan intake, late-fee computation, and routing decisions to
-  cover **US&nbsp;3.1**, **US&nbsp;3.5**, and **US&nbsp;3.7**.
-- **Return Log &amp; Activity Stream** – Captures the automated audit trail we will need for
-  **US&nbsp;3.5** and downstream reporting.
-- **Quick Tools &amp; Session Checklist** – Reserve space for high-priority backlog items such as search,
-  reservations, and renewal prompts while keeping staff guidance visible for training.
+| Sprint 0 Table | Library Concept | Where It Appears |
+| --- | --- | --- |
+| `students` | Patrons | Patron registration card and checkout dropdown |
+| `courses` | Library items | Catalog form and collection inventory grid |
+| `enrollments` | Active loans | Checkout session log and return/reshelving queue |
 
-All callouts are intentionally rendered as dashed boxes, tags, and placeholder bars to emphasize the
-wireframe nature of the deliverable.
+The PHP API files remain untouched. Front-end JavaScript consumes the same JSON responses, enriches them with demo policy metadata, and provides visual guardrails that explain how we will expand the backend in future sprints.
 
-### Viewing the Wireframe Locally
+### Running Locally
 
 ```bash
 php -S 127.0.0.1:8000 -t public
 ```
 
-Visit `http://127.0.0.1:8000/` and resize the browser to explore the responsive layout. Because this
-is a static mock-up there are no interactive controls yet—visual annotations explain where policy
-checks and messaging will appear once the real circulation services are connected.
+Navigate to `http://127.0.0.1:8000/` to interact with the circulation wireframe. Add patrons, catalog items with loan durations, and simulate checkouts to observe due-date calculations and policy enforcement. Because returns and fine payments are outside Sprint 1 scope, the UI highlights those steps for later implementation while keeping the workflow grounded in the reused PHP endpoints.
 
 ## Sprint 0 Deliverables Recap
 
-Sprint&nbsp;0 focused on establishing the infrastructure, agile ceremonies, and documentation required by
-the course. A completed user story must provide:
+Sprint 0 focused on establishing the infrastructure, agile ceremonies, and documentation required by the course. A completed user story must provide:
 
 - Acceptance criteria.
 - Activity diagram per story and supporting system models:
@@ -59,7 +47,7 @@ the course. A completed user story must provide:
 - Working code hosted on the Ada server (or alternate agreed location).
 - Demonstration tying models and code back to the acceptance criteria.
 
-Key Sprint&nbsp;0 setup reminders:
+Key Sprint 0 setup reminders:
 
 - Secure Ada server, phpMyAdmin, and VPN access.
 - Align on the LAMP toolchain and ensure the entire team can run it locally.
@@ -75,11 +63,9 @@ The retained backend demonstrates a three-table many-to-many relationship:
 - **Courses** (`id`, `course_name`, `course_code`, `credits`)
 - **Enrollments** (`id`, `student_id`, `course_id`, `grade`)
 
-Students can enroll in multiple courses, and courses support multiple students. JSON endpoints expose
-all three tables so we can quickly validate CRUD operations. Future sprints will reuse the same
-structure for patrons, items, and circulation records.
+Students can enroll in multiple courses, and courses support multiple students. JSON endpoints expose all three tables so we can quickly validate CRUD operations. Future sprints will evolve the schema to add patron card metadata, fine ledgers, item statuses, and return transactions while preserving this many-to-many foundation.
 
-## Sprint 1 Priority Snapshot – Core Checkout &amp; Returns
+## Sprint 1 Priority Snapshot – Core Checkout & Returns
 
 | Priority | User Story | Summary |
 | --- | --- | --- |
@@ -97,6 +83,4 @@ Additional planning priorities:
 
 ## Future Release Outlook
 
-Subsequent sprints will expand beyond circulation to deliver patron onboarding, catalog management,
-fines and payments, multi-branch support, and reporting as listed in the broader backlog the team
-assembled during Sprint&nbsp;0.
+Subsequent sprints will expand beyond circulation to deliver patron onboarding, catalog management, fines and payments, multi-branch support, and reporting as listed in the broader backlog assembled during Sprint 0.
