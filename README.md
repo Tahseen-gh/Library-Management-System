@@ -4,11 +4,10 @@ CSC 565 Group 3 Project
 
 ## Overview
 
-This repository now showcases a **Sprint 1 circulation console** that still runs on
-the Sprint 0 PHP + SQLite proof-of-concept. The PHP endpoints and database tables
-have been renamed to match Wilmington Public Library terminology—students →
-patrons, courses → items, and enrollments → loans—so the demo reads like a
-circulation workflow while staying within the same lightweight architecture.
+This repository now showcases a **Sprint 1 circulation console** that still runs on the Sprint 0 PHP + SQLite proof-of-concept.
+The PHP endpoints and database tables have been renamed to match Wilmington Public Library terminology—students → patrons,
+courses → items, and enrollments → loans—so the demo reads like a circulation workflow while staying within the same lightweight
+architecture.
 
 ## Sprint 1 Circulation Demo
 
