@@ -1,0 +1,208 @@
+# Library Information System - Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    PATRONS {
+        string id PK
+        string first_name
+        string last_name
+        string email UK
+        string phone
+        date birthday
+        decimal balance
+        boolean isActive
+        date createdAt
+    }
+
+    LIBRARY_ITEMS {
+        string id PK
+        string title
+        string item_type
+        text description
+        int publication_year
+        decimal cost
+        string library_of_congress_code
+        boolean available
+        string location
+        string condition
+        date date_acquired
+        date createdAt
+        date updatedAt
+    }
+
+    BOOKS {
+        string id PK
+        string author
+        string publisher
+        string genre
+        string cover_image_url
+        int number_of_pages
+        string isbn
+        string library_item_id FK
+    }
+
+    AUDIOBOOKS {
+        string id PK
+        string narrator
+        string publisher
+        string genre
+        string cover_image_url
+        int duration_minutes
+        string format
+        string isbn
+        string library_item_id FK
+    }
+
+    VIDEOS {
+        string id PK
+        string director
+        string studio
+        string genre
+        string cover_image_url
+        int duration_minutes
+        string format
+        string rating
+        string isbn
+        string library_item_id FK
+    }
+
+    LIBRARY_ITEM_COPIES {
+        string id PK
+        string library_item_id FK
+        string branch_id FK
+        string condition
+        string status
+        decimal cost
+        string location
+        string notes
+        date date_acquired
+        date createdAt
+        date updatedAt
+    }
+
+    TRANSACTIONS {
+        string id PK
+        string copy_id FK
+        string patron_id FK
+        string transaction_type
+        date checkout_date
+        date due_date
+        date return_date
+        decimal fine_amount
+        string status
+        string notes
+        date createdAt
+        date updatedAt
+    }
+
+    RESERVATIONS {
+        string id PK
+        string library_item_id FK
+        string patron_id FK
+        date reservation_date
+        date expiry_date
+        string status
+        int queue_position
+        date notification_sent
+        date createdAt
+        date updatedAt
+    }
+
+    BRANCHES {
+        string id PK
+        string branch_name
+        string address
+        string phone
+        boolean is_main
+        date createdAt
+    }
+
+    FINES {
+        string id PK
+        string transaction_id FK
+        string patron_id FK
+        decimal amount
+        string reason
+        boolean is_paid
+        date paid_date
+        string payment_method
+        string notes
+        date createdAt
+    }
+
+    RENEWAL_HISTORY {
+        string id PK
+        string transaction_id FK
+        string patron_id FK
+        date renewal_date
+        date new_due_date
+        string reason
+        string staff_id FK
+        date createdAt
+    }
+
+    %% Relationships
+    LIBRARY_ITEMS ||--|| BOOKS : "is a"
+    LIBRARY_ITEMS ||--|| AUDIOBOOKS : "is a"
+    LIBRARY_ITEMS ||--|| VIDEOS : "is a"
+    LIBRARY_ITEMS ||--o{ LIBRARY_ITEM_COPIES : "has copies"
+    BRANCHES ||--o{ LIBRARY_ITEM_COPIES : "houses"
+    PATRONS ||--o{ TRANSACTIONS : "borrows"
+    LIBRARY_ITEM_COPIES ||--o{ TRANSACTIONS : "is borrowed in"
+    PATRONS ||--o{ RESERVATIONS : "makes"
+    LIBRARY_ITEMS ||--o{ RESERVATIONS : "is reserved for"
+    TRANSACTIONS ||--o{ FINES : "may incur"
+    PATRONS ||--o{ FINES : "owes"
+    TRANSACTIONS ||--o{ RENEWAL_HISTORY : "can be renewed"
+    PATRONS ||--o{ RENEWAL_HISTORY : "requests renewal"
+```
+
+## Entity Descriptions
+
+### Core Entities
+
+**PATRONS**
+
+- Library members who can borrow books
+- Includes contact information, membership details, and account balance
+
+**BOOKS**
+
+- Physical and digital items in the library collection
+- Includes bibliographic information, availability status, and physical condition
+
+**TRANSACTIONS**
+
+- Records of all checkout, return, and renewal activities
+- Tracks dates, status, and any associated fines
+
+**RESERVATIONS**
+
+- Queue system for patrons to reserve books that are currently unavailable
+- Includes expiry dates and notification tracking
+
+### Supporting Entities
+
+**FINES**
+
+- Financial penalties for late returns or damaged items
+- Links to transactions and tracks payment status
+
+### Operational Entities
+
+**RENEWAL_HISTORY**
+
+- Historical record of all renewal requests
+- Supports renewal limits and approval workflows
+
+## Key Relationships
+
+3. **One-to-Many**: Patrons → Transactions, Reservations, Fines
+4. **One-to-Many**: Books → Transactions, Reservations
+
+## Business Rules Enforced
+
+- A book can only have one active checkout transaction
+- Patrons can have multiple reservations but limited active checkouts
+- Fines are automatically calculated based on transaction data
+- Reservation queue position is maintained automatically
