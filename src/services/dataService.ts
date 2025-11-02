@@ -76,7 +76,7 @@ export const dataService = {
       search_params.append('availability', filters.availability);
     }
 
-    search_params.append('item_type', 'Book');
+    search_params.append('item_type', 'BOOK');
 
     const query_string = search_params.toString()
       ? `?${search_params.toString()}`
@@ -84,7 +84,7 @@ export const dataService = {
     const books = await api_request<Book[]>(`/catalog-items${query_string}`);
 
     // Filter only books from catalog items
-    return books.filter((item) => item.item_type === 'Book');
+    return books.filter((item) => item.item_type === 'BOOK');
   },
 
   async getBookById(id: string): Promise<Book | null> {
@@ -94,7 +94,7 @@ export const dataService = {
         `/catalog-items/${id}`
       );
 
-      if (!catalog_item || catalog_item.item_type !== 'Book') {
+      if (!catalog_item || catalog_item.item_type !== 'BOOK') {
         return null;
       }
 
@@ -126,7 +126,7 @@ export const dataService = {
   async create_book(book: Book_Form_Data): Promise<Book> {
     const catalog_item_data = {
       title: book.title,
-      item_type: 'Book',
+      item_type: 'BOOK',
       description: book.description,
       publication_year: book.publication_year,
       congress_code: book.congress_code,
@@ -209,7 +209,7 @@ export const dataService = {
   ): Promise<Transaction> {
     const checkout_data = {
       copy_id,
-      patron_id,
+      patron_id: patron_id.toString(), // Convert to string for new schema
       due_date: due_date?.toISOString() || undefined,
     };
 
@@ -234,7 +234,6 @@ export const dataService = {
       const checkin_data = {
         copy_id,
         new_condition,
-        new_location_id,
         notes,
       };
 
@@ -266,7 +265,7 @@ export const dataService = {
     // Get all active transactions and filter overdue on client side
     // TODO: Add server-side filtering for overdue transactions
     const all_transactions = await api_request<Transaction[]>(
-      '/transactions?status=Active'
+      '/transactions?status=active'
     );
     const now = new Date();
 
@@ -276,7 +275,7 @@ export const dataService = {
   },
 
   async getActiveTransactions(): Promise<Transaction[]> {
-    return await api_request<Transaction[]>('/transactions?status=Active');
+    return await api_request<Transaction[]>('/transactions?status=active');
   },
 
   // Reservation operations
@@ -285,8 +284,8 @@ export const dataService = {
     patron_id?: number
   ): Promise<Reservation> {
     const reservation_data = {
-      catalog_item_id,
-      patron_id,
+      library_item_id: catalog_item_id, // Changed field name
+      patron_id: patron_id?.toString(), // Convert to string
     };
 
     return await api_request<Reservation>('/reservations', {
@@ -327,7 +326,7 @@ export const dataService = {
   },
 
   async get_all_copies_by_item_id(item_id: string): Promise<Item_Copy[]> {
-    return await api_request<Item_Copy[]>(`/item-copies/catalog/${item_id}`);
+    return await api_request<Item_Copy[]>(`/item-copies/item/${item_id}`);
   },
 
   async get_all_copy_ids(): Promise<string[]> {

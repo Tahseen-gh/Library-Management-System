@@ -109,7 +109,7 @@ export const CopiesDataGrid = ({
     <>
       <DataGrid
         onRowDoubleClick={(params) =>
-          params.row.status !== 'Available' && set_snack(true)
+          params.row.status !== 'available' && set_snack(true) // Changed from 'Available'
         }
         rows={copies}
         columns={columns}
@@ -127,7 +127,7 @@ export const CopiesDataGrid = ({
         }}
         label="Copies"
         isRowSelectable={(params: GridRowParams) =>
-          params.row.status === 'Available'
+          params.row.status === 'available' // Changed from 'Available'
         }
         onRowSelectionModelChange={(newSelection) => {
           const selected_copy =
@@ -144,7 +144,7 @@ export const CopiesDataGrid = ({
         anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}
       >
         <Alert severity="info">
-          {'Only copies of status "Available" can be selected.'}
+          {'Only copies of status "available" can be selected.'} {/* Changed text */}
         </Alert>
       </Snackbar>
     </>

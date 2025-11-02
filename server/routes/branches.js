@@ -30,7 +30,7 @@ const handle_validation_errors = (req, res, next) => {
 router.get('/', async (req, res) => {
   try {
     const branches = await db.get_all(
-      'branches',
+      'BRANCHES',
       'ORDER BY is_main DESC, branch_name ASC'
     );
     res.json({
@@ -49,7 +49,7 @@ router.get('/', async (req, res) => {
 // GET /api/v1/branches/:id - Get single branch
 router.get('/:id', async (req, res) => {
   try {
-    const branch = await db.get_by_id('branches', req.params.id);
+    const branch = await db.get_by_id('BRANCHES', req.params.id);
 
     if (!branch) {
       return res.status(404).json({
@@ -72,7 +72,7 @@ router.get('/:id', async (req, res) => {
 // GET /api/v1/branches/:id/inventory - Get branch inventory
 router.get('/:id/inventory', async (req, res) => {
   try {
-    const branch = await db.get_by_id('branches', req.params.id);
+    const branch = await db.get_by_id('BRANCHES', req.params.id);
 
     if (!branch) {
       return res.status(404).json({
@@ -82,17 +82,17 @@ router.get('/:id/inventory', async (req, res) => {
 
     const inventory = await db.execute_query(
       `SELECT 
-        ci.id as catalog_item_id,
-        ci.title,
-        ci.item_type,
-        COUNT(ic.id) as total_copies,
-        SUM(CASE WHEN ic.status = 'Available' THEN 1 ELSE 0 END) as available_copies,
-        SUM(CASE WHEN ic.status = 'Checked Out' THEN 1 ELSE 0 END) as checked_out_copies
-       FROM catalog_items ci
-       JOIN item_copies ic ON ci.id = ic.catalog_item_id
-       WHERE ic.branch_id = ?
-       GROUP BY ci.id, ci.title, ci.item_type
-       ORDER BY ci.title`,
+        li.id as library_item_id,
+        li.title,
+        li.item_type,
+        COUNT(lic.id) as total_copies,
+        SUM(CASE WHEN lic.status = 'available' THEN 1 ELSE 0 END) as available_copies,
+        SUM(CASE WHEN lic.status = 'borrowed' THEN 1 ELSE 0 END) as checked_out_copies
+       FROM LIBRARY_ITEMS li
+       JOIN LIBRARY_ITEM_COPIES lic ON li.id = lic.library_item_id
+       WHERE lic.branch_id = ?
+       GROUP BY li.id, li.title, li.item_type
+       ORDER BY li.title`,
       [req.params.id]
     );
 
@@ -120,10 +120,10 @@ router.post(
       const branch_data = {
         ...req.body,
         is_main: req.body.is_main || false,
-        created_at: new Date(),
+        createdAt: new Date().toISOString(),
       };
 
-      const branch_id = await db.create_record('branches', branch_data);
+      const branch_id = await db.create_record('BRANCHES', branch_data);
 
       res.status(201).json({
         success: true,
@@ -146,7 +146,7 @@ router.put(
   handle_validation_errors,
   async (req, res) => {
     try {
-      const existing_branch = await db.get_by_id('branches', req.params.id);
+      const existing_branch = await db.get_by_id('BRANCHES', req.params.id);
 
       if (!existing_branch) {
         return res.status(404).json({
@@ -155,7 +155,7 @@ router.put(
       }
 
       const updated = await db.update_record(
-        'branches',
+        'BRANCHES',
         req.params.id,
         req.body
       );
@@ -182,7 +182,7 @@ router.put(
 // DELETE /api/v1/branches/:id - Delete branch
 router.delete('/:id', async (req, res) => {
   try {
-    const existing_branch = await db.get_by_id('branches', req.params.id);
+    const existing_branch = await db.get_by_id('BRANCHES', req.params.id);
 
     if (!existing_branch) {
       return res.status(404).json({
@@ -192,7 +192,7 @@ router.delete('/:id', async (req, res) => {
 
     // Check if branch has any item copies
     const item_copies = await db.execute_query(
-      'SELECT COUNT(*) as count FROM item_copies WHERE branch_id = ?',
+      'SELECT COUNT(*) as count FROM LIBRARY_ITEM_COPIES WHERE branch_id = ?',
       [req.params.id]
     );
 
@@ -203,7 +203,7 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
-    const deleted = await db.delete_record('branches', req.params.id);
+    const deleted = await db.delete_record('BRANCHES', req.params.id);
 
     if (deleted) {
       res.json({

@@ -13,22 +13,18 @@ type ChipColor =
 const CHIP_COLORS = blueberryTwilightPalette('dark');
 
 const ITEM_TYPE_COLOR_MAP: Record<Library_Item_Type, string> = {
-  [Library_Item_Type.Book]: CHIP_COLORS[0],
-  [Library_Item_Type.Magazine]: CHIP_COLORS[1],
-  [Library_Item_Type.Periodical]: CHIP_COLORS[2],
-  [Library_Item_Type.Recording]: CHIP_COLORS[3],
-  [Library_Item_Type.Audiobook]: CHIP_COLORS[4],
-  [Library_Item_Type.Video]: CHIP_COLORS[5],
+  [Library_Item_Type.BOOK]: CHIP_COLORS[0], // Changed from Book
+  [Library_Item_Type.VIDEO]: CHIP_COLORS[5], // Changed from Video
+  [Library_Item_Type.AUDIOBOOK]: CHIP_COLORS[4], // Changed from Audiobook
 };
 
 const STATUS_COLOR_MAP: Record<string, ChipColor> = {
-  Available: 'success',
-  'Checked Out': 'warning',
-  Maintenance: 'warning',
-  Reserved: 'info',
-  Processing: 'secondary',
-  Damaged: 'error',
-  Lost: 'error',
+  available: 'success', // Changed from 'Available'
+  borrowed: 'warning', // Changed from 'Checked Out'
+  maintenance: 'warning', // Changed from 'Maintenance'
+  reserved: 'info', // Changed from 'Reserved'
+  damaged: 'error', // Changed from 'Damaged'
+  lost: 'error', // Changed from 'Lost'
 };
 
 const CONDITION_COLOR_MAP: Record<string, ChipColor> = {

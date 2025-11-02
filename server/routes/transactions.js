@@ -7,7 +7,7 @@ const router = express.Router();
 
 // Validation middleware
 const validate_transaction = [
-  body('patron_id').isInt().withMessage('Valid patron ID is required'),
+  body('patron_id').notEmpty().withMessage('Valid patron ID is required'),
   body('transaction_type')
     .isIn(['checkout', 'checkin', 'renewal'])
     .withMessage('Invalid transaction type'),
@@ -18,7 +18,8 @@ const validate_transaction = [
 ];
 
 const validate_checkout = [
-  body('patron_id').isInt().withMessage('Valid patron ID is required'),
+  body('patron_id').notEmpty().withMessage('Valid patron ID is required'),
+  body('copy_id').notEmpty().withMessage('Valid copy ID is required'),
   body('due_date')
     .optional()
     .isISO8601()
@@ -41,43 +42,41 @@ const handle_validation_errors = (req, res, next) => {
 router.get('/', async (req, res) => {
   try {
     const { patron_id, status, transaction_type } = req.query;
-    let conditions = '';
-    let params = [];
-
-    const filters = [];
-    if (patron_id) {
-      filters.push('t.patron_id = ?');
-      params.push(patron_id);
-    }
-    if (status) {
-      filters.push('t.status = ?');
-      params.push(status);
-    }
-    if (transaction_type) {
-      filters.push('t.transaction_type = ?');
-      params.push(transaction_type);
-    }
-
-    if (filters.length > 0) {
-      conditions = ' WHERE ' + filters.join(' AND ');
-    }
-
-    const query = `
+    let query = `
       SELECT 
         t.*,
         p.first_name,
         p.last_name,
-        ci.title,
-        ci.item_type,
+        li.title,
+        li.item_type,
         b.branch_name
-      FROM transactions t
-      JOIN patrons p ON t.patron_id = p.id
-      JOIN item_copies ic ON t.copy_id = ic.id
-      JOIN catalog_items ci ON ic.catalog_item_id = ci.id
-      JOIN branches b ON ic.branch_id = b.id
-      ${conditions}
-      ORDER BY t.created_at DESC
+      FROM TRANSACTIONS t
+      JOIN PATRONS p ON t.patron_id = p.id
+      JOIN LIBRARY_ITEM_COPIES lic ON t.copy_id = lic.id
+      JOIN LIBRARY_ITEMS li ON lic.library_item_id = li.id
+      JOIN BRANCHES b ON lic.branch_id = b.id
     `;
+    let params = [];
+    let conditions = [];
+
+    if (patron_id) {
+      conditions.push('t.patron_id = ?');
+      params.push(patron_id);
+    }
+    if (status) {
+      conditions.push('t.status = ?');
+      params.push(status);
+    }
+    if (transaction_type) {
+      conditions.push('t.transaction_type = ?');
+      params.push(transaction_type);
+    }
+
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    query += ' ORDER BY t.createdAt DESC';
 
     const transactions = await db.execute_query(query, params);
 
@@ -103,14 +102,14 @@ router.get('/:id', async (req, res) => {
         p.first_name,
         p.last_name,
         p.email,
-        ci.title,
-        ci.item_type,
+        li.title,
+        li.item_type,
         b.branch_name
-      FROM transactions t
-      JOIN patrons p ON t.patron_id = p.id
-      JOIN item_copies ic ON t.copy_id = ic.id
-      JOIN catalog_items ci ON ic.catalog_item_id = ci.id
-      JOIN branches b ON ic.branch_id = b.id
+      FROM TRANSACTIONS t
+      JOIN PATRONS p ON t.patron_id = p.id
+      JOIN LIBRARY_ITEM_COPIES lic ON t.copy_id = lic.id
+      JOIN LIBRARY_ITEMS li ON lic.library_item_id = li.id
+      JOIN BRANCHES b ON lic.branch_id = b.id
       WHERE t.id = ?
     `;
 
@@ -144,34 +143,34 @@ router.post(
     try {
       const { copy_id, patron_id, due_date } = req.body;
 
-      // Verify item copy exists and is available
-      const item_copy = await db.get_by_id('item_copies', copy_id);
-      if (!item_copy) {
+      // Verify library item copy exists and is available
+      const library_item_copy = await db.get_by_id('LIBRARY_ITEM_COPIES', copy_id);
+      if (!library_item_copy) {
         return res.status(400).json({
-          error: 'Item copy not found',
+          error: 'Library item copy not found',
         });
       }
 
-      if (item_copy.status !== 'Available') {
+      if (library_item_copy.status !== 'available') {
         return res.status(400).json({
           error: 'Item is not available for checkout',
-          current_status: item_copy.status,
+          current_status: library_item_copy.status,
         });
       }
 
       // Verify patron exists and is active
-      const patron = await db.get_by_id('patrons', patron_id);
-      if (!patron || !patron.is_active) {
+      const patron = await db.get_by_id('PATRONS', patron_id);
+      if (!patron || !patron.isActive) {
         return res.status(400).json({
           error: 'Patron not found or inactive',
         });
       }
 
       // Calculate due date if not provided (default 14 days)
-      const checkout_date = new Date();
+      const checkout_date = new Date().toISOString();
       const calculated_due_date = due_date
-        ? new Date(due_date)
-        : new Date(checkout_date.getTime() + 14 * 24 * 60 * 60 * 1000);
+        ? new Date(due_date).toISOString()
+        : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
 
       // Create transaction
       const transaction_data = {
@@ -181,20 +180,20 @@ router.post(
         transaction_type: 'checkout',
         checkout_date,
         due_date: calculated_due_date,
-        status: 'Active',
+        return_date: null,
+        status: 'active',
         fine_amount: 0,
-        created_at: new Date(),
-        updated_at: new Date(),
+        notes: null,
+        createdAt: checkout_date,
+        updatedAt: checkout_date,
       };
 
-      await db.create_record('transactions', transaction_data);
+      await db.create_record('TRANSACTIONS', transaction_data);
 
-      // Update item copy status and checkout info
-      await db.update_record('item_copies', copy_id, {
-        status: 'Checked Out',
-        checked_out_by: patron_id,
-        due_date: calculated_due_date,
-        updated_at: new Date(),
+      // Update library item copy status
+      await db.update_record('LIBRARY_ITEM_COPIES', copy_id, {
+        status: 'borrowed',
+        updatedAt: checkout_date,
       });
 
       res.status(201).json({
@@ -215,6 +214,7 @@ router.post(
 router.post(
   '/checkin',
   [
+    body('copy_id').notEmpty().withMessage('Copy ID is required'),
     body('new_condition')
       .optional()
       .isIn(['New', 'Excellent', 'Good', 'Fair', 'Poor'])
@@ -223,58 +223,68 @@ router.post(
   handle_validation_errors,
   async (req, res) => {
     try {
-      const { copy_id, new_condition, new_location_id, notes } = req.body;
+      const { copy_id, new_condition, notes } = req.body;
 
       // Find active transaction for this copy
       const active_transactions = await db.execute_query(
-        'SELECT * FROM transactions WHERE copy_id = ? AND status = "Active" ORDER BY created_at DESC LIMIT 1',
+        'SELECT * FROM TRANSACTIONS WHERE copy_id = ? AND status = "active" ORDER BY createdAt DESC LIMIT 1',
         [copy_id]
       );
 
       if (active_transactions.length === 0) {
         return res.status(400).json({
-          error: 'No active transaction found for this item copy',
+          error: 'No active transaction found for this library item copy',
         });
       }
 
       const transaction = active_transactions[0];
-      const return_date = new Date(); // today
+      const return_date = new Date().toISOString();
       const due_date = new Date(transaction.due_date);
+      const return_date_obj = new Date(return_date);
 
       // Calculate fine if overdue
       let fine_amount = 0;
-      if (return_date > due_date) {
+      if (return_date_obj > due_date) {
         const days_overdue = Math.ceil(
-          (return_date - due_date) / (1000 * 60 * 60 * 24)
+          (return_date_obj - due_date) / (1000 * 60 * 60 * 24)
         );
         fine_amount = days_overdue * 0.5; // $0.50 per day
       }
 
       // Update transaction
-      await db.update_record('transactions', transaction.id, {
+      await db.update_record('TRANSACTIONS', transaction.id, {
         return_date,
         fine_amount,
-        status: 'Completed',
+        status: 'returned',
         notes: notes || null,
-        updated_at: new Date(),
+        updatedAt: return_date,
       });
 
-      // Update item copy
+      // Update library item copy
       const update_data = {
-        status: 'Available',
-        checked_out_by: null,
-        due_date: null,
-        location: new_location_id || transaction.location_id,
+        status: 'available',
         condition: new_condition || transaction.condition,
-        updated_at: new Date(),
+        updatedAt: return_date,
       };
 
-      await db.update_record('item_copies', copy_id, update_data);
+      await db.update_record('LIBRARY_ITEM_COPIES', copy_id, update_data);
 
-      // Update patron balance if there's a fine
+      // Create fine record if there's a fine
       if (fine_amount > 0) {
+        const fine_data = {
+          id: uuidv4(),
+          transaction_id: transaction.id,
+          patron_id: transaction.patron_id,
+          amount: fine_amount,
+          reason: `Late return - ${Math.ceil((return_date_obj - due_date) / (1000 * 60 * 60 * 24))} days overdue`,
+          is_paid: false,
+          createdAt: return_date,
+        };
+        await db.create_record('FINES', fine_data);
+
+        // Update patron balance
         await db.execute_query(
-          'UPDATE patrons SET balance = balance + ? WHERE id = ?',
+          'UPDATE PATRONS SET balance = balance + ? WHERE id = ?',
           [fine_amount, transaction.patron_id]
         );
       }
@@ -288,7 +298,7 @@ router.post(
           fine_amount,
           days_overdue:
             fine_amount > 0
-              ? Math.ceil((return_date - due_date) / (1000 * 60 * 60 * 24))
+              ? Math.ceil((return_date_obj - due_date) / (1000 * 60 * 60 * 24))
               : 0,
         },
       });
@@ -304,7 +314,7 @@ router.post(
 // PUT /api/v1/transactions/:id/renew - Renew transaction
 router.put('/:id/renew', async (req, res) => {
   try {
-    const transaction = await db.get_by_id('transactions', req.params.id);
+    const transaction = await db.get_by_id('TRANSACTIONS', req.params.id);
 
     if (!transaction) {
       return res.status(404).json({
@@ -318,10 +328,13 @@ router.put('/:id/renew', async (req, res) => {
       });
     }
 
+    // Get library item ID from copy
+    const copy = await db.get_by_id('LIBRARY_ITEM_COPIES', transaction.copy_id);
+    
     // Check if item has reservations
     const reservations = await db.execute_query(
-      'SELECT COUNT(*) as count FROM reservations WHERE catalog_item_id = (SELECT catalog_item_id FROM item_copies WHERE id = ?) AND status = "pending"',
-      [transaction.copy_id]
+      'SELECT COUNT(*) as count FROM RESERVATIONS WHERE library_item_id = ? AND status = "active"',
+      [copy.library_item_id]
     );
 
     if (reservations[0].count > 0) {
@@ -334,18 +347,12 @@ router.put('/:id/renew', async (req, res) => {
     const current_due_date = new Date(transaction.due_date);
     const new_due_date = new Date(
       current_due_date.getTime() + 14 * 24 * 60 * 60 * 1000
-    );
+    ).toISOString();
 
     // Update transaction
-    await db.update_record('transactions', req.params.id, {
+    await db.update_record('TRANSACTIONS', req.params.id, {
       due_date: new_due_date,
-      updated_at: new Date(),
-    });
-
-    // Update item copy
-    await db.update_record('item_copies', transaction.copy_id, {
-      due_date: new_due_date,
-      updated_at: new Date(),
+      updatedAt: new Date().toISOString(),
     });
 
     res.json({

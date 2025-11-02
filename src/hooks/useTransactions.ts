@@ -50,15 +50,13 @@ export const useReturnBook = () => {
     mutationFn: ({
       copy_id,
       new_condition,
-      new_location_id,
       notes,
     }: {
       copy_id: string;
       new_condition?: Condition;
-      new_location_id?: number;
       notes?: string;
     }) =>
-      dataService.return_book(copy_id, new_condition, new_location_id, notes),
+      dataService.return_book(copy_id, new_condition, undefined, notes), // Pass undefined for removed parameter
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['books'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
