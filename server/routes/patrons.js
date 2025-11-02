@@ -1,5 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
+const { v4: uuidv4 } = require('uuid');
 const db = require('../config/database');
 
 const router = express.Router();
@@ -28,23 +29,25 @@ const handle_validation_errors = (req, res, next) => {
 router.get('/', async (req, res) => {
   try {
     const { search, active_only } = req.query;
-    let conditions = '';
+    let query = 'SELECT * FROM PATRONS';
     let params = [];
+    let conditions = [];
 
     if (active_only === 'true') {
-      conditions += ' WHERE is_active = 1';
+      conditions.push('isActive = 1');
     }
 
     if (search) {
-      conditions += active_only === 'true' ? ' AND' : ' WHERE';
-      conditions += ' (first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)';
+      conditions.push('(first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)');
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
-    const patrons = await db.execute_query(
-      `SELECT * FROM patrons ${conditions}`,
-      params
-    );
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    const patrons = await db.execute_query(query, params);
+    
     res.json({
       success: true,
       count: patrons.length,
@@ -61,7 +64,7 @@ router.get('/', async (req, res) => {
 // GET /api/v1/patrons/:id - Get single patron
 router.get('/:id', async (req, res) => {
   try {
-    const patron = await db.get_by_id('patrons', req.params.id);
+    const patron = await db.get_by_id('PATRONS', req.params.id);
 
     if (!patron) {
       return res.status(404).json({
@@ -84,7 +87,7 @@ router.get('/:id', async (req, res) => {
 // GET /api/v1/patrons/:id/transactions - Get patron's transaction history
 router.get('/:id/transactions', async (req, res) => {
   try {
-    const patron = await db.get_by_id('patrons', req.params.id);
+    const patron = await db.get_by_id('PATRONS', req.params.id);
 
     if (!patron) {
       return res.status(404).json({
@@ -93,12 +96,12 @@ router.get('/:id/transactions', async (req, res) => {
     }
 
     const transactions = await db.execute_query(
-      `SELECT t.*, ci.title, ci.item_type 
-       FROM transactions t 
-       JOIN item_copies ic ON t.copy_id = ic.id 
-       JOIN catalog_items ci ON ic.catalog_item_id = ci.id 
+      `SELECT t.*, li.title, li.item_type 
+       FROM TRANSACTIONS t 
+       JOIN LIBRARY_ITEM_COPIES lic ON t.copy_id = lic.id 
+       JOIN LIBRARY_ITEMS li ON lic.library_item_id = li.id 
        WHERE t.patron_id = ? 
-       ORDER BY t.created_at DESC`,
+       ORDER BY t.createdAt DESC`,
       [req.params.id]
     );
 
@@ -115,6 +118,35 @@ router.get('/:id/transactions', async (req, res) => {
   }
 });
 
+// GET /api/v1/patrons/:id/fines - Get patron's fines
+router.get('/:id/fines', async (req, res) => {
+  try {
+    const patron = await db.get_by_id('PATRONS', req.params.id);
+
+    if (!patron) {
+      return res.status(404).json({
+        error: 'Patron not found',
+      });
+    }
+
+    const fines = await db.execute_query(
+      `SELECT * FROM FINES WHERE patron_id = ? ORDER BY createdAt DESC`,
+      [req.params.id]
+    );
+
+    res.json({
+      success: true,
+      count: fines.length,
+      data: fines,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to fetch patron fines',
+      message: error.message,
+    });
+  }
+});
+
 // POST /api/v1/patrons - Create new patron
 router.post(
   '/',
@@ -123,18 +155,23 @@ router.post(
   async (req, res) => {
     try {
       const patron_data = {
-        ...req.body,
+        id: uuidv4(),
+        first_name: req.body.first_name,
+        last_name: req.body.last_name,
+        email: req.body.email || null,
+        phone: req.body.phone || null,
+        birthday: req.body.birthday || null,
         balance: req.body.balance || 0.0,
-        is_active: true,
-        created_at: new Date(),
+        isActive: true,
+        createdAt: new Date().toISOString(),
       };
 
-      const patron_id = await db.create_record('patrons', patron_data);
+      await db.create_record('PATRONS', patron_data);
 
       res.status(201).json({
         success: true,
         message: 'Patron created successfully',
-        data: { id: patron_id, ...patron_data },
+        data: patron_data,
       });
     } catch (error) {
       res.status(500).json({
@@ -152,7 +189,7 @@ router.put(
   handle_validation_errors,
   async (req, res) => {
     try {
-      const existing_patron = await db.get_by_id('patrons', req.params.id);
+      const existing_patron = await db.get_by_id('PATRONS', req.params.id);
 
       if (!existing_patron) {
         return res.status(404).json({
@@ -161,7 +198,7 @@ router.put(
       }
 
       const updated = await db.update_record(
-        'patrons',
+        'PATRONS',
         req.params.id,
         req.body
       );
@@ -185,10 +222,10 @@ router.put(
   }
 );
 
-// DELETE /api/v1/patrons/:id - Delete patron (soft delete by setting is_active to false)
+// DELETE /api/v1/patrons/:id - Delete patron (soft delete by setting isActive to false)
 router.delete('/:id', async (req, res) => {
   try {
-    const existing_patron = await db.get_by_id('patrons', req.params.id);
+    const existing_patron = await db.get_by_id('PATRONS', req.params.id);
 
     if (!existing_patron) {
       return res.status(404).json({
@@ -198,7 +235,7 @@ router.delete('/:id', async (req, res) => {
 
     // Check if patron has active transactions
     const active_transactions = await db.execute_query(
-      'SELECT COUNT(*) as count FROM transactions WHERE patron_id = ? AND status = "active"',
+      'SELECT COUNT(*) as count FROM TRANSACTIONS WHERE patron_id = ? AND status = "active"',
       [req.params.id]
     );
 
@@ -208,8 +245,8 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
-    const updated = await db.update_record('patrons', req.params.id, {
-      is_active: false,
+    const updated = await db.update_record('PATRONS', req.params.id, {
+      isActive: false,
     });
 
     if (updated) {

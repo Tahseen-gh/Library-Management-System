@@ -9,12 +9,16 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Import routes
-const catalog_items_routes = require('./routes/catalog_items');
+const catalog_items_routes = require('./routes/library_items');
 const patrons_routes = require('./routes/patrons');
 const transactions_routes = require('./routes/transactions');
 const reservations_routes = require('./routes/reservations');
 const branches_routes = require('./routes/branches');
-const item_copies_routes = require('./routes/item_copies');
+const item_copies_routes = require('./routes/library_item_copies');
+const books_routes = require('./routes/books');
+const videos_routes = require('./routes/videos');
+const audiobooks_routes = require('./routes/audiobooks');
+const fines_routes = require('./routes/fines');
 
 // Middleware
 app.use(helmet()); // Security headers
@@ -48,6 +52,10 @@ app.use(`${api_base}/transactions`, transactions_routes);
 app.use(`${api_base}/reservations`, reservations_routes);
 app.use(`${api_base}/branches`, branches_routes);
 app.use(`${api_base}/item-copies`, item_copies_routes);
+app.use(`${api_base}/books`, books_routes);
+app.use(`${api_base}/videos`, videos_routes);
+app.use(`${api_base}/audiobooks`, audiobooks_routes);
+app.use(`${api_base}/fines`, fines_routes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

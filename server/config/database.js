@@ -32,167 +32,220 @@ const init_database = async () => {
 // Create database tables
 const create_tables = async () => {
   try {
-    // Create branches table first (referenced by other tables)
+    // Create BRANCHES table first (referenced by other tables)
     await db.exec(`
-      CREATE TABLE IF NOT EXISTS branches (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        branch_name TEXT NOT NULL DEFAULT 'Default Branch Name',
+      CREATE TABLE IF NOT EXISTS BRANCHES (
+        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
+        branch_name TEXT NOT NULL,
         address TEXT,
         phone TEXT,
-        is_main BOOLEAN NOT NULL DEFAULT 0
+        is_main BOOLEAN DEFAULT 0,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
-    // Create catalog_items table
+    // Create PATRONS table
     await db.exec(`
-      CREATE TABLE IF NOT EXISTS catalog_items (
+      CREATE TABLE IF NOT EXISTS PATRONS (
+        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
+        first_name TEXT NOT NULL,
+        last_name TEXT NOT NULL,
+        email TEXT UNIQUE,
+        phone TEXT,
+        birthday DATE,
+        balance REAL DEFAULT 0.00,
+        isActive BOOLEAN DEFAULT 1,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create LIBRARY_ITEMS table (parent/superclass)
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS LIBRARY_ITEMS (
         id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
         title TEXT NOT NULL,
         item_type TEXT NOT NULL,
         description TEXT,
         publication_year INTEGER,
-        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        congress_code TEXT DEFAULT '0000-0000'
+        cost REAL,
+        library_of_congress_code TEXT,
+        available BOOLEAN DEFAULT 1,
+        location TEXT,
+        condition TEXT,
+        date_acquired DATE,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
-    // Create patrons table
+    // Create BOOKS table (subclass of LIBRARY_ITEMS)
     await db.exec(`
-      CREATE TABLE IF NOT EXISTS patrons (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        first_name TEXT NOT NULL,
-        last_name TEXT NOT NULL,
-        email TEXT UNIQUE,
-        phone TEXT,
-        balance REAL NOT NULL DEFAULT 0.00,
-        birthday DATE,
-        card_expiration_date DATE NOT NULL DEFAULT (date('now')),
-        is_active BOOLEAN NOT NULL DEFAULT 1
-      )
-    `);
-
-    // Create books table (extends catalog_items)
-    await db.exec(`
-      CREATE TABLE IF NOT EXISTS books (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CREATE TABLE IF NOT EXISTS BOOKS (
+        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
+        author TEXT,
         publisher TEXT,
-        author TEXT NOT NULL DEFAULT '',
         genre TEXT,
-        cover_img_url TEXT,
-        catalog_id TEXT NOT NULL,
+        cover_image_url TEXT,
         number_of_pages INTEGER,
         isbn TEXT,
-        FOREIGN KEY (catalog_id) REFERENCES catalog_items(id) ON DELETE CASCADE
+        library_item_id TEXT NOT NULL,
+        FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE
       )
     `);
 
-    // Create item_copies table
+    // Create VIDEOS table (subclass of LIBRARY_ITEMS)
     await db.exec(`
-      CREATE TABLE IF NOT EXISTS item_copies (
+      CREATE TABLE IF NOT EXISTS VIDEOS (
         id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
-        catalog_item_id TEXT,
-        branch_id INTEGER,
-        condition TEXT DEFAULT 'Good',
-        status TEXT DEFAULT 'Available',
+        director TEXT,
+        studio TEXT,
+        genre TEXT,
+        cover_image_url TEXT,
+        duration_minutes INTEGER,
+        format TEXT,
+        rating TEXT,
+        isbn TEXT,
+        library_item_id TEXT NOT NULL,
+        FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Create AUDIOBOOKS table (subclass of LIBRARY_ITEMS)
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS AUDIOBOOKS (
+        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
+        narrator TEXT,
+        publisher TEXT,
+        genre TEXT,
+        cover_image_url TEXT,
+        duration_minutes INTEGER,
+        format TEXT,
+        isbn TEXT,
+        library_item_id TEXT NOT NULL,
+        FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Create LIBRARY_ITEM_COPIES table
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS LIBRARY_ITEM_COPIES (
+        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
+        library_item_id TEXT NOT NULL,
+        branch_id TEXT NOT NULL,
+        condition TEXT,
+        status TEXT DEFAULT 'available',
         cost REAL,
+        location TEXT,
         notes TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        location INTEGER NOT NULL DEFAULT 1,
-        checked_out_by INTEGER,
-        due_date DATE,
-        FOREIGN KEY (catalog_item_id) REFERENCES catalog_items(id) ON DELETE CASCADE,
-        FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE SET NULL,
-        FOREIGN KEY (location) REFERENCES branches(id) ON DELETE SET NULL,
-        FOREIGN KEY (checked_out_by) REFERENCES patrons(id) ON DELETE SET NULL
+        date_acquired DATE,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE,
+        FOREIGN KEY (branch_id) REFERENCES BRANCHES(id) ON DELETE CASCADE
       )
     `);
 
-    // Create reservations table
+    // Create TRANSACTIONS table
     await db.exec(`
-      CREATE TABLE IF NOT EXISTS reservations (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
-        catalog_item_id TEXT,
-        patron_id INTEGER,
-        reservation_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-        expiry_date DATETIME,
-        status TEXT DEFAULT 'pending',
-        queue_position INTEGER,
-        notification_sent DATETIME,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (catalog_item_id) REFERENCES catalog_items(id) ON DELETE CASCADE,
-        FOREIGN KEY (patron_id) REFERENCES patrons(id) ON DELETE CASCADE
-      )
-    `);
-
-    // Create transactions table
-    await db.exec(`
-      CREATE TABLE IF NOT EXISTS transactions (
+      CREATE TABLE IF NOT EXISTS TRANSACTIONS (
         id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
         copy_id TEXT,
-        patron_id INTEGER,
-        location_id INTEGER,
-        transaction_type TEXT NOT NULL,
-        checkout_date DATETIME,
-        due_date DATETIME,
-        return_date DATETIME,
-        fine_amount REAL DEFAULT 0.00,
-        status TEXT DEFAULT 'active',
+        patron_id TEXT,
+        transaction_type TEXT,
+        checkout_date TEXT,
+        due_date TEXT,
+        return_date TEXT,
+        fine_amount REAL,
+        status TEXT,
         notes TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (copy_id) REFERENCES item_copies(id) ON DELETE CASCADE,
-        FOREIGN KEY (patron_id) REFERENCES patrons(id) ON DELETE CASCADE,
-        FOREIGN KEY (location_id) REFERENCES branches(id) ON DELETE SET NULL
+        createdAt TEXT DEFAULT (datetime('now')),
+        updatedAt TEXT,
+        FOREIGN KEY(copy_id) REFERENCES LIBRARY_ITEM_COPIES(id) ON DELETE SET NULL,
+        FOREIGN KEY(patron_id) REFERENCES PATRONS(id) ON DELETE SET NULL
+      )
+    `);
+
+    // Create RESERVATIONS table
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS RESERVATIONS (
+        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
+        library_item_id TEXT,
+        patron_id TEXT,
+        reservation_date TEXT,
+        expiry_date TEXT,
+        status TEXT,
+        queue_position INTEGER,
+        notification_sent TEXT,
+        createdAt TEXT DEFAULT (datetime('now')),
+        updatedAt TEXT,
+        FOREIGN KEY(library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE SET NULL,
+        FOREIGN KEY(patron_id) REFERENCES PATRONS(id) ON DELETE SET NULL
+      )
+    `);
+
+    // Create FINES table
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS FINES (
+        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
+        transaction_id TEXT NOT NULL,
+        patron_id TEXT NOT NULL,
+        amount REAL NOT NULL,
+        reason TEXT,
+        is_paid BOOLEAN DEFAULT 0,
+        paid_date DATE,
+        payment_method TEXT,
+        notes TEXT,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (transaction_id) REFERENCES TRANSACTIONS(id) ON DELETE CASCADE,
+        FOREIGN KEY (patron_id) REFERENCES PATRONS(id) ON DELETE CASCADE
       )
     `);
 
     // Create indexes for better performance
     await db.exec(`
-      CREATE INDEX IF NOT EXISTS idx_catalog_items_type ON catalog_items(item_type);
-      CREATE INDEX IF NOT EXISTS idx_catalog_items_year ON catalog_items(publication_year);
-      CREATE INDEX IF NOT EXISTS idx_item_copies_status ON item_copies(status);
-      CREATE INDEX IF NOT EXISTS idx_item_copies_branch ON item_copies(branch_id);
-      CREATE INDEX IF NOT EXISTS idx_patrons_name ON patrons(last_name, first_name);
-      CREATE INDEX IF NOT EXISTS idx_transactions_status ON transactions(status);
-      CREATE INDEX IF NOT EXISTS idx_reservations_status ON reservations(status);
+      CREATE INDEX IF NOT EXISTS idx_library_items_type ON LIBRARY_ITEMS(item_type);
+      CREATE INDEX IF NOT EXISTS idx_library_items_year ON LIBRARY_ITEMS(publication_year);
+      CREATE INDEX IF NOT EXISTS idx_library_item_copies_status ON LIBRARY_ITEM_COPIES(status);
+      CREATE INDEX IF NOT EXISTS idx_library_item_copies_branch ON LIBRARY_ITEM_COPIES(branch_id);
+      CREATE INDEX IF NOT EXISTS idx_patrons_email ON PATRONS(email);
+      CREATE INDEX IF NOT EXISTS idx_patrons_name ON PATRONS(last_name, first_name);
+      CREATE INDEX IF NOT EXISTS idx_transactions_status ON TRANSACTIONS(status);
+      CREATE INDEX IF NOT EXISTS idx_reservations_status ON RESERVATIONS(status);
+      CREATE INDEX IF NOT EXISTS idx_fines_patron ON FINES(patron_id);
+      CREATE INDEX IF NOT EXISTS idx_fines_paid ON FINES(is_paid);
     `);
 
     // Insert default branch if none exists
-    await db.exec(`
-      INSERT OR IGNORE INTO branches (id, branch_name, is_main) 
-      VALUES (1, 'Main Library', 1)
+    await db.run(`
+      INSERT OR IGNORE INTO BRANCHES (id, branch_name, is_main) 
+      SELECT '1', 'Main Library', 1
+      WHERE NOT EXISTS (SELECT 1 FROM BRANCHES WHERE is_main = 1)
     `);
 
     // Create update triggers
     await db.exec(`
-      CREATE TRIGGER IF NOT EXISTS update_catalog_items_timestamp 
-          AFTER UPDATE ON catalog_items
+      CREATE TRIGGER IF NOT EXISTS update_library_items_timestamp 
+          AFTER UPDATE ON LIBRARY_ITEMS
       BEGIN
-          UPDATE catalog_items SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+          UPDATE LIBRARY_ITEMS SET updatedAt = CURRENT_TIMESTAMP WHERE id = NEW.id;
       END;
 
-      CREATE TRIGGER IF NOT EXISTS update_item_copies_timestamp 
-          AFTER UPDATE ON item_copies
+      CREATE TRIGGER IF NOT EXISTS update_library_item_copies_timestamp 
+          AFTER UPDATE ON LIBRARY_ITEM_COPIES
       BEGIN
-          UPDATE item_copies SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+          UPDATE LIBRARY_ITEM_COPIES SET updatedAt = CURRENT_TIMESTAMP WHERE id = NEW.id;
       END;
 
       CREATE TRIGGER IF NOT EXISTS update_reservations_timestamp 
-          AFTER UPDATE ON reservations
+          AFTER UPDATE ON RESERVATIONS
       BEGIN
-          UPDATE reservations SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+          UPDATE RESERVATIONS SET updatedAt = CURRENT_TIMESTAMP WHERE id = NEW.id;
       END;
 
       CREATE TRIGGER IF NOT EXISTS update_transactions_timestamp 
-          AFTER UPDATE ON transactions
+          AFTER UPDATE ON TRANSACTIONS
       BEGIN
-          UPDATE transactions SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+          UPDATE TRANSACTIONS SET updatedAt = CURRENT_TIMESTAMP WHERE id = NEW.id;
       END;
     `);
 

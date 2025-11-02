@@ -7,10 +7,10 @@ const router = express.Router();
 
 // Validation middleware
 const validate_reservation = [
-  body('catalog_item_id')
-    .isUUID()
-    .withMessage('Valid catalog item ID is required'),
-  body('patron_id').isInt().withMessage('Valid patron ID is required'),
+  body('library_item_id')
+    .notEmpty()
+    .withMessage('Valid library item ID is required'),
+  body('patron_id').notEmpty().withMessage('Valid patron ID is required'),
 ];
 
 // Helper function to handle validation errors
@@ -28,42 +28,40 @@ const handle_validation_errors = (req, res, next) => {
 // GET /api/v1/reservations - Get all reservations
 router.get('/', async (req, res) => {
   try {
-    const { patron_id, status, catalog_item_id } = req.query;
-    let conditions = '';
-    let params = [];
-
-    const filters = [];
-    if (patron_id) {
-      filters.push('r.patron_id = ?');
-      params.push(patron_id);
-    }
-    if (status) {
-      filters.push('r.status = ?');
-      params.push(status);
-    }
-    if (catalog_item_id) {
-      filters.push('r.catalog_item_id = ?');
-      params.push(catalog_item_id);
-    }
-
-    if (filters.length > 0) {
-      conditions = ' WHERE ' + filters.join(' AND ');
-    }
-
-    const query = `
+    const { patron_id, status, library_item_id } = req.query;
+    let query = `
       SELECT 
         r.*,
         p.first_name,
         p.last_name,
         p.email,
-        ci.title,
-        ci.item_type
-      FROM reservations r
-      JOIN patrons p ON r.patron_id = p.id
-      JOIN catalog_items ci ON r.catalog_item_id = ci.id
-      ${conditions}
-      ORDER BY r.queue_position ASC, r.reservation_date ASC
+        li.title,
+        li.item_type
+      FROM RESERVATIONS r
+      JOIN PATRONS p ON r.patron_id = p.id
+      JOIN LIBRARY_ITEMS li ON r.library_item_id = li.id
     `;
+    let params = [];
+    let conditions = [];
+
+    if (patron_id) {
+      conditions.push('r.patron_id = ?');
+      params.push(patron_id);
+    }
+    if (status) {
+      conditions.push('r.status = ?');
+      params.push(status);
+    }
+    if (library_item_id) {
+      conditions.push('r.library_item_id = ?');
+      params.push(library_item_id);
+    }
+
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    query += ' ORDER BY r.queue_position ASC, r.reservation_date ASC';
 
     const reservations = await db.execute_query(query, params);
 
@@ -89,12 +87,12 @@ router.get('/:id', async (req, res) => {
         p.first_name,
         p.last_name,
         p.email,
-        ci.title,
-        ci.item_type,
-        ci.description
-      FROM reservations r
-      JOIN patrons p ON r.patron_id = p.id
-      JOIN catalog_items ci ON r.catalog_item_id = ci.id
+        li.title,
+        li.item_type,
+        li.description
+      FROM RESERVATIONS r
+      JOIN PATRONS p ON r.patron_id = p.id
+      JOIN LIBRARY_ITEMS li ON r.library_item_id = li.id
       WHERE r.id = ?
     `;
 
@@ -126,19 +124,19 @@ router.post(
   handle_validation_errors,
   async (req, res) => {
     try {
-      const { catalog_item_id, patron_id } = req.body;
+      const { library_item_id, patron_id } = req.body;
 
-      // Verify catalog item exists
-      const catalog_item = await db.get_by_id('catalog_items', catalog_item_id);
-      if (!catalog_item) {
+      // Verify library item exists
+      const library_item = await db.get_by_id('LIBRARY_ITEMS', library_item_id);
+      if (!library_item) {
         return res.status(400).json({
-          error: 'Catalog item not found',
+          error: 'Library item not found',
         });
       }
 
       // Verify patron exists and is active
-      const patron = await db.get_by_id('patrons', patron_id);
-      if (!patron || !patron.is_active) {
+      const patron = await db.get_by_id('PATRONS', patron_id);
+      if (!patron || !patron.isActive) {
         return res.status(400).json({
           error: 'Patron not found or inactive',
         });
@@ -146,20 +144,20 @@ router.post(
 
       // Check if patron already has a reservation for this item
       const existing_reservation = await db.execute_query(
-        'SELECT * FROM reservations WHERE catalog_item_id = ? AND patron_id = ? AND status = "pending"',
-        [catalog_item_id, patron_id]
+        'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND patron_id = ? AND status = "active"',
+        [library_item_id, patron_id]
       );
 
       if (existing_reservation.length > 0) {
         return res.status(400).json({
-          error: 'Patron already has a pending reservation for this item',
+          error: 'Patron already has an active reservation for this item',
         });
       }
 
       // Check if item is available
       const available_copies = await db.execute_query(
-        'SELECT COUNT(*) as count FROM item_copies WHERE catalog_item_id = ? AND status = "Available"',
-        [catalog_item_id]
+        'SELECT COUNT(*) as count FROM LIBRARY_ITEM_COPIES WHERE library_item_id = ? AND status = "available"',
+        [library_item_id]
       );
 
       if (available_copies[0].count > 0) {
@@ -170,29 +168,30 @@ router.post(
 
       // Get next queue position
       const queue_position_result = await db.execute_query(
-        'SELECT COALESCE(MAX(queue_position), 0) + 1 as next_position FROM reservations WHERE catalog_item_id = ? AND status = "pending"',
-        [catalog_item_id]
+        'SELECT COALESCE(MAX(queue_position), 0) + 1 as next_position FROM RESERVATIONS WHERE library_item_id = ? AND status = "active"',
+        [library_item_id]
       );
 
       const queue_position = queue_position_result[0].next_position;
 
       // Calculate expiry date (7 days from now)
-      const expiry_date = new Date();
-      expiry_date.setDate(expiry_date.getDate() + 7);
+      const reservation_date = new Date().toISOString();
+      const expiry_date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
       const reservation_data = {
         id: uuidv4(),
-        catalog_item_id,
+        library_item_id,
         patron_id,
-        reservation_date: new Date(),
+        reservation_date,
         expiry_date,
-        status: 'pending',
+        status: 'active',
         queue_position,
-        created_at: new Date(),
-        updated_at: new Date(),
+        notification_sent: null,
+        createdAt: reservation_date,
+        updatedAt: reservation_date,
       };
 
-      await db.create_record('reservations', reservation_data);
+      await db.create_record('RESERVATIONS', reservation_data);
 
       res.status(201).json({
         success: true,
@@ -211,7 +210,7 @@ router.post(
 // PUT /api/v1/reservations/:id/fulfill - Fulfill reservation
 router.put('/:id/fulfill', async (req, res) => {
   try {
-    const reservation = await db.get_by_id('reservations', req.params.id);
+    const reservation = await db.get_by_id('RESERVATIONS', req.params.id);
 
     if (!reservation) {
       return res.status(404).json({
@@ -219,16 +218,16 @@ router.put('/:id/fulfill', async (req, res) => {
       });
     }
 
-    if (reservation.status !== 'pending') {
+    if (reservation.status !== 'active') {
       return res.status(400).json({
-        error: 'Only pending reservations can be fulfilled',
+        error: 'Only active reservations can be fulfilled',
       });
     }
 
     // Check if item is available
     const available_copies = await db.execute_query(
-      'SELECT * FROM item_copies WHERE catalog_item_id = ? AND status = "Available" LIMIT 1',
-      [reservation.catalog_item_id]
+      'SELECT * FROM LIBRARY_ITEM_COPIES WHERE library_item_id = ? AND status = "available" LIMIT 1',
+      [reservation.library_item_id]
     );
 
     if (available_copies.length === 0) {
@@ -238,22 +237,22 @@ router.put('/:id/fulfill', async (req, res) => {
     }
 
     // Update reservation status
-    await db.update_record('reservations', req.params.id, {
+    await db.update_record('RESERVATIONS', req.params.id, {
       status: 'fulfilled',
-      notification_sent: new Date(),
-      updated_at: new Date(),
+      notification_sent: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
 
-    // Reserve the item copy
-    await db.update_record('item_copies', available_copies[0].id, {
-      status: 'Reserved',
-      updated_at: new Date(),
+    // Reserve the library item copy
+    await db.update_record('LIBRARY_ITEM_COPIES', available_copies[0].id, {
+      status: 'reserved',
+      updatedAt: new Date().toISOString(),
     });
 
     // Update queue positions for remaining reservations
     await db.execute_query(
-      'UPDATE reservations SET queue_position = queue_position - 1 WHERE catalog_item_id = ? AND queue_position > ? AND status = "pending"',
-      [reservation.catalog_item_id, reservation.queue_position]
+      'UPDATE RESERVATIONS SET queue_position = queue_position - 1 WHERE library_item_id = ? AND queue_position > ? AND status = "active"',
+      [reservation.library_item_id, reservation.queue_position]
     );
 
     res.json({
@@ -275,7 +274,7 @@ router.put('/:id/fulfill', async (req, res) => {
 // DELETE /api/v1/reservations/:id - Cancel reservation
 router.delete('/:id', async (req, res) => {
   try {
-    const reservation = await db.get_by_id('reservations', req.params.id);
+    const reservation = await db.get_by_id('RESERVATIONS', req.params.id);
 
     if (!reservation) {
       return res.status(404).json({
@@ -283,22 +282,22 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
-    if (reservation.status !== 'pending') {
+    if (reservation.status !== 'active') {
       return res.status(400).json({
-        error: 'Only pending reservations can be cancelled',
+        error: 'Only active reservations can be cancelled',
       });
     }
 
     // Update reservation status to cancelled
-    await db.update_record('reservations', req.params.id, {
+    await db.update_record('RESERVATIONS', req.params.id, {
       status: 'cancelled',
-      updated_at: new Date(),
+      updatedAt: new Date().toISOString(),
     });
 
     // Update queue positions for remaining reservations
     await db.execute_query(
-      'UPDATE reservations SET queue_position = queue_position - 1 WHERE catalog_item_id = ? AND queue_position > ? AND status = "pending"',
-      [reservation.catalog_item_id, reservation.queue_position]
+      'UPDATE RESERVATIONS SET queue_position = queue_position - 1 WHERE library_item_id = ? AND queue_position > ? AND status = "active"',
+      [reservation.library_item_id, reservation.queue_position]
     );
 
     res.json({

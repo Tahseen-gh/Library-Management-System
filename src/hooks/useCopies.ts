@@ -4,7 +4,7 @@ import type { Item_Copy } from '../types';
 
 export const useCopies = (item_id: string) => {
   return useQuery({
-    queryKey: ['item_copies', item_id],
+    queryKey: ['library_item_copies', item_id], // Changed from 'item_copies'
     queryFn: () => dataService.get_all_copies_by_item_id(item_id),
     enabled: !!item_id,
   });
@@ -12,21 +12,21 @@ export const useCopies = (item_id: string) => {
 
 export const useAllCopyIds = () => {
   return useQuery({
-    queryKey: ['all_item_copy_ids'],
+    queryKey: ['all_library_item_copy_ids'], // Changed from 'all_item_copy_ids'
     queryFn: () => dataService.get_all_copy_ids(),
   });
 };
 
 export const useAllCopies = () => {
   return useQuery({
-    queryKey: ['all_item_copies'],
+    queryKey: ['all_library_item_copies'], // Changed from 'all_item_copies'
     queryFn: (): Promise<Item_Copy[]> => dataService.get_all_copies(),
   });
 };
 
 export const useCopyById = (copy_id: string) => {
   return useQuery({
-    queryKey: ['item_copy', copy_id],
+    queryKey: ['library_item_copy', copy_id], // Changed from 'item_copy'
     queryFn: () => dataService.get_copy_by_id(copy_id),
     enabled: !!copy_id,
   });
