@@ -147,6 +147,69 @@ router.get('/:id/fines', async (req, res) => {
   }
 });
 
+// GET /api/v1/patrons/:id/checkout-eligibility - Check if patron can checkout (NEW - US 1.3, US 2.3, US 2.7)
+router.get('/:id/checkout-eligibility', async (req, res) => {
+  try {
+    const patron = await db.get_by_id('PATRONS', req.params.id);
+
+    if (!patron) {
+      return res.status(404).json({
+        eligible: false,
+        error: 'Patron not found',
+      });
+    }
+
+    if (!patron.isActive) {
+      return res.status(200).json({
+        eligible: false,
+        reason: 'inactive',
+        message: 'Patron account is inactive',
+      });
+    }
+
+    // Check for outstanding fees - US 2.7
+    if (patron.balance > 0) {
+      return res.status(200).json({
+        eligible: false,
+        reason: 'fees',
+        balance: patron.balance,
+        message: `Patron owes $${patron.balance.toFixed(2)}. Fees must be paid before checkout.`,
+      });
+    }
+
+    // Check checkout limit - US 2.3
+    const active_checkouts = await db.execute_query(
+      'SELECT COUNT(*) as count FROM TRANSACTIONS WHERE patron_id = ? AND status = "active"',
+      [req.params.id]
+    );
+
+    if (active_checkouts[0].count >= 20) {
+      return res.status(200).json({
+        eligible: false,
+        reason: 'limit_reached',
+        current_checkouts: active_checkouts[0].count,
+        message: 'Patron has 20 items checked out. Cannot checkout more items.',
+      });
+    }
+
+    res.json({
+      eligible: true,
+      patron_info: {
+        id: patron.id,
+        name: `${patron.first_name} ${patron.last_name}`,
+        active_checkouts: active_checkouts[0].count,
+        balance: patron.balance,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      eligible: false,
+      error: 'Failed to check patron eligibility',
+      message: error.message,
+    });
+  }
+});
+
 // POST /api/v1/patrons - Create new patron
 router.post(
   '/',

@@ -166,11 +166,59 @@ router.post(
         });
       }
 
-      // Calculate due date if not provided (default 14 days)
+      // CHECK PATRON BALANCE (Fees) - US 2.7
+      if (patron.balance > 0) {
+        return res.status(400).json({
+          error: 'Patron has outstanding fees',
+          balance: patron.balance,
+          message: `Patron owes $${patron.balance.toFixed(2)}. Fees must be paid before checkout.`
+        });
+      }
+
+      // CHECK 20-ITEM LIMIT - US 2.3
+      const active_checkout_count = await db.execute_query(
+        'SELECT COUNT(*) as count FROM TRANSACTIONS WHERE patron_id = ? AND status = "active"',
+        [patron_id]
+      );
+
+      if (active_checkout_count[0].count >= 20) {
+        return res.status(400).json({
+          error: 'Checkout limit reached',
+          current_checkouts: active_checkout_count[0].count,
+          message: 'Patron already has 20 items checked out. Cannot checkout more items.'
+        });
+      }
+
+      // GET ITEM TYPE FOR DUE DATE CALCULATION - US 2.7
+      const library_item = await db.execute_query(
+        'SELECT li.item_type FROM LIBRARY_ITEMS li ' +
+        'JOIN LIBRARY_ITEM_COPIES lic ON li.id = lic.library_item_id ' +
+        'WHERE lic.id = ?',
+        [copy_id]
+      );
+
+      // Calculate due date based on item type - US 2.7
       const checkout_date = new Date().toISOString();
+      let loan_duration_days;
+
+      switch (library_item[0].item_type.toUpperCase()) {
+        case 'BOOK':
+          loan_duration_days = 28; // 4 weeks
+          break;
+        case 'VIDEO':
+          // TODO: Distinguish "new movies" for 3-day loans
+          loan_duration_days = 7; // 1 week for movies
+          break;
+        case 'AUDIOBOOK':
+          loan_duration_days = 28; // Same as books
+          break;
+        default:
+          loan_duration_days = 14; // Default 2 weeks
+      }
+
       const calculated_due_date = due_date
         ? new Date(due_date).toISOString()
-        : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+        : new Date(Date.now() + loan_duration_days * 24 * 60 * 60 * 1000).toISOString();
 
       // Create transaction
       const transaction_data = {
@@ -210,7 +258,7 @@ router.post(
   }
 );
 
-// POST /api/v1/transactions/checkin - Checkin item
+// POST /api/v1/transactions/checkin - Checkin item (US 3.1, US 3.7)
 router.post(
   '/checkin',
   [
@@ -242,7 +290,7 @@ router.post(
       const due_date = new Date(transaction.due_date);
       const return_date_obj = new Date(return_date);
 
-      // Calculate fine if overdue
+      // Calculate fine if overdue - US 3.1
       let fine_amount = 0;
       if (return_date_obj > due_date) {
         const days_overdue = Math.ceil(
@@ -260,7 +308,7 @@ router.post(
         updatedAt: return_date,
       });
 
-      // Update library item copy
+      // Update library item copy status to 'available' - US 3.7
       const update_data = {
         status: 'available',
         condition: new_condition || transaction.condition,
@@ -269,7 +317,7 @@ router.post(
 
       await db.update_record('LIBRARY_ITEM_COPIES', copy_id, update_data);
 
-      // Create fine record if there's a fine
+      // Create fine record if there's a fine - US 3.1
       if (fine_amount > 0) {
         const fine_data = {
           id: uuidv4(),

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   Container,
   Typography,
@@ -10,322 +10,431 @@ import {
   StepLabel,
   Stepper,
   Paper,
-  Snackbar,
-  Tooltip,
+  TextField,
+  CircularProgress,
+  Divider,
 } from '@mui/material';
 import { LibraryAdd } from '@mui/icons-material';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { PatronsDataGrid } from '../components/patrons/PatronsDataGrid';
-import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
-import { CopiesDataGrid } from '../components/copies/CopiesDataGrid';
-import { format_date, is_overdue } from '../utils/dateUtils';
-import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
-import { useCheckoutBook } from '../hooks/useTransactions';
 
-const two_weeks_from_now = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // Default 2 weeks from now
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
 
-const steps = ['Select Patron', 'Select Item', 'Confirm Details'];
+const steps = ['Enter Patron ID', 'Enter Book ID', 'Confirmation'];
 
-const columns: GridColDef[] = [
-  { field: 'id', headerName: 'ID', width: 50 },
-  {
-    field: 'first_name',
-    headerName: 'First Name',
-    flex: 1,
-  },
-  { field: 'last_name', headerName: 'Last Name', flex: 1 },
-  {
-    field: 'balance',
-    headerName: 'Balance',
-    align: 'left',
-    headerAlign: 'left',
-    type: 'number',
-    width: 150,
-    valueFormatter: (value) =>
-      value === null || value === undefined
-        ? '$0.00'
-        : `$${Number(value).toFixed(2)}`,
-    renderCell: (params: GridRenderCellParams) => (
-      <Box
-        sx={{
-          color: params.value > 0 ? 'warning.main' : 'inherit',
-        }}
-      >
-        {`$${params.value.toFixed(2)}`}
-      </Box>
-    ),
-  },
-  {
-    field: 'card_expiration_date',
-    headerName: 'Card Expiration',
-    valueGetter: (value) => {
-      if (!value) return;
-      return format_date(value);
-    },
-    flex: 3,
-    renderCell: (params: GridRenderCellParams) => (
-      <Box
-        sx={{
-          color: is_overdue(new Date(params.value))
-            ? 'warning.main'
-            : 'inherit',
-        }}
-      >
-        {params.value}
-      </Box>
-    ),
-  },
-];
+interface PatronEligibility {
+  eligible: boolean;
+  reason?: string;
+  message?: string;
+  balance?: number;
+  patron_info?: {
+    id: string;
+    name: string;
+    active_checkouts: number;
+    balance: number;
+  };
+}
 
-interface CheckOutFormData {
-  patron_id: number;
-  item_id: string;
-  due_date: Date;
+interface ItemInfo {
+  id: string;
+  title: string;
+  item_type: string;
+  status: string;
+  author?: string;
+  director?: string;
+  narrator?: string;
+  library_item_id: string;
 }
 
 export const CheckOutItem: React.FC = () => {
-  const [form_data, set_form_data] = useState<CheckOutFormData>({
-    patron_id: 0,
-    item_id: '',
-    due_date: two_weeks_from_now,
-  });
-
+  const [active_step, set_active_step] = useState(0);
+  const [patron_id_input, set_patron_id_input] = useState<string>('');
+  const [item_id_input, set_item_id_input] = useState<string>('');
+  
+  const [patron_eligibility, set_patron_eligibility] = useState<PatronEligibility | null>(null);
+  const [item_info, set_item_info] = useState<ItemInfo | null>(null);
+  
+  const [checking_patron, set_checking_patron] = useState(false);
+  const [checking_item, set_checking_item] = useState(false);
+  const [processing_checkout, set_processing_checkout] = useState(false);
+  
   const [error, set_error] = useState<string | null>(null);
   const [success, set_success] = useState<string | null>(null);
 
-  const [active_step, set_active_step] = useState(0);
-  const [skipped, set_skipped] = useState(new Set<number>());
-
-  const { mutate: checkoutBook } = useCheckoutBook();
-
-  const handle_retry = useCallback(() => {
-    set_error(null);
-    set_success(null);
-  }, []);
-
-  const is_step_skipped = (step: number) => {
-    return skipped.has(step);
-  };
-
-  const handle_next = () => {
-    if (active_step === steps.length - 1) {
-      checkoutBook({
-        patron_id: form_data.patron_id,
-        copy_id: form_data.item_id,
-        due_date: form_data.due_date,
-      });
+  // STEP 1: Check Patron ID
+  const check_patron_eligibility = async () => {
+    if (!patron_id_input.trim()) {
+      set_error('Please enter a Patron ID');
       return;
     }
-    let new_skipped = skipped;
-    if (is_step_skipped(active_step)) {
-      new_skipped = new Set(new_skipped.values());
-      new_skipped.delete(active_step);
+
+    set_checking_patron(true);
+    set_error(null);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/patrons/${patron_id_input}/checkout-eligibility`);
+      const data = await response.json();
+
+      set_patron_eligibility(data);
+
+      if (data.eligible) {
+        // Move to next step
+        set_active_step(1);
+      } else {
+        set_error(data.message || 'Patron is not eligible for checkout');
+      }
+    } catch (err) {
+      set_error('Failed to verify patron. Please check the ID and try again.');
+      set_patron_eligibility(null);
+    } finally {
+      set_checking_patron(false);
+    }
+  };
+
+  // STEP 2: Check Book/Item ID
+  const check_item_availability = async () => {
+    if (!item_id_input.trim()) {
+      set_error('Please enter an Item ID');
+      return;
     }
 
-    set_active_step((prevActiveStep) => prevActiveStep + 1);
-    set_skipped(new_skipped);
+    set_checking_item(true);
+    set_error(null);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/item-copies/${item_id_input}`);
+      
+      if (!response.ok) {
+        throw new Error('Item not found');
+      }
+
+      const item_data = await response.json();
+      const item = item_data.data || item_data;
+
+      // Check if item is available
+      if (item.status !== 'available') {
+        set_error(`Item is not available for checkout. Current status: ${item.status}`);
+        set_item_info(null);
+        return;
+      }
+
+      set_item_info(item);
+      set_active_step(2);
+    } catch (err) {
+      set_error('Item not found. Please verify the ID and try again.');
+      set_item_info(null);
+    } finally {
+      set_checking_item(false);
+    }
+  };
+
+  // STEP 3: Complete Checkout
+  const complete_checkout = async () => {
+    if (!patron_eligibility?.patron_info?.id || !item_id_input) {
+      set_error('Missing required information');
+      return;
+    }
+
+    set_processing_checkout(true);
+    set_error(null);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/transactions/checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          patron_id: patron_eligibility.patron_info.id,
+          copy_id: item_id_input,
+        }),
+      });
+
+      if (!response.ok) {
+        const error_data = await response.json();
+        throw new Error(error_data.message || 'Checkout failed');
+      }
+
+      const result = await response.json();
+      set_success('Item checked out successfully!');
+      
+      // Reset form after 2 seconds
+      setTimeout(() => {
+        handle_reset();
+      }, 2000);
+    } catch (err) {
+      set_error(err instanceof Error ? err.message : 'Failed to complete checkout');
+    } finally {
+      set_processing_checkout(false);
+    }
   };
 
   const handle_back = () => {
-    set_active_step((prevActiveStep) => prevActiveStep - 1);
+    set_error(null);
+    if (active_step === 1) {
+      set_item_id_input('');
+      set_item_info(null);
+    }
+    set_active_step((prev) => prev - 1);
   };
 
-  const handleReset = () => {
+  const handle_reset = () => {
     set_active_step(0);
+    set_patron_id_input('');
+    set_item_id_input('');
+    set_patron_eligibility(null);
+    set_item_info(null);
+    set_error(null);
+    set_success(null);
   };
 
-  const is_next_disabled = () => {
-    if (active_step === 0 && !form_data.patron_id) return true;
+  const calculate_due_date = (item_type: string): string => {
+    const today = new Date();
+    let days = 14; // default
 
-    if (active_step === 1 && !form_data.item_id) return true;
+    switch (item_type.toUpperCase()) {
+      case 'BOOK':
+        days = 28; // 4 weeks
+        break;
+      case 'VIDEO':
+        days = 7; // 1 week
+        break;
+      case 'AUDIOBOOK':
+        days = 28; // 4 weeks
+        break;
+    }
 
-    if (active_step === 2 && !form_data.due_date) return true;
-    return false;
-  };
-
-  const handle_patron_selected = (patron_id: string) => {
-    set_form_data((prev) => ({ ...prev, patron_id: Number(patron_id) }));
-  };
-
-  const handle_copy_selected = (copy_id: string) => {
-    set_form_data((prev) => ({ ...prev, item_id: copy_id }));
+    const due_date = new Date(today.getTime() + days * 24 * 60 * 60 * 1000);
+    return due_date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
   };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Container
-        maxWidth="lg"
+    <Container
+      maxWidth="md"
+      sx={{
+        py: 4,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <Typography
+        variant="h3"
+        component="h1"
+        gutterBottom
         sx={{
-          py: 2,
-          height: 1,
-          maxHeight: 1,
-          overflow: 'hidden',
+          fontWeight: 'bold',
+          mb: 4,
           display: 'flex',
-          flexDirection: 'column',
-          gap: 0,
+          alignItems: 'center',
+          gap: 2,
         }}
       >
-        <Typography
-          onClick={() => console.log(form_data)}
-          variant="h3"
-          component="h1"
-          gutterBottom
-          title={'Active Step: ' + active_step}
-          sx={{
-            fontWeight: 'bold',
-            mb: 4,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-            fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
-          }}
-        >
-          <LibraryAdd color="primary" fontSize="large" />
-          Check Out Item
-        </Typography>
+        <LibraryAdd color="primary" fontSize="large" />
+        Check Out Item
+      </Typography>
 
-        <Snackbar open={!!error} autoHideDuration={6000} onClose={handle_retry}>
-          <Alert severity="error" sx={{ mb: 3 }}>
-            <AlertTitle>Check-out Error</AlertTitle>
-            {error}
-            <Button
-              size="small"
-              onClick={handle_retry}
-              sx={{ mt: 1, display: 'block' }}
-            >
-              Try Again
-            </Button>
-          </Alert>
-        </Snackbar>
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => set_error(null)}>
+          <AlertTitle>Error</AlertTitle>
+          {error}
+        </Alert>
+      )}
 
-        <Snackbar
-          open={!!success}
-          autoHideDuration={6000}
-          onClose={() => set_success(null)}
-        >
-          <Alert severity="success" sx={{ mb: 3 }}>
-            <AlertTitle>Success!</AlertTitle>
-            {success}
-          </Alert>
-        </Snackbar>
+      {success && (
+        <Alert severity="success" sx={{ mb: 3 }}>
+          <AlertTitle>Success!</AlertTitle>
+          {success}
+        </Alert>
+      )}
 
-        <Stepper activeStep={active_step}>
-          {steps.map((label, index) => {
-            const stepProps: { completed?: boolean } = {};
-            const labelProps: {
-              optional?: React.ReactNode;
-            } = {};
-            if (is_step_skipped(index)) {
-              stepProps.completed = false;
-            }
-            return (
-              <Step key={label} {...stepProps}>
-                <StepLabel {...labelProps}>{label}</StepLabel>
-              </Step>
-            );
-          })}
-        </Stepper>
-        {active_step === steps.length ? (
-          <>
-            <Typography sx={{ mt: 2, mb: 1 }}>
-              {"All steps completed - you're finished"}
+      <Stepper activeStep={active_step} sx={{ mb: 4 }}>
+        {steps.map((label) => (
+          <Step key={label}>
+            <StepLabel>{label}</StepLabel>
+          </Step>
+        ))}
+      </Stepper>
+
+      <Paper elevation={3} sx={{ p: 4, flex: 1 }}>
+        {/* STEP 0: Enter Patron ID */}
+        {active_step === 0 && (
+          <Box>
+            <Typography variant="h5" gutterBottom fontWeight="bold">
+              Enter Patron ID
             </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'row', pt: 2 }}>
-              <Box sx={{ flex: '1 1 auto' }} />
-              <Button onClick={handleReset}>Reset</Button>
-            </Box>
-          </>
-        ) : (
-          <>
-            <Box
-              sx={{
-                flex: 1,
-                mt: 2,
-                overflow: 'hidden',
-              }}
-            >
-              {active_step === 0 && (
-                <PatronsDataGrid
-                  cols={columns}
-                  onError={set_error}
-                  onPatronSelected={handle_patron_selected}
-                  check_overdue={true}
-                />
-              )}
-              {active_step === 1 && (
-                <CopiesDataGrid on_copy_selected={handle_copy_selected} />
-              )}
-              {active_step === 2 && (
-                <Paper
-                  elevation={4}
-                  sx={{
-                    height: 'min-content',
-                    width: 'min-content',
-                    mx: 'auto',
-                    mt: 2,
-                  }}
-                >
-                  <Typography
-                    variant="h6"
-                    sx={{ p: 2, pb: 0 }}
-                    color="text.secondary"
-                    fontSize={{ xs: '0.9rem', sm: '1rem', md: '1.2rem' }}
-                  >
-                    Select Due Date
-                  </Typography>
-                  <DateCalendar
-                    value={form_data.due_date}
-                    onChange={(new_value) =>
-                      set_form_data((prev) => ({
-                        ...prev,
-                        due_date: new_value || two_weeks_from_now,
-                      }))
-                    }
-                  />
-                </Paper>
-              )}
-              <Box />
-            </Box>
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'row',
-                pt: 2,
-              }}
-            >
-              <Button
-                disabled={active_step === 0}
-                onClick={handle_back}
-                sx={{ mr: 1 }}
-                variant="outlined"
-              >
-                Back
-              </Button>
-              <Box sx={{ flex: '1 1 auto' }} />
-              <Tooltip
-                children={
-                  <span>
-                    {/* this span is needed to avoid a ref error caused by MUI code */}
-                    <Button
-                      variant="outlined"
-                      onClick={handle_next}
-                      disabled={is_next_disabled()}
-                    >
-                      {active_step === steps.length - 1 ? 'Finish' : 'Next'}
-                    </Button>
-                  </span>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Enter the patron's library card ID number to verify eligibility.
+            </Typography>
+
+            <TextField
+              fullWidth
+              label="Patron ID"
+              value={patron_id_input}
+              onChange={(e) => set_patron_id_input(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && patron_id_input) {
+                  check_patron_eligibility();
                 }
-                title={
-                  is_next_disabled()
-                    ? `Select ${active_step === 0 ? 'patron' : 'item'} to proceed`
-                    : 'Next page'
-                }
-              ></Tooltip>
+              }}
+              placeholder="Enter patron ID"
+              autoFocus
+              disabled={checking_patron}
+              sx={{ mb: 3 }}
+            />
+
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={check_patron_eligibility}
+              disabled={!patron_id_input || checking_patron}
+              startIcon={checking_patron ? <CircularProgress size={20} /> : null}
+              size="large"
+            >
+              {checking_patron ? 'Verifying...' : 'Check ID'}
+            </Button>
+
+            <Box sx={{ mt: 3, p: 2, bgcolor: 'info.50', borderRadius: 1, border: '1px solid', borderColor: 'info.main' }}>
+              <Typography variant="body2" display="block" gutterBottom fontWeight="bold" color="info.main">
+                Validation Checks:
+              </Typography>
+              <Typography variant="body2" display="block" color="text.primary">• Card not expired</Typography>
+              <Typography variant="body2" display="block" color="text.primary">• No fines owed</Typography>
+              <Typography variant="body2" display="block" color="text.primary">• Less than 20 books checked out</Typography>
             </Box>
-          </>
+          </Box>
         )}
-      </Container>
-    </LocalizationProvider>
+
+        {/* STEP 1: Enter Book ID */}
+        {active_step === 1 && (
+          <Box>
+            <Typography variant="h5" gutterBottom fontWeight="bold">
+              Enter Book ID
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Enter the item's copy ID to check availability.
+            </Typography>
+
+            {patron_eligibility?.patron_info && (
+              <Alert severity="success" sx={{ mb: 3 }}>
+                <Typography variant="body2" fontWeight="bold">
+                  Patron: {patron_eligibility.patron_info.name}
+                </Typography>
+                <Typography variant="caption">
+                  Active checkouts: {patron_eligibility.patron_info.active_checkouts}/20
+                </Typography>
+              </Alert>
+            )}
+
+            <TextField
+              fullWidth
+              label="Item ID"
+              value={item_id_input}
+              onChange={(e) => set_item_id_input(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && item_id_input) {
+                  check_item_availability();
+                }
+              }}
+              placeholder="Enter item copy ID"
+              autoFocus
+              disabled={checking_item}
+              sx={{ mb: 3 }}
+            />
+
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={check_item_availability}
+              disabled={!item_id_input || checking_item}
+              startIcon={checking_item ? <CircularProgress size={20} /> : null}
+              size="large"
+            >
+              {checking_item ? 'Checking...' : 'Check Book'}
+            </Button>
+          </Box>
+        )}
+
+        {/* STEP 2: Confirmation */}
+        {active_step === 2 && patron_eligibility?.patron_info && item_info && (
+          <Box>
+            <Typography variant="h5" gutterBottom fontWeight="bold" textAlign="center" color="success.main">
+              Checkout Confirmation
+            </Typography>
+
+            <Box sx={{ mt: 3, p: 3, bgcolor: 'success.50', borderRadius: 2, border: '2px solid', borderColor: 'success.main' }}>
+              <Typography variant="h6" gutterBottom fontWeight="bold">
+                PATRON INFORMATION
+              </Typography>
+              <Typography variant="body1">Patron ID: {patron_eligibility.patron_info.id}</Typography>
+              <Typography variant="body1" sx={{ mb: 2 }}>
+                Name: {patron_eligibility.patron_info.name}
+              </Typography>
+
+              <Divider sx={{ my: 2 }} />
+
+              <Typography variant="h6" gutterBottom fontWeight="bold">
+                BOOK INFORMATION
+              </Typography>
+              <Typography variant="body1">Title: {item_info.title || 'N/A'}</Typography>
+              <Typography variant="body1">Type: {item_info.item_type}</Typography>
+              <Typography variant="body1" sx={{ mb: 2 }}>Status: {item_info.status}</Typography>
+
+              <Divider sx={{ my: 2 }} />
+
+              <Typography variant="h6" gutterBottom fontWeight="bold">
+                DUE DATE - Based on Item Type
+              </Typography>
+              <Typography variant="body1" fontWeight="bold" color="primary">
+                Due Date: {calculate_due_date(item_info.item_type)}
+              </Typography>
+
+              <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+                <Typography variant="body2" gutterBottom fontWeight="bold">
+                  Loan Duration Rules:
+                </Typography>
+                <Typography variant="body2">• Books: 4 weeks</Typography>
+                <Typography variant="body2">• Movies: 1 week</Typography>
+                <Typography variant="body2">• Audiobooks: 4 weeks</Typography>
+              </Box>
+            </Box>
+
+            <Button
+              fullWidth
+              variant="contained"
+              color="success"
+              onClick={complete_checkout}
+              disabled={processing_checkout}
+              startIcon={processing_checkout ? <CircularProgress size={20} /> : null}
+              size="large"
+              sx={{ mt: 3 }}
+            >
+              {processing_checkout ? 'Processing...' : 'Complete Checkout'}
+            </Button>
+          </Box>
+        )}
+
+        {/* Navigation Buttons */}
+        <Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
+          <Button
+            variant="outlined"
+            onClick={handle_back}
+            disabled={active_step === 0 || checking_patron || checking_item || processing_checkout}
+          >
+            Back
+          </Button>
+          <Box sx={{ flex: 1 }} />
+          <Button
+            variant="outlined"
+            onClick={handle_reset}
+            disabled={checking_patron || checking_item || processing_checkout}
+          >
+            Reset
+          </Button>
+        </Box>
+      </Paper>
+    </Container>
   );
 };
