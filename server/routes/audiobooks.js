@@ -6,10 +6,10 @@ const db = require('../config/database');
 const router = express.Router();
 
 // Validation middleware
-const validate_audiobook = [
+const validate_new_video = [
   body('library_item_id').notEmpty().withMessage('Library item ID is required'),
-  body('narrator').optional().isString().withMessage('Narrator must be a string'),
-  body('publisher').optional().isString().withMessage('Publisher must be a string'),
+  body('director').optional().isString().withMessage('Director must be a string'),
+  body('studio').optional().isString().withMessage('Studio must be a string'),
   body('duration_minutes').optional().isInt({ min: 1 }).withMessage('Duration must be a positive integer'),
 ];
 
@@ -25,169 +25,170 @@ const handle_validation_errors = (req, res, next) => {
   next();
 };
 
-// GET /api/v1/audiobooks - Get all audiobooks
+// GET /api/v1/new-videos - Get all new videos
 router.get('/', async (req, res) => {
   try {
-    const audiobooks = await db.execute_query(
-      `SELECT a.*, li.title, li.description, li.publication_year, li.available
-       FROM AUDIOBOOKS a
-       JOIN LIBRARY_ITEMS li ON a.library_item_id = li.id
+    const new_videos = await db.execute_query(
+      `SELECT nv.*, li.title, li.description, li.publication_year, li.available
+       FROM NEW_VIDEOS nv
+       JOIN LIBRARY_ITEMS li ON nv.library_item_id = li.id
        ORDER BY li.title ASC`
     );
 
     res.json({
       success: true,
-      count: audiobooks.length,
-      data: audiobooks,
+      count: new_videos.length,
+      data: new_videos,
     });
   } catch (error) {
     res.status(500).json({
-      error: 'Failed to fetch audiobooks',
+      error: 'Failed to fetch new videos',
       message: error.message,
     });
   }
 });
 
-// GET /api/v1/audiobooks/:id - Get single audiobook
+// GET /api/v1/new-videos/:id - Get single new video
 router.get('/:id', async (req, res) => {
   try {
-    const audiobook = await db.execute_query(
-      `SELECT a.*, li.title, li.description, li.publication_year, li.available
-       FROM AUDIOBOOKS a
-       JOIN LIBRARY_ITEMS li ON a.library_item_id = li.id
-       WHERE a.id = ?`,
+    const new_video = await db.execute_query(
+      `SELECT nv.*, li.title, li.description, li.publication_year, li.available
+       FROM NEW_VIDEOS nv
+       JOIN LIBRARY_ITEMS li ON nv.library_item_id = li.id
+       WHERE nv.id = ?`,
       [req.params.id]
     );
 
-    if (!audiobook || audiobook.length === 0) {
+    if (!new_video || new_video.length === 0) {
       return res.status(404).json({
-        error: 'Audiobook not found',
+        error: 'New video not found',
       });
     }
 
     res.json({
       success: true,
-      data: audiobook[0],
+      data: new_video[0],
     });
   } catch (error) {
     res.status(500).json({
-      error: 'Failed to fetch audiobook',
+      error: 'Failed to fetch new video',
       message: error.message,
     });
   }
 });
 
-// POST /api/v1/audiobooks - Create new audiobook
+// POST /api/v1/new-videos - Create new video
 router.post(
   '/',
-  validate_audiobook,
+  validate_new_video,
   handle_validation_errors,
   async (req, res) => {
     try {
       const library_item = await db.get_by_id('LIBRARY_ITEMS', req.body.library_item_id);
-      
+
       if (!library_item) {
         return res.status(404).json({
           error: 'Library item not found',
         });
       }
 
-      if (library_item.item_type !== 'AUDIOBOOK') {
+      if (library_item.item_type !== 'NEW_VIDEO') {
         return res.status(400).json({
-          error: 'Library item must be of type AUDIOBOOK',
+          error: 'Library item must be of type NEW_VIDEO',
         });
       }
 
-      const audiobook_data = {
+      const new_video_data = {
         id: uuidv4(),
-        narrator: req.body.narrator || null,
-        publisher: req.body.publisher || null,
+        director: req.body.director || null,
+        studio: req.body.studio || null,
         genre: req.body.genre || null,
         cover_image_url: req.body.cover_image_url || null,
         duration_minutes: req.body.duration_minutes || null,
         format: req.body.format || null,
+        rating: req.body.rating || null,
         isbn: req.body.isbn || null,
         library_item_id: req.body.library_item_id,
       };
 
-      await db.create_record('AUDIOBOOKS', audiobook_data);
+      await db.create_record('NEW_VIDEOS', new_video_data);
 
       res.status(201).json({
         success: true,
-        message: 'Audiobook created successfully',
-        data: audiobook_data,
+        message: 'New video created successfully',
+        data: new_video_data,
       });
     } catch (error) {
       res.status(500).json({
-        error: 'Failed to create audiobook',
+        error: 'Failed to create new video',
         message: error.message,
       });
     }
   }
 );
 
-// PUT /api/v1/audiobooks/:id - Update audiobook
+// PUT /api/v1/new-videos/:id - Update new video
 router.put(
   '/:id',
-  validate_audiobook,
+  validate_new_video,
   handle_validation_errors,
   async (req, res) => {
     try {
-      const existing_audiobook = await db.get_by_id('AUDIOBOOKS', req.params.id);
+      const existing_new_video = await db.get_by_id('NEW_VIDEOS', req.params.id);
 
-      if (!existing_audiobook) {
+      if (!existing_new_video) {
         return res.status(404).json({
-          error: 'Audiobook not found',
+          error: 'New video not found',
         });
       }
 
-      const updated = await db.update_record('AUDIOBOOKS', req.params.id, req.body);
+      const updated = await db.update_record('NEW_VIDEOS', req.params.id, req.body);
 
       if (updated) {
         res.json({
           success: true,
-          message: 'Audiobook updated successfully',
+          message: 'New video updated successfully',
         });
       } else {
         res.status(500).json({
-          error: 'Failed to update audiobook',
+          error: 'Failed to update new video',
         });
       }
     } catch (error) {
       res.status(500).json({
-        error: 'Failed to update audiobook',
+        error: 'Failed to update new video',
         message: error.message,
       });
     }
   }
 );
 
-// DELETE /api/v1/audiobooks/:id - Delete audiobook
+// DELETE /api/v1/new-videos/:id - Delete new video
 router.delete('/:id', async (req, res) => {
   try {
-    const existing_audiobook = await db.get_by_id('AUDIOBOOKS', req.params.id);
+    const existing_new_video = await db.get_by_id('NEW_VIDEOS', req.params.id);
 
-    if (!existing_audiobook) {
+    if (!existing_new_video) {
       return res.status(404).json({
-        error: 'Audiobook not found',
+        error: 'New video not found',
       });
     }
 
-    const deleted = await db.delete_record('AUDIOBOOKS', req.params.id);
+    const deleted = await db.delete_record('NEW_VIDEOS', req.params.id);
 
     if (deleted) {
       res.json({
         success: true,
-        message: 'Audiobook deleted successfully',
+        message: 'New video deleted successfully',
       });
     } else {
       res.status(500).json({
-        error: 'Failed to delete audiobook',
+        error: 'Failed to delete new video',
       });
     }
   } catch (error) {
     res.status(500).json({
-      error: 'Failed to delete audiobook',
+      error: 'Failed to delete new video',
       message: error.message,
     });
   }

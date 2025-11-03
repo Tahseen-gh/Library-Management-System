@@ -9,6 +9,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Patrons } from './pages/Patrons';
 import { CheckInItem } from './pages/CheckInItem';
 import { CheckOutItem } from './pages/CheckOutItem';
+import { ReshelveItem } from './pages/ReshelveItem';
 import { BookPage } from './pages/Book';
 import { Logo } from './components/common/Logo';
 import { PatronPage } from './pages/PatronPage';
@@ -41,6 +42,7 @@ function App() {
             <Route path="admin" element={<AdminPanel />} />
             <Route path="checkin" element={<CheckInItem />} />
             <Route path="checkout" element={<CheckOutItem />} />
+            <Route path="reshelve" element={<ReshelveItem />} />
             <Route path="logo" element={<Logo />} />
             <Route path="books">
               <Route path=":book_id" element={<BookPage />} />

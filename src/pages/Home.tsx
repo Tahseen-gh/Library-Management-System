@@ -197,8 +197,8 @@ export const Home = () => {
       case 'VIDEO':
         days = 7;
         break;
-      case 'AUDIOBOOK':
-        days = 28;
+      case 'NEW_VIDEO':
+        days = 3;
         break;
     }
 
@@ -442,7 +442,7 @@ export const Home = () => {
                 </Typography>
                 <Typography variant="body2" sx={{ color: '#000000' }}>• Books: 4 weeks</Typography>
                 <Typography variant="body2" sx={{ color: '#000000' }}>• Movies: 1 week</Typography>
-                <Typography variant="body2" sx={{ color: '#000000' }}>• Audiobooks: 4 weeks</Typography>
+                <Typography variant="body2" sx={{ color: '#000000' }}>• New Movies: 3 days</Typography>
               </Box>
             </Box>
 

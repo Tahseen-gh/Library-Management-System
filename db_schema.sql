@@ -43,7 +43,9 @@ CREATE TABLE PATRONS (
     last_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE,
     phone VARCHAR(50),
+    address TEXT,
     birthday DATE,
+    card_expiration DATE,
     balance DECIMAL(10, 2) DEFAULT 0.00,
     isActive BOOLEAN DEFAULT TRUE,
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -53,7 +55,7 @@ CREATE TABLE PATRONS (
 CREATE TABLE LIBRARY_ITEMS (
     id VARCHAR(255) PRIMARY KEY,
     title VARCHAR(500) NOT NULL,
-    item_type VARCHAR(50) NOT NULL, -- 'BOOK', 'VIDEO', 'AUDIOBOOK'
+    item_type VARCHAR(50) NOT NULL, -- 'BOOK', 'VIDEO', 'NEW_VIDEO'
     description TEXT,
     publication_year INT,
     cost DECIMAL(10, 2),
@@ -94,15 +96,16 @@ CREATE TABLE VIDEOS (
     FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE
 );
 
--- AUDIOBOOKS table (subclass of LIBRARY_ITEMS)
-CREATE TABLE AUDIOBOOKS (
+-- NEW_VIDEOS table (subclass of LIBRARY_ITEMS) - New movie releases with 3-day loan period
+CREATE TABLE NEW_VIDEOS (
     id VARCHAR(255) PRIMARY KEY,
-    narrator VARCHAR(255),
-    publisher VARCHAR(255),
+    director VARCHAR(255),
+    studio VARCHAR(255),
     genre VARCHAR(100),
     cover_image_url VARCHAR(500),
     duration_minutes INT,
-    format VARCHAR(50), -- 'CD', 'MP3', 'Digital', etc.
+    format VARCHAR(50), -- 'DVD', 'Blu-ray', '4K', etc.
+    rating VARCHAR(10),
     isbn VARCHAR(20),
     library_item_id VARCHAR(255) NOT NULL,
     FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE

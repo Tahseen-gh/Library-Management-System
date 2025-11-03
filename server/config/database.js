@@ -52,7 +52,9 @@ const create_tables = async () => {
         last_name TEXT NOT NULL,
         email TEXT UNIQUE,
         phone TEXT,
+        address TEXT,
         birthday DATE,
+        card_expiration DATE,
         balance REAL DEFAULT 0.00,
         isActive BOOLEAN DEFAULT 1,
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -110,16 +112,17 @@ const create_tables = async () => {
       )
     `);
 
-    // Create AUDIOBOOKS table (subclass of LIBRARY_ITEMS)
+    // Create NEW_VIDEOS table (subclass of LIBRARY_ITEMS) - New movie releases with 3-day loan
     await db.exec(`
-      CREATE TABLE IF NOT EXISTS AUDIOBOOKS (
+      CREATE TABLE IF NOT EXISTS NEW_VIDEOS (
         id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
-        narrator TEXT,
-        publisher TEXT,
+        director TEXT,
+        studio TEXT,
         genre TEXT,
         cover_image_url TEXT,
         duration_minutes INTEGER,
         format TEXT,
+        rating TEXT,
         isbn TEXT,
         library_item_id TEXT NOT NULL,
         FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE

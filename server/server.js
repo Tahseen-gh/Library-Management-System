@@ -17,8 +17,9 @@ const branches_routes = require('./routes/branches');
 const item_copies_routes = require('./routes/library_item_copies');
 const books_routes = require('./routes/books');
 const videos_routes = require('./routes/videos');
-const audiobooks_routes = require('./routes/audiobooks');
+const new_videos_routes = require('./routes/audiobooks'); // File will be renamed to new_videos.js
 const fines_routes = require('./routes/fines');
+const reports_routes = require('./routes/reports');
 
 // Middleware
 app.use(helmet()); // Security headers
@@ -54,8 +55,9 @@ app.use(`${api_base}/branches`, branches_routes);
 app.use(`${api_base}/item-copies`, item_copies_routes);
 app.use(`${api_base}/books`, books_routes);
 app.use(`${api_base}/videos`, videos_routes);
-app.use(`${api_base}/audiobooks`, audiobooks_routes);
+app.use(`${api_base}/new-videos`, new_videos_routes);
 app.use(`${api_base}/fines`, fines_routes);
+app.use(`${api_base}/reports`, reports_routes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

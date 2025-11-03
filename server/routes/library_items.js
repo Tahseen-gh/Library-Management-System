@@ -9,8 +9,8 @@ const router = express.Router();
 const validate_library_item = [
   body('title').notEmpty().withMessage('Title is required'),
   body('item_type')
-    .isIn(['BOOK', 'VIDEO', 'AUDIOBOOK'])
-    .withMessage('Invalid item type. Must be BOOK, VIDEO, or AUDIOBOOK'),
+    .isIn(['BOOK', 'VIDEO', 'NEW_VIDEO'])
+    .withMessage('Invalid item type. Must be BOOK, VIDEO, or NEW_VIDEO'),
   body('publication_year')
     .optional()
     .isInt({ min: 1000, max: new Date().getFullYear() })
@@ -121,12 +121,12 @@ router.get('/:id/details', async (req, res) => {
         [req.params.id]
       );
       details = video_details[0] || null;
-    } else if (library_item.item_type === 'AUDIOBOOK') {
-      const audiobook_details = await db.execute_query(
-        'SELECT * FROM AUDIOBOOKS WHERE library_item_id = ?',
+    } else if (library_item.item_type === 'NEW_VIDEO') {
+      const new_video_details = await db.execute_query(
+        'SELECT * FROM NEW_VIDEOS WHERE library_item_id = ?',
         [req.params.id]
       );
-      details = audiobook_details[0] || null;
+      details = new_video_details[0] || null;
     }
 
     res.json({

@@ -206,11 +206,10 @@ router.post(
           loan_duration_days = 28; // 4 weeks
           break;
         case 'VIDEO':
-          // TODO: Distinguish "new movies" for 3-day loans
           loan_duration_days = 7; // 1 week for movies
           break;
-        case 'AUDIOBOOK':
-          loan_duration_days = 28; // Same as books
+        case 'NEW_VIDEO':
+          loan_duration_days = 3; // 3 days for new movie releases
           break;
         default:
           loan_duration_days = 14; // Default 2 weeks
@@ -308,9 +307,10 @@ router.post(
         updatedAt: return_date,
       });
 
-      // Update library item copy status to 'available' - US 3.7
+      // Update library item copy status to 'returned' (not 'available') - HIGHEST PRIORITY REQUIREMENT
+      // Item should be 'returned' until it's reshelved
       const update_data = {
-        status: 'available',
+        status: 'returned',
         condition: new_condition || transaction.condition,
         updatedAt: return_date,
       };
@@ -353,6 +353,57 @@ router.post(
     } catch (error) {
       res.status(500).json({
         error: 'Failed to checkin item',
+        message: error.message,
+      });
+    }
+  }
+);
+
+// POST /api/v1/transactions/reshelve - Reshelve item (HIGHEST PRIORITY REQUIREMENT)
+// Changes item status from 'returned' to 'available'
+router.post(
+  '/reshelve',
+  [body('copy_id').notEmpty().withMessage('Copy ID is required')],
+  handle_validation_errors,
+  async (req, res) => {
+    try {
+      const { copy_id } = req.body;
+
+      // Get library item copy
+      const library_item_copy = await db.get_by_id('LIBRARY_ITEM_COPIES', copy_id);
+
+      if (!library_item_copy) {
+        return res.status(404).json({
+          error: 'Library item copy not found',
+        });
+      }
+
+      // Verify item is in 'returned' status
+      if (library_item_copy.status !== 'returned') {
+        return res.status(400).json({
+          error: `Item cannot be reshelved. Current status: ${library_item_copy.status}. Only items with 'returned' status can be reshelved.`,
+        });
+      }
+
+      // Update library item copy status to 'available'
+      const reshelve_date = new Date().toISOString();
+      await db.update_record('LIBRARY_ITEM_COPIES', copy_id, {
+        status: 'available',
+        updatedAt: reshelve_date,
+      });
+
+      res.json({
+        success: true,
+        message: 'Item reshelved successfully',
+        data: {
+          copy_id,
+          status: 'available',
+          reshelved_at: reshelve_date,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({
+        error: 'Failed to reshelve item',
         message: error.message,
       });
     }

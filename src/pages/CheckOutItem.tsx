@@ -197,16 +197,16 @@ export const CheckOutItem: React.FC = () => {
       case 'VIDEO':
         days = 7; // 1 week
         break;
-      case 'AUDIOBOOK':
-        days = 28; // 4 weeks
+      case 'NEW_VIDEO':
+        days = 3; // 3 days for new movies
         break;
     }
 
     const due_date = new Date(today.getTime() + days * 24 * 60 * 60 * 1000);
-    return due_date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    return due_date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   };
 
@@ -397,7 +397,7 @@ export const CheckOutItem: React.FC = () => {
                 </Typography>
                 <Typography variant="body2">• Books: 4 weeks</Typography>
                 <Typography variant="body2">• Movies: 1 week</Typography>
-                <Typography variant="body2">• Audiobooks: 4 weeks</Typography>
+                <Typography variant="body2">• New Movies: 3 days</Typography>
               </Box>
             </Box>
 

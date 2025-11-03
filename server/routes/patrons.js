@@ -167,6 +167,23 @@ router.get('/:id/checkout-eligibility', async (req, res) => {
       });
     }
 
+    // Check card expiration - HIGHEST PRIORITY REQUIREMENT
+    if (patron.card_expiration) {
+      const expiration_date = new Date(patron.card_expiration);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      expiration_date.setHours(0, 0, 0, 0);
+
+      if (expiration_date < today) {
+        return res.status(200).json({
+          eligible: false,
+          reason: 'card_expired',
+          card_expiration: patron.card_expiration,
+          message: 'Library card has expired. Please renew your card before checkout.',
+        });
+      }
+    }
+
     // Check for outstanding fees - US 2.7
     if (patron.balance > 0) {
       return res.status(200).json({
@@ -223,7 +240,9 @@ router.post(
         last_name: req.body.last_name,
         email: req.body.email || null,
         phone: req.body.phone || null,
+        address: req.body.address || null,
         birthday: req.body.birthday || null,
+        card_expiration: req.body.card_expiration || null,
         balance: req.body.balance || 0.0,
         isActive: true,
         createdAt: new Date().toISOString(),

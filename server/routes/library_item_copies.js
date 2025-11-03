@@ -304,4 +304,130 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// GET /api/v1/item-copies/:id/label - Generate item label (MEDIUM PRIORITY REQUIREMENT)
+router.get('/:id/label', async (req, res) => {
+  try {
+    const copy = await db.get_by_id('LIBRARY_ITEM_COPIES', req.params.id);
+
+    if (!copy) {
+      return res.status(404).json({
+        error: 'Library item copy not found',
+      });
+    }
+
+    // Get library item details
+    const library_item = await db.get_by_id('LIBRARY_ITEMS', copy.library_item_id);
+
+    if (!library_item) {
+      return res.status(404).json({
+        error: 'Library item not found',
+      });
+    }
+
+    // Get branch details
+    const branch = await db.get_by_id('BRANCHES', copy.branch_id);
+
+    // Generate label data
+    const label_data = {
+      copy_id: copy.id,
+      title: library_item.title,
+      item_type: library_item.item_type,
+      library_of_congress_code: library_item.library_of_congress_code || 'N/A',
+      branch_name: branch ? branch.branch_name : 'Unknown',
+      branch_location: branch ? branch.address : 'Unknown',
+      condition: copy.condition || 'Good',
+      date_acquired: copy.date_acquired || new Date().toISOString().split('T')[0],
+      barcode: `BC-${copy.id.substring(0, 8).toUpperCase()}`,
+    };
+
+    res.json({
+      success: true,
+      data: label_data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to generate label',
+      message: error.message,
+    });
+  }
+});
+
+// POST /api/v1/item-copies/:id/mark-damaged - Mark item as damaged (LOW PRIORITY REQUIREMENT)
+router.post('/:id/mark-damaged', async (req, res) => {
+  try {
+    const copy = await db.get_by_id('LIBRARY_ITEM_COPIES', req.params.id);
+
+    if (!copy) {
+      return res.status(404).json({
+        error: 'Library item copy not found',
+      });
+    }
+
+    const damage_notes = req.body.damage_notes || 'Item marked as damaged';
+    const damage_date = new Date().toISOString();
+
+    // Update item status to damaged
+    await db.update_record('LIBRARY_ITEM_COPIES', req.params.id, {
+      status: 'damaged',
+      notes: damage_notes,
+      updatedAt: damage_date,
+    });
+
+    res.json({
+      success: true,
+      message: 'Item marked as damaged',
+      data: {
+        copy_id: req.params.id,
+        status: 'damaged',
+        damage_notes,
+        damaged_at: damage_date,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to mark item as damaged',
+      message: error.message,
+    });
+  }
+});
+
+// POST /api/v1/item-copies/:id/mark-maintenance - Mark item for maintenance (LOW PRIORITY REQUIREMENT)
+router.post('/:id/mark-maintenance', async (req, res) => {
+  try {
+    const copy = await db.get_by_id('LIBRARY_ITEM_COPIES', req.params.id);
+
+    if (!copy) {
+      return res.status(404).json({
+        error: 'Library item copy not found',
+      });
+    }
+
+    const maintenance_notes = req.body.maintenance_notes || 'Item sent for maintenance';
+    const maintenance_date = new Date().toISOString();
+
+    // Update item status to maintenance
+    await db.update_record('LIBRARY_ITEM_COPIES', req.params.id, {
+      status: 'maintenance',
+      notes: maintenance_notes,
+      updatedAt: maintenance_date,
+    });
+
+    res.json({
+      success: true,
+      message: 'Item marked for maintenance',
+      data: {
+        copy_id: req.params.id,
+        status: 'maintenance',
+        maintenance_notes,
+        maintenance_at: maintenance_date,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to mark item for maintenance',
+      message: error.message,
+    });
+  }
+});
+
 module.exports = router;

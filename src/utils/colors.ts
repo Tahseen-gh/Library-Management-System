@@ -15,7 +15,7 @@ const CHIP_COLORS = blueberryTwilightPalette('dark');
 const ITEM_TYPE_COLOR_MAP: Record<Library_Item_Type, string> = {
   [Library_Item_Type.BOOK]: CHIP_COLORS[0], // Changed from Book
   [Library_Item_Type.VIDEO]: CHIP_COLORS[5], // Changed from Video
-  [Library_Item_Type.AUDIOBOOK]: CHIP_COLORS[4], // Changed from Audiobook
+  [Library_Item_Type.NEW_VIDEO]: CHIP_COLORS[4], // New movie releases
 };
 
 const STATUS_COLOR_MAP: Record<string, ChipColor> = {

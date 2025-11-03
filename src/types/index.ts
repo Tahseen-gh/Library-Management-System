@@ -114,7 +114,7 @@ export interface Branch {
 export enum Library_Item_Type {
   BOOK = 'BOOK', // Changed to uppercase
   VIDEO = 'VIDEO', // Changed to uppercase
-  AUDIOBOOK = 'AUDIOBOOK', // Changed to uppercase
+  NEW_VIDEO = 'NEW_VIDEO', // New movie releases with 3-day loan
 }
 
 export interface Create_Catalog_Item_Form_Data {
@@ -211,13 +211,14 @@ export interface Magazine extends Catalog_Item {
   publisher: string;
 }
 
-export interface Audiobook extends Catalog_Item {
-  narrator?: string; // Made optional
+export interface New_Video extends Catalog_Item {
+  director?: string;
   library_item_id: string; // Changed from catalog_id
-  publisher?: string; // Added publisher
-  genre?: string; // Added genre
-  cover_image_url?: string; // Added cover_image_url
-  duration_minutes?: number; // Changed from duration_hours
-  format?: string; // Added format
-  isbn?: string; // Added isbn
+  studio?: string;
+  genre?: string;
+  cover_image_url?: string;
+  duration_minutes?: number;
+  format?: string; // 'DVD', 'Blu-ray', '4K', etc.
+  rating?: string; // Movie rating
+  isbn?: string;
 }

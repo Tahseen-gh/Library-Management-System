@@ -87,15 +87,15 @@ const getLayoutConfig = (item: Catalog_Item): LayoutConfig => {
           { label: 'Category', value: 'General Interest' },
         ],
       };
-    case Library_Item_Type.Audiobook:
+    case Library_Item_Type.NEW_VIDEO:
       return {
-        title: 'Audiobook Details',
-        descriptionTitle: 'Story Overview',
+        title: 'New Movie Details',
+        descriptionTitle: 'Movie Overview',
         fields: [
-          { label: 'Audiobook ID', value: item.id },
+          { label: 'Movie ID', value: item.id },
           { label: 'Publication Year', value: item.publication_year },
-          { label: 'Duration', value: '8-12 hours' },
-          { label: 'Narrator', value: 'Professional Voice Actor' },
+          { label: 'Duration', value: '90-180 minutes' },
+          { label: 'Director', value: 'Acclaimed Director' },
         ],
         icon: <MenuBook fontSize="large" />,
       };
