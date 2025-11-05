@@ -1,7 +1,7 @@
-const express = require('express');
-const { body, validationResult } = require('express-validator');
-const { v4: uuidv4 } = require('uuid');
-const db = require('../config/database');
+import express from 'express';
+import { body, validationResult } from 'express-validator';
+import { v4 as uuidv4 } from 'uuid';
+import * as db from '../config/database.js';
 
 const router = express.Router();
 
@@ -9,8 +9,8 @@ const router = express.Router();
 const validate_library_item = [
   body('title').notEmpty().withMessage('Title is required'),
   body('item_type')
-    .isIn(['BOOK', 'VIDEO', 'NEW_VIDEO'])
-    .withMessage('Invalid item type. Must be BOOK, VIDEO, or NEW_VIDEO'),
+    .isIn(['Book', 'Magazine', 'Periodical', 'Recording', 'Audiobook', 'Video'])
+    .withMessage('Invalid item type'),
   body('publication_year')
     .optional()
     .isInt({ min: 1000, max: new Date().getFullYear() })
@@ -37,28 +37,21 @@ const handle_validation_errors = (req, res, next) => {
 router.get('/', async (req, res) => {
   try {
     const { item_type, search } = req.query;
-    let query = 'SELECT * FROM LIBRARY_ITEMS';
+    let conditions = '';
     let params = [];
-    let conditions = [];
 
     if (item_type) {
-      conditions.push('item_type = ?');
+      conditions += ' WHERE item_type = ?';
       params.push(item_type);
     }
 
     if (search) {
-      conditions.push('(title LIKE ? OR description LIKE ?)');
+      conditions += item_type ? ' AND' : ' WHERE';
+      conditions += ' (title LIKE ? OR description LIKE ?)';
       params.push(`%${search}%`, `%${search}%`);
     }
 
-    if (conditions.length > 0) {
-      query += ' WHERE ' + conditions.join(' AND ');
-    }
-
-    query += ' ORDER BY title ASC';
-
-    const library_items = await db.execute_query(query, params);
-    
+    const library_items = await db.get_all('LIBRARY_ITEMS', conditions, params);
     res.json({
       success: true,
       count: library_items.length,
@@ -95,55 +88,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// GET /api/v1/library-items/:id/details - Get library item with type-specific details
-router.get('/:id/details', async (req, res) => {
-  try {
-    const library_item = await db.get_by_id('LIBRARY_ITEMS', req.params.id);
-
-    if (!library_item) {
-      return res.status(404).json({
-        error: 'Library item not found',
-      });
-    }
-
-    let details = null;
-    
-    // Fetch type-specific details based on item_type
-    if (library_item.item_type === 'BOOK') {
-      const book_details = await db.execute_query(
-        'SELECT * FROM BOOKS WHERE library_item_id = ?',
-        [req.params.id]
-      );
-      details = book_details[0] || null;
-    } else if (library_item.item_type === 'VIDEO') {
-      const video_details = await db.execute_query(
-        'SELECT * FROM VIDEOS WHERE library_item_id = ?',
-        [req.params.id]
-      );
-      details = video_details[0] || null;
-    } else if (library_item.item_type === 'NEW_VIDEO') {
-      const new_video_details = await db.execute_query(
-        'SELECT * FROM NEW_VIDEOS WHERE library_item_id = ?',
-        [req.params.id]
-      );
-      details = new_video_details[0] || null;
-    }
-
-    res.json({
-      success: true,
-      data: {
-        ...library_item,
-        details: details,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: 'Failed to fetch library item details',
-      message: error.message,
-    });
-  }
-});
-
 // POST /api/v1/library-items - Create new library item
 router.post(
   '/',
@@ -153,18 +97,9 @@ router.post(
     try {
       const library_item_data = {
         id: uuidv4(),
-        title: req.body.title,
-        item_type: req.body.item_type,
-        description: req.body.description || null,
-        publication_year: req.body.publication_year || null,
-        cost: req.body.cost || null,
-        library_of_congress_code: req.body.library_of_congress_code || null,
-        available: req.body.available !== undefined ? req.body.available : true,
-        location: req.body.location || null,
-        condition: req.body.condition || null,
-        date_acquired: req.body.date_acquired || new Date().toISOString().split('T')[0],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        ...req.body,
+        created_at: new Date(),
+        updated_at: new Date(),
       };
 
       await db.create_record('LIBRARY_ITEMS', library_item_data);
@@ -200,7 +135,7 @@ router.put(
 
       const update_data = {
         ...req.body,
-        updatedAt: new Date().toISOString(),
+        updated_at: new Date(),
       };
 
       const updated = await db.update_record(
@@ -259,4 +194,4 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

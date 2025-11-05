@@ -1,20 +1,22 @@
-const express = require('express');
-const { body, validationResult } = require('express-validator');
-const { v4: uuidv4 } = require('uuid');
-const db = require('../config/database');
+import express from 'express';
+import { body, validationResult } from 'express-validator';
+import { v4 as uuidv4 } from 'uuid';
+import * as db from '../config/database.js';
 
-const router = express.Router();
+var router = express.Router();
 
 // Validation middleware
-const validate_fine = [
+var validate_fine = [
   body('transaction_id').notEmpty().withMessage('Transaction ID is required'),
   body('patron_id').notEmpty().withMessage('Patron ID is required'),
-  body('amount').isFloat({ min: 0 }).withMessage('Amount must be a positive number'),
+  body('amount')
+    .isFloat({ min: 0 })
+    .withMessage('Amount must be a positive number'),
 ];
 
 // Helper function to handle validation errors
-const handle_validation_errors = (req, res, next) => {
-  const errors = validationResult(req);
+var handle_validation_errors = function (req, res, next) {
+  var errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({
       error: 'Validation failed',
@@ -25,18 +27,18 @@ const handle_validation_errors = (req, res, next) => {
 };
 
 // GET /api/v1/fines - Get all fines
-router.get('/', async (req, res) => {
+router.get('/', async function (req, res) {
   try {
-    const { unpaid_only } = req.query;
-    let query = 'SELECT * FROM FINES';
-    
+    var unpaid_only = req.query.unpaid_only;
+    var query = 'SELECT * FROM FINES';
+
     if (unpaid_only === 'true') {
       query += ' WHERE is_paid = 0';
     }
-    
-    query += ' ORDER BY createdAt DESC';
 
-    const fines = await db.execute_query(query);
+    query += ' ORDER BY created_at DESC';
+
+    var fines = await db.execute_query(query);
 
     res.json({
       success: true,
@@ -52,9 +54,9 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/v1/fines/:id - Get single fine
-router.get('/:id', async (req, res) => {
+router.get('/:id', async function (req, res) {
   try {
-    const fine = await db.get_by_id('FINES', req.params.id);
+    var fine = await db.get_by_id('FINES', req.params.id);
 
     if (!fine) {
       return res.status(404).json({
@@ -79,9 +81,9 @@ router.post(
   '/',
   validate_fine,
   handle_validation_errors,
-  async (req, res) => {
+  async function (req, res) {
     try {
-      const fine_data = {
+      var fine_data = {
         id: uuidv4(),
         transaction_id: req.body.transaction_id,
         patron_id: req.body.patron_id,
@@ -91,7 +93,7 @@ router.post(
         paid_date: null,
         payment_method: null,
         notes: req.body.notes || null,
-        createdAt: new Date().toISOString(),
+        created_at: new Date().toISOString(),
       };
 
       await db.create_record('FINES', fine_data);
@@ -117,9 +119,9 @@ router.post(
 );
 
 // PUT /api/v1/fines/:id/pay - Mark fine as paid
-router.put('/:id/pay', async (req, res) => {
+router.put('/:id/pay', async function (req, res) {
   try {
-    const fine = await db.get_by_id('FINES', req.params.id);
+    var fine = await db.get_by_id('FINES', req.params.id);
 
     if (!fine) {
       return res.status(404).json({
@@ -133,7 +135,7 @@ router.put('/:id/pay', async (req, res) => {
       });
     }
 
-    const update_data = {
+    var update_data = {
       is_paid: true,
       paid_date: new Date().toISOString().split('T')[0],
       payment_method: req.body.payment_method || 'Cash',
@@ -160,9 +162,9 @@ router.put('/:id/pay', async (req, res) => {
 });
 
 // DELETE /api/v1/fines/:id - Delete fine
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async function (req, res) {
   try {
-    const fine = await db.get_by_id('FINES', req.params.id);
+    var fine = await db.get_by_id('FINES', req.params.id);
 
     if (!fine) {
       return res.status(404).json({
@@ -184,7 +186,7 @@ router.delete('/:id', async (req, res) => {
       );
     }
 
-    const deleted = await db.delete_record('FINES', req.params.id);
+    var deleted = await db.delete_record('FINES', req.params.id);
 
     if (deleted) {
       res.json({
@@ -204,4 +206,4 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

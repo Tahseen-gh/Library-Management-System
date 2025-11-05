@@ -1,6 +1,6 @@
-const express = require('express');
-const { body, validationResult } = require('express-validator');
-const db = require('../config/database');
+import express from 'express';
+import { body, validationResult } from 'express-validator';
+import * as db from '../config/database.js';
 
 const router = express.Router();
 
@@ -82,17 +82,17 @@ router.get('/:id/inventory', async (req, res) => {
 
     const inventory = await db.execute_query(
       `SELECT 
-        li.id as library_item_id,
-        li.title,
-        li.item_type,
-        COUNT(lic.id) as total_copies,
-        SUM(CASE WHEN lic.status = 'available' THEN 1 ELSE 0 END) as available_copies,
-        SUM(CASE WHEN lic.status = 'borrowed' THEN 1 ELSE 0 END) as checked_out_copies
-       FROM LIBRARY_ITEMS li
-       JOIN LIBRARY_ITEM_COPIES lic ON li.id = lic.library_item_id
-       WHERE lic.branch_id = ?
-       GROUP BY li.id, li.title, li.item_type
-       ORDER BY li.title`,
+        ci.id as library_item_id,
+        ci.title,
+        ci.item_type,
+        COUNT(ic.id) as total_copies,
+        SUM(CASE WHEN ic.status = 'Available' THEN 1 ELSE 0 END) as available_copies,
+        SUM(CASE WHEN ic.status = 'Checked Out' THEN 1 ELSE 0 END) as checked_out_copies
+       FROM LIBRARY_ITEMS ci
+       JOIN LIBRARY_ITEM_COPIES ic ON ci.id = ic.library_item_id
+       WHERE ic.branch_id = ?
+       GROUP BY ci.id, ci.title, ci.item_type
+       ORDER BY ci.title`,
       [req.params.id]
     );
 
@@ -120,7 +120,7 @@ router.post(
       const branch_data = {
         ...req.body,
         is_main: req.body.is_main || false,
-        createdAt: new Date().toISOString(),
+        created_at: new Date(),
       };
 
       const branch_id = await db.create_record('BRANCHES', branch_data);
@@ -223,4 +223,4 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

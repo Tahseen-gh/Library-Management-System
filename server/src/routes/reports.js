@@ -1,15 +1,18 @@
-const express = require('express');
-const db = require('../config/database');
+import express from 'express';
+import * as db from '../config/database.js';
 
-const router = express.Router();
+var router = express.Router();
 
 // GET /api/v1/reports/checkouts - Generate checkout report (LOW PRIORITY REQUIREMENT)
-router.get('/checkouts', async (req, res) => {
+router.get('/checkouts', async function (req, res) {
   try {
-    const { start_date, end_date, branch_id, item_type } = req.query;
+    var start_date = req.query.start_date;
+    var end_date = req.query.end_date;
+    var branch_id = req.query.branch_id;
+    var item_type = req.query.item_type;
 
-    let query = `
-      SELECT
+    var query = `
+      SELECT 
         t.id as transaction_id,
         t.checkout_date,
         t.due_date,
@@ -28,7 +31,7 @@ router.get('/checkouts', async (req, res) => {
       JOIN BRANCHES b ON lic.branch_id = b.id
       WHERE t.transaction_type = 'checkout'
     `;
-    let params = [];
+    var params = [];
 
     if (start_date) {
       query += ' AND t.checkout_date >= ?';
@@ -52,12 +55,16 @@ router.get('/checkouts', async (req, res) => {
 
     query += ' ORDER BY t.checkout_date DESC';
 
-    const results = await db.execute_query(query, params);
+    var results = await db.execute_query(query, params);
 
     // Calculate statistics
-    const total_checkouts = results.length;
-    const active_checkouts = results.filter(r => r.status === 'active').length;
-    const returned_checkouts = results.filter(r => r.status === 'returned').length;
+    var total_checkouts = results.length;
+    var active_checkouts = results.filter(function (r) {
+      return r.status === 'active';
+    }).length;
+    var returned_checkouts = results.filter(function (r) {
+      return r.status === 'returned';
+    }).length;
 
     res.json({
       success: true,
@@ -82,12 +89,14 @@ router.get('/checkouts', async (req, res) => {
 });
 
 // GET /api/v1/reports/returns - Generate returns report (LOW PRIORITY REQUIREMENT)
-router.get('/returns', async (req, res) => {
+router.get('/returns', async function (req, res) {
   try {
-    const { start_date, end_date, branch_id } = req.query;
+    var start_date = req.query.start_date;
+    var end_date = req.query.end_date;
+    var branch_id = req.query.branch_id;
 
-    let query = `
-      SELECT
+    var query = `
+      SELECT 
         t.id as transaction_id,
         t.checkout_date,
         t.due_date,
@@ -106,9 +115,9 @@ router.get('/returns', async (req, res) => {
       JOIN LIBRARY_ITEM_COPIES lic ON t.copy_id = lic.id
       JOIN LIBRARY_ITEMS li ON lic.library_item_id = li.id
       JOIN BRANCHES b ON lic.branch_id = b.id
-      WHERE t.status = 'returned' AND t.return_date IS NOT NULL
+      WHERE t.status = 'Returned' AND t.return_date IS NOT NULL
     `;
-    let params = [];
+    var params = [];
 
     if (start_date) {
       query += ' AND t.return_date >= ?';
@@ -127,13 +136,17 @@ router.get('/returns', async (req, res) => {
 
     query += ' ORDER BY t.return_date DESC';
 
-    const results = await db.execute_query(query, params);
+    var results = await db.execute_query(query, params);
 
     // Calculate statistics
-    const total_returns = results.length;
-    const late_returns = results.filter(r => r.fine_amount > 0).length;
-    const on_time_returns = total_returns - late_returns;
-    const total_fines = results.reduce((sum, r) => sum + (r.fine_amount || 0), 0);
+    var total_returns = results.length;
+    var late_returns = results.filter(function (r) {
+      return r.fine_amount > 0;
+    }).length;
+    var on_time_returns = total_returns - late_returns;
+    var total_fines = results.reduce(function (sum, r) {
+      return sum + (r.fine_amount || 0);
+    }, 0);
 
     res.json({
       success: true,
@@ -159,12 +172,14 @@ router.get('/returns', async (req, res) => {
 });
 
 // GET /api/v1/reports/fines - Generate fines report (LOW PRIORITY REQUIREMENT)
-router.get('/fines', async (req, res) => {
+router.get('/fines', async function (req, res) {
   try {
-    const { start_date, end_date, paid_status } = req.query;
+    var start_date = req.query.start_date;
+    var end_date = req.query.end_date;
+    var paid_status = req.query.paid_status;
 
-    let query = `
-      SELECT
+    var query = `
+      SELECT 
         f.id as fine_id,
         f.amount,
         f.reason,
@@ -186,7 +201,7 @@ router.get('/fines', async (req, res) => {
       JOIN LIBRARY_ITEMS li ON lic.library_item_id = li.id
       WHERE 1=1
     `;
-    let params = [];
+    var params = [];
 
     if (start_date) {
       query += ' AND f.createdAt >= ?';
@@ -206,15 +221,25 @@ router.get('/fines', async (req, res) => {
 
     query += ' ORDER BY f.createdAt DESC';
 
-    const results = await db.execute_query(query, params);
+    var results = await db.execute_query(query, params);
 
     // Calculate statistics
-    const total_fines_count = results.length;
-    const paid_fines = results.filter(r => r.is_paid).length;
-    const unpaid_fines = total_fines_count - paid_fines;
-    const total_amount = results.reduce((sum, r) => sum + (r.amount || 0), 0);
-    const paid_amount = results.filter(r => r.is_paid).reduce((sum, r) => sum + (r.amount || 0), 0);
-    const unpaid_amount = total_amount - paid_amount;
+    var total_fines_count = results.length;
+    var paid_fines = results.filter(function (r) {
+      return r.is_paid;
+    }).length;
+    var unpaid_fines = total_fines_count - paid_fines;
+    var total_amount = results.reduce(function (sum, r) {
+      return sum + (r.amount || 0);
+    }, 0);
+    var paid_amount = results
+      .filter(function (r) {
+        return r.is_paid;
+      })
+      .reduce(function (sum, r) {
+        return sum + (r.amount || 0);
+      }, 0);
+    var unpaid_amount = total_amount - paid_amount;
 
     res.json({
       success: true,
@@ -242,42 +267,48 @@ router.get('/fines', async (req, res) => {
 });
 
 // GET /api/v1/reports/overview - Generate overall library statistics (LOW PRIORITY REQUIREMENT)
-router.get('/overview', async (req, res) => {
+router.get('/overview', async function (req, res) {
   try {
     // Get total items
-    const total_items = await db.execute_query(
-      'SELECT COUNT(*) as count FROM LIBRARY_ITEM_COPIES'
-    );
+    var total_items = await db.execute_query(`
+      SELECT COUNT(*) as count FROM LIBRARY_ITEM_COPIES
+    `);
 
     // Get available items
-    const available_items = await db.execute_query(
-      'SELECT COUNT(*) as count FROM LIBRARY_ITEM_COPIES WHERE status = "available"'
-    );
+    var available_items = await db.execute_query(`
+      SELECT COUNT(*) as count FROM LIBRARY_ITEM_COPIES 
+      WHERE status = "Available"
+    `);
 
     // Get borrowed items
-    const borrowed_items = await db.execute_query(
-      'SELECT COUNT(*) as count FROM LIBRARY_ITEM_COPIES WHERE status = "borrowed"'
-    );
+    var borrowed_items = await db.execute_query(`
+      SELECT COUNT(*) as count FROM LIBRARY_ITEM_COPIES 
+      WHERE status = "Borrowed"
+    `);
 
     // Get damaged items
-    const damaged_items = await db.execute_query(
-      'SELECT COUNT(*) as count FROM LIBRARY_ITEM_COPIES WHERE status = "damaged"'
-    );
+    var damaged_items = await db.execute_query(`
+      SELECT COUNT(*) as count FROM LIBRARY_ITEM_COPIES 
+      WHERE status = "Damaged"
+    `);
 
     // Get total patrons
-    const total_patrons = await db.execute_query(
-      'SELECT COUNT(*) as count FROM PATRONS WHERE isActive = 1'
-    );
+    var total_patrons = await db.execute_query(`
+      SELECT COUNT(*) as count FROM PATRONS 
+      WHERE is_active = 1
+    `);
 
     // Get active checkouts
-    const active_checkouts = await db.execute_query(
-      'SELECT COUNT(*) as count FROM TRANSACTIONS WHERE status = "active"'
-    );
+    var active_checkouts = await db.execute_query(`
+      SELECT COUNT(*) as count FROM TRANSACTIONS 
+      WHERE status = "Active"
+    `);
 
     // Get total outstanding fines
-    const outstanding_fines = await db.execute_query(
-      'SELECT SUM(balance) as total FROM PATRONS WHERE balance > 0'
-    );
+    var outstanding_fines = await db.execute_query(`
+      SELECT SUM(balance) as total FROM PATRONS 
+      WHERE balance > 0
+    `);
 
     res.json({
       success: true,
@@ -300,4 +331,4 @@ router.get('/overview', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
