@@ -106,9 +106,8 @@ export const dataService = {
         item_type: catalog_item.item_type,
         description: catalog_item.description,
         publication_year: catalog_item.publication_year,
-        congress_code: catalog_item.congress_code,
         author: '', // These would come from books table
-        genre: [],
+        genre: '',
         publisher: '',
         cover_img_url: '',
         catalog_id: catalog_item.id,
@@ -141,7 +140,7 @@ export const dataService = {
     return {
       ...created_item,
       author: book.author || '',
-      genre: book?.genre || [],
+      genre: book?.genre || '',
       publisher: book?.publisher || '',
       cover_img_url: book?.cover_img_url || '',
       catalog_id: created_item.id,
@@ -154,7 +153,6 @@ export const dataService = {
         title: updates.title,
         description: updates.description,
         publication_year: updates.publication_year,
-        congress_code: updates.congress_code,
       };
 
       await api_request(`/catalog-items/${id}`, {
@@ -334,8 +332,9 @@ export const dataService = {
     return copies.map((item: Item_Copy) => item.id);
   },
 
-  async get_all_copies(): Promise<Item_Copy[]> {
-    return await api_request<Item_Copy[]>('/item-copies');
+  async get_all_copies(branch_id?: number): Promise<Item_Copy[]> {
+    const url = branch_id ? `/item-copies?branch_id=${branch_id}` : '/item-copies';
+    return await api_request<Item_Copy[]>(url);
   },
 
   async get_copy_by_id(copy_id: string): Promise<Item_Copy | null> {

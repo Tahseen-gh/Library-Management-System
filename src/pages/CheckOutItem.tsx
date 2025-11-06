@@ -269,21 +269,28 @@ export const CheckOutItem: React.FC = () => {
               Enter the patron's library card ID number to verify eligibility.
             </Typography>
 
-            <TextField
-              fullWidth
-              label="Patron ID"
-              value={patron_id_input}
-              onChange={(e) => set_patron_id_input(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' && patron_id_input) {
-                  check_patron_eligibility();
-                }
-              }}
-              placeholder="Enter patron ID"
-              autoFocus
-              disabled={checking_patron}
-              sx={{ mb: 3 }}
-            />
+        <TextField
+          fullWidth
+          label="Patron ID"
+          value={patron_id_input}
+          onChange={(e) => {
+            // Only allow numeric input
+            const value = e.target.value;
+            if (value === '' || /^\d+$/.test(value)) {
+              set_patron_id_input(value);
+            }
+          }}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter' && patron_id_input) {
+              check_patron_eligibility();
+            }
+          }}
+          placeholder="Enter numeric patron ID (e.g., 100)"
+          autoFocus
+          disabled={checking_patron}
+          helperText="Patron ID must be numeric"
+          sx={{ mb: 3 }}
+        />
 
             <Button
               fullWidth

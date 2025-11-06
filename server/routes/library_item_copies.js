@@ -222,49 +222,44 @@ router.post(
 );
 
 // PUT /api/v1/library-item-copies/:id - Update library item copy
-router.put(
-  '/:id',
-  validate_library_item_copy,
-  handle_validation_errors,
-  async (req, res) => {
-    try {
-      const existing_copy = await db.get_by_id('LIBRARY_ITEM_COPIES', req.params.id);
+router.put('/:id', async (req, res) => {
+  try {
+    const existing_copy = await db.get_by_id('LIBRARY_ITEM_COPIES', parseInt(req.params.id));
 
-      if (!existing_copy) {
-        return res.status(404).json({
-          error: 'Library item copy not found',
-        });
-      }
-
-      const update_data = {
-        ...req.body,
-        updatedAt: new Date().toISOString(),
-      };
-
-      const updated = await db.update_record(
-        'LIBRARY_ITEM_COPIES',
-        req.params.id,
-        update_data
-      );
-
-      if (updated) {
-        res.json({
-          success: true,
-          message: 'Library item copy updated successfully',
-        });
-      } else {
-        res.status(500).json({
-          error: 'Failed to update library item copy',
-        });
-      }
-    } catch (error) {
-      res.status(500).json({
-        error: 'Failed to update library item copy',
-        message: error.message,
+    if (!existing_copy) {
+      return res.status(404).json({
+        error: 'Library item copy not found',
       });
     }
+
+    const update_data = {
+      ...req.body,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const updated = await db.update_record(
+      'LIBRARY_ITEM_COPIES',
+      parseInt(req.params.id),
+      update_data
+    );
+
+    if (updated) {
+      res.json({
+        success: true,
+        message: 'Library item copy updated successfully',
+      });
+    } else {
+      res.status(500).json({
+        error: 'Failed to update library item copy',
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to update library item copy',
+      message: error.message,
+    });
   }
-);
+});
 
 // DELETE /api/v1/library-item-copies/:id - Delete library item copy
 router.delete('/:id', async (req, res) => {

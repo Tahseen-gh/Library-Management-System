@@ -35,7 +35,7 @@ const create_tables = async () => {
     // Create BRANCHES table first (referenced by other tables)
     await db.exec(`
       CREATE TABLE IF NOT EXISTS BRANCHES (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         branch_name TEXT NOT NULL,
         address TEXT,
         phone TEXT,
@@ -47,7 +47,7 @@ const create_tables = async () => {
     // Create PATRONS table
     await db.exec(`
       CREATE TABLE IF NOT EXISTS PATRONS (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         first_name TEXT NOT NULL,
         last_name TEXT NOT NULL,
         email TEXT UNIQUE,
@@ -64,7 +64,7 @@ const create_tables = async () => {
     // Create LIBRARY_ITEMS table (parent/superclass)
     await db.exec(`
       CREATE TABLE IF NOT EXISTS LIBRARY_ITEMS (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         item_type TEXT NOT NULL,
         description TEXT,
@@ -83,14 +83,14 @@ const create_tables = async () => {
     // Create BOOKS table (subclass of LIBRARY_ITEMS)
     await db.exec(`
       CREATE TABLE IF NOT EXISTS BOOKS (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         author TEXT,
         publisher TEXT,
         genre TEXT,
         cover_image_url TEXT,
         number_of_pages INTEGER,
         isbn TEXT,
-        library_item_id TEXT NOT NULL,
+        library_item_id INTEGER NOT NULL,
         FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE
       )
     `);
@@ -98,7 +98,7 @@ const create_tables = async () => {
     // Create VIDEOS table (subclass of LIBRARY_ITEMS)
     await db.exec(`
       CREATE TABLE IF NOT EXISTS VIDEOS (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         director TEXT,
         studio TEXT,
         genre TEXT,
@@ -107,7 +107,7 @@ const create_tables = async () => {
         format TEXT,
         rating TEXT,
         isbn TEXT,
-        library_item_id TEXT NOT NULL,
+        library_item_id INTEGER NOT NULL,
         FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE
       )
     `);
@@ -115,7 +115,7 @@ const create_tables = async () => {
     // Create NEW_VIDEOS table (subclass of LIBRARY_ITEMS) - New movie releases with 3-day loan
     await db.exec(`
       CREATE TABLE IF NOT EXISTS NEW_VIDEOS (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         director TEXT,
         studio TEXT,
         genre TEXT,
@@ -124,7 +124,7 @@ const create_tables = async () => {
         format TEXT,
         rating TEXT,
         isbn TEXT,
-        library_item_id TEXT NOT NULL,
+        library_item_id INTEGER NOT NULL,
         FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE
       )
     `);
@@ -132,9 +132,10 @@ const create_tables = async () => {
     // Create LIBRARY_ITEM_COPIES table
     await db.exec(`
       CREATE TABLE IF NOT EXISTS LIBRARY_ITEM_COPIES (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
-        library_item_id TEXT NOT NULL,
-        branch_id TEXT NOT NULL,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        library_item_id INTEGER NOT NULL,
+        branch_id INTEGER NOT NULL,
+        return_branch_id INTEGER,
         condition TEXT,
         status TEXT DEFAULT 'available',
         cost REAL,
@@ -144,16 +145,18 @@ const create_tables = async () => {
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
         updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE,
-        FOREIGN KEY (branch_id) REFERENCES BRANCHES(id) ON DELETE CASCADE
+        FOREIGN KEY (branch_id) REFERENCES BRANCHES(id) ON DELETE CASCADE,
+        FOREIGN KEY (return_branch_id) REFERENCES BRANCHES(id) ON DELETE SET NULL
       )
     `);
 
     // Create TRANSACTIONS table
     await db.exec(`
       CREATE TABLE IF NOT EXISTS TRANSACTIONS (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
-        copy_id TEXT,
-        patron_id TEXT,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        copy_id INTEGER,
+        patron_id INTEGER,
+        branch_id INTEGER,
         transaction_type TEXT,
         checkout_date TEXT,
         due_date TEXT,
@@ -164,16 +167,17 @@ const create_tables = async () => {
         createdAt TEXT DEFAULT (datetime('now')),
         updatedAt TEXT,
         FOREIGN KEY(copy_id) REFERENCES LIBRARY_ITEM_COPIES(id) ON DELETE SET NULL,
-        FOREIGN KEY(patron_id) REFERENCES PATRONS(id) ON DELETE SET NULL
+        FOREIGN KEY(patron_id) REFERENCES PATRONS(id) ON DELETE SET NULL,
+        FOREIGN KEY(branch_id) REFERENCES BRANCHES(id) ON DELETE SET NULL
       )
     `);
 
     // Create RESERVATIONS table
     await db.exec(`
       CREATE TABLE IF NOT EXISTS RESERVATIONS (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
-        library_item_id TEXT,
-        patron_id TEXT,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        library_item_id INTEGER,
+        patron_id INTEGER,
         reservation_date TEXT,
         expiry_date TEXT,
         status TEXT,
@@ -189,9 +193,9 @@ const create_tables = async () => {
     // Create FINES table
     await db.exec(`
       CREATE TABLE IF NOT EXISTS FINES (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
-        transaction_id TEXT NOT NULL,
-        patron_id TEXT NOT NULL,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        transaction_id INTEGER NOT NULL,
+        patron_id INTEGER NOT NULL,
         amount REAL NOT NULL,
         reason TEXT,
         is_paid BOOLEAN DEFAULT 0,
@@ -221,7 +225,7 @@ const create_tables = async () => {
     // Insert default branch if none exists
     await db.run(`
       INSERT OR IGNORE INTO BRANCHES (id, branch_name, is_main) 
-      SELECT '1', 'Main Library', 1
+      SELECT 1, 'Main Library', 1
       WHERE NOT EXISTS (SELECT 1 FROM BRANCHES WHERE is_main = 1)
     `);
 

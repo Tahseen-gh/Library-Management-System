@@ -12,6 +12,7 @@ import {
 import { useAllCopies } from '../../hooks/useCopies';
 import type { Branch } from '../../types';
 import { useBranches } from '../../hooks/useBranches';
+import { useBranchContext } from '../../contexts/Branch_Context';
 import { useState } from 'react';
 
 export const CopiesDataGrid = ({
@@ -19,7 +20,8 @@ export const CopiesDataGrid = ({
 }: {
   on_copy_selected: (copy_id: string) => void;
 }) => {
-  const { data: copies, isLoading: loading } = useAllCopies();
+  const { selectedBranch } = useBranchContext();
+  const { data: copies, isLoading: loading } = useAllCopies(selectedBranch?.id);
   const { data: branches } = useBranches();
 
   const [snack, set_snack] = useState<boolean>(false);

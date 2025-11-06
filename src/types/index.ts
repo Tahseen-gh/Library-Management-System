@@ -103,12 +103,12 @@ export interface Patron {
 }
 
 export interface Branch {
-  id: string; // Changed from number to string
+  id: number;
   branch_name: string;
-  address?: string; // Added address
-  phone?: string; // Added phone
+  address?: string;
+  phone?: string;
   is_main: boolean;
-  createdAt: Date; // Added createdAt
+  createdAt: Date;
 }
 
 export enum Library_Item_Type {

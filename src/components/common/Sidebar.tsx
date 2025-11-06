@@ -18,6 +18,9 @@ import {
   SsidChart,
   Groups2,
   Book,
+  CheckCircle,
+  Input,
+  Output,
 } from '@mui/icons-material';
 import { type PropsWithChildren } from 'react';
 
@@ -48,6 +51,12 @@ export const Sidebar = ({
     { text: 'Catalog', path: '/catalog', icon: <Book /> },
     { text: 'Patrons', path: '/patrons', icon: <Groups2 /> },
     { text: 'Transactions', path: '/transactions', icon: <SsidChart /> },
+  ];
+
+  const circulationItems = [
+    { text: 'Check Out', path: '/checkout', icon: <Output /> },
+    { text: 'Check In', path: '/reshelve', icon: <Input /> },
+    { text: 'Mark Available', path: '/mark-available', icon: <CheckCircle /> },
   ];
 
   const adminItems = [
@@ -93,6 +102,45 @@ export const Sidebar = ({
       <Box sx={{ overflow: 'auto', pt: 2 }}>
         <List>
           {menuItems.map((item) => (
+            <ListItem key={item.text} disablePadding>
+              <ListItemButton
+                component={Link}
+                to={item.path}
+                selected={isActive(item.path)}
+                onClick={() => !xsUp && setSidebarOpen(false)}
+                sx={{
+                  mx: 1,
+                  borderRadius: 1,
+                  '&.Mui-selected': {
+                    backgroundColor: 'primary.50',
+                    color: 'primary.main',
+                    '&:hover': {
+                      backgroundColor: 'primary.100',
+                    },
+                  },
+                }}
+              >
+                <ListItemIcon
+                  sx={{
+                    color: isActive(item.path) ? 'primary.main' : 'inherit',
+                    minWidth: 40,
+                  }}
+                >
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText
+                  primary={item.text}
+                  slotProps={{
+                    primary: { fontWeight: isActive(item.path) ? 600 : 400 },
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+          ))}
+
+          <Divider sx={{ my: 1, mx: 2 }} />
+          
+          {circulationItems.map((item) => (
             <ListItem key={item.text} disablePadding>
               <ListItemButton
                 component={Link}

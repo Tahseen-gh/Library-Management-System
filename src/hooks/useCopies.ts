@@ -17,10 +17,10 @@ export const useAllCopyIds = () => {
   });
 };
 
-export const useAllCopies = () => {
+export const useAllCopies = (branch_id?: number) => {
   return useQuery({
-    queryKey: ['all_library_item_copies'], // Changed from 'all_item_copies'
-    queryFn: (): Promise<Item_Copy[]> => dataService.get_all_copies(),
+    queryKey: ['all_library_item_copies', branch_id], // Changed from 'all_item_copies'
+    queryFn: (): Promise<Item_Copy[]> => dataService.get_all_copies(branch_id),
   });
 };
 
