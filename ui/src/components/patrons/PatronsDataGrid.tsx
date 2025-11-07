@@ -9,7 +9,8 @@ import {
 import { useEffect, useState } from 'react';
 import { useAllPatrons } from '../../hooks/usePatrons';
 import { format_date, is_overdue } from '../../utils/dateUtils';
-import { Alert, Box, Link, Snackbar } from '@mui/material';
+import { Alert, Box, Snackbar, Typography } from '@mui/material';
+import { Link } from 'react-router-dom';
 
 const columns: GridColDef[] = [
   {
@@ -23,9 +24,18 @@ const columns: GridColDef[] = [
     flex: 2,
     renderCell: (params: GridRenderCellParams) => (
       <Link
-        sx={{ textDecoration: 'none', color: 'primary' }}
-        href={`/patron/${params.row.id}`}
-      >{`${params.value} ${params.row.last_name}`}</Link>
+        to={`/patron/${params.row.id}`}
+        style={{ textDecoration: 'none', height: '100%', display: 'block' }}
+      >
+        <Typography
+          sx={(theme) => ({
+            textDecoration: 'none',
+            color: `color-mix(in srgb, ${theme.palette.primary.main} 50%, ${theme.palette.text.primary} 50%)`,
+            display: 'inline',
+            fontWeight: 500,
+          })}
+        >{`${params.value} ${params.row.last_name}`}</Typography>
+      </Link>
     ),
   },
   {

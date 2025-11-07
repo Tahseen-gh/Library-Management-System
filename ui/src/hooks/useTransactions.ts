@@ -33,7 +33,7 @@ export const useCheckoutBook = () => {
       due_date,
     }: {
       patron_id: number;
-      copy_id: string;
+      copy_id: number;
       due_date?: Date;
     }) => data_service.checkoutBook(patron_id, copy_id, due_date),
     onSuccess: () => {
@@ -53,7 +53,7 @@ export const useReturnBook = () => {
       new_location_id,
       notes,
     }: {
-      copy_id: string;
+      copy_id: number;
       new_condition?: Condition;
       new_location_id?: number;
       notes?: string;

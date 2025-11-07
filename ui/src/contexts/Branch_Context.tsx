@@ -15,7 +15,7 @@ interface BranchContextType {
   error: string | null;
   selected_branch: Branch | null;
   set_selected_branch: (branch: Branch | null) => void;
-  get_branch_by_id: (id: string) => Branch | undefined;
+  get_branch_by_id: (id: number) => Branch | undefined;
   refresh_branches: () => Promise<void>;
 }
 
@@ -32,7 +32,7 @@ export const Branch_Provider = ({ children }: PropsWithChildren) => {
   } = useBranches();
 
   const get_branch_by_id = useCallback(
-    (id: string): Branch | undefined => {
+    (id: number): Branch | undefined => {
       return branches?.find((branch) => branch.id === id);
     },
     [branches]

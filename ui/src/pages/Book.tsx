@@ -28,7 +28,7 @@ export const BookPage = () => {
     data: copies,
     isLoading: copiesLoading,
     error: copiesError,
-  } = useCopies(book?.library_item_id ?? '');
+  } = useCopies(book?.library_item_id ?? 0);
   const { branches } = useBranchesContext();
 
   if (bookLoading) {

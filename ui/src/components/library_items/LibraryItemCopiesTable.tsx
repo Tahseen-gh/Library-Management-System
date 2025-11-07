@@ -18,7 +18,7 @@ interface CopiesTableProps {
 }
 
 export const CopiesTable = ({ copies, branches }: CopiesTableProps) => {
-  const get_branch_name = (branch_id: string): string => {
+  const get_branch_name = (branch_id: number): string => {
     return (
       branches.find((branch) => branch.id === branch_id)?.branch_name ||
       'Unknown'
@@ -76,7 +76,7 @@ export const CopiesTable = ({ copies, branches }: CopiesTableProps) => {
             >
               <TableCell component="th" scope="row">
                 <Typography
-                  title={copy.id}
+                  title={copy.id.toString()}
                   variant="body2"
                   sx={{
                     fontFamily: 'monospace',
@@ -86,7 +86,7 @@ export const CopiesTable = ({ copies, branches }: CopiesTableProps) => {
                     maxWidth: { xs: 60, sm: 100 },
                   }}
                 >
-                  {copy.id}
+                  {copy.id.toString()}
                 </Typography>
               </TableCell>
               <TableCell>

@@ -32,7 +32,7 @@ const conditions: string[] = ['New', 'Excellent', 'Good', 'Fair', 'Poor'];
 const steps = ['Select Item', 'Confirm Details'];
 
 interface CheckInFormData {
-  copy_id: string;
+  copy_id: number;
   new_condition?: Condition;
   new_location_id?: number;
   notes?: string;
@@ -40,7 +40,7 @@ interface CheckInFormData {
 
 export const CheckInItem: FC = () => {
   const [form_data, set_form_data] = useState<CheckInFormData>({
-    copy_id: '',
+    copy_id: 0,
   });
 
   const [active_step, set_active_step] = useState(0);
@@ -65,7 +65,7 @@ export const CheckInItem: FC = () => {
       // Reset form and go to completion step
       setTimeout(() => {
         set_active_step(steps.length);
-        set_form_data({ copy_id: '' });
+        set_form_data({ copy_id: 0 });
         set_condition('Excellent');
       }, 1000);
     } else if (isError) {
@@ -103,7 +103,7 @@ export const CheckInItem: FC = () => {
 
   const handleReset = () => {
     set_active_step(0);
-    set_form_data({ copy_id: '' });
+    set_form_data({ copy_id: 0 });
     set_condition('Excellent');
   };
 
@@ -112,13 +112,13 @@ export const CheckInItem: FC = () => {
   };
 
   const is_next_disabled = () => {
-    if (active_step === 0 && (!form_data.copy_id || form_data.copy_id === ''))
+    if (active_step === 0 && (!form_data.copy_id || form_data.copy_id === 0))
       return true;
 
     return false;
   };
 
-  const handle_copy_selected = (copy_id: string) => {
+  const handle_copy_selected = (copy_id: number) => {
     set_form_data((prev) => ({ ...prev, copy_id: copy_id }));
   };
 
@@ -302,7 +302,9 @@ export const CheckInItem: FC = () => {
                 }
                 title={
                   is_next_disabled()
-                    ? `Select ${active_step === 0 ? 'patron' : 'item'} to proceed`
+                    ? `Select ${
+                        active_step === 0 ? 'patron' : 'item'
+                      } to proceed`
                     : 'Next page'
                 }
               ></Tooltip>

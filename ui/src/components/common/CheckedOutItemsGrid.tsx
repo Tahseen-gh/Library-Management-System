@@ -61,7 +61,7 @@ const columns: GridColDef[] = [
 export const CheckedOutItemsGrid = ({
   select_item_copy,
 }: {
-  select_item_copy: (copy_id: string) => void;
+  select_item_copy: (copy_id: number) => void;
 }) => {
   const { data, isLoading, refetch } = useActiveTransactions();
 

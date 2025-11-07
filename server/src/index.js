@@ -11,6 +11,10 @@ import patrons_routes from './routes/patrons.js';
 import transactions_routes from './routes/transactions.js';
 import reservations_routes from './routes/reservations.js';
 import branches_routes from './routes/library_branches.js';
+import videos_routes from './routes/videos.js';
+import books_routes from './routes/books.js';
+import audiobooks_routes from './routes/audiobooks.js';
+import reports_routes from './routes/reports.js';
 
 // Load environment variables
 dotenv.config();
@@ -19,15 +23,20 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const api_base = process.env.API_BASE_URL || '/api/v1';
 
+const cors_origin = process.env.CORS_ORIGIN || 'http://localhost:5173';
+
 const is_dev =
   process.env.NODE_ENV === 'development' ||
   process.env.NODE_ENV !== 'production' ||
   !process.env.NODE_ENV;
 
+const url = is_dev ? '127.0.0.1' : '0.0.0.0';
+
 // CORS configuration
 app.use(
   cors({
-    origin: is_dev ? 'http://localhost:5173' : process.env.CORS_ORIGIN,
+    origin: cors_origin,
+    referredPolicy: 'no-referrer',
     credentials: false,
   })
 );
@@ -84,6 +93,10 @@ app.use(api_base + '/transactions', transactions_routes);
 app.use(api_base + '/reservations', reservations_routes);
 app.use(api_base + '/branches', branches_routes);
 app.use(api_base + '/item-copies', item_copies_routes);
+app.use(api_base + '/videos', videos_routes);
+app.use(api_base + '/books', books_routes);
+app.use(api_base + '/audiobooks', audiobooks_routes);
+app.use(api_base + '/reports', reports_routes);
 
 // 404 handler (must come after routes)
 app.use(function (req, res) {
@@ -106,14 +119,13 @@ app.use(function (err, req, res, next) {
 });
 
 // Start server
-const server = app.listen(PORT, '127.0.0.1', function () {
+const server = app.listen(PORT, url, function () {
   console.log(
     pico.bgGreen(
-      pico.bold('🚀 Server running on http://127.0.0.1:' + PORT + ' ')
+      pico.bold(
+        `🚀 Server running on http://${url}:${PORT} | 💻 Environment: ${!is_dev ? 'PROD' : 'DEV'} | CORS: ${cors_origin}`
+      )
     )
-  );
-  console.log(
-    pico.bgCyan(pico.bold('💻 Environment: ' + (!is_dev ? 'PROD ' : 'DEV ')))
   );
 });
 

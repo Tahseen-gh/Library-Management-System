@@ -20,7 +20,7 @@ import { useCopyById } from '../../hooks/useCopies';
 
 interface ConfirmCheckoutDetailsProps {
   patron_id: number;
-  copy_id: string;
+  copy_id: number;
   due_date: Date;
   on_confirm: () => void;
   on_cancel: () => void;

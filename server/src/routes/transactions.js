@@ -62,7 +62,7 @@ router.get('/', async (req, res) => {
       JOIN PATRONS p ON t.patron_id = p.id
       JOIN LIBRARY_ITEM_COPIES ic ON t.copy_id = ic.id
       JOIN LIBRARY_ITEMS ci ON ic.library_item_id = ci.id
-      JOIN BRANCHES b ON ic.branch_id = b.id
+      JOIN BRANCHES b ON ic.owning_branch_id = b.id
       ${conditions}
       ORDER BY t.created_at DESC
     `;
@@ -98,7 +98,7 @@ router.get('/:id', async (req, res) => {
       JOIN PATRONS p ON t.patron_id = p.id
       JOIN LIBRARY_ITEM_COPIES ic ON t.copy_id = ic.id
       JOIN LIBRARY_ITEMS ci ON ic.library_item_id = ci.id
-      JOIN BRANCHES b ON ic.branch_id = b.id
+      JOIN BRANCHES b ON ic.owning_branch_id = b.id
       WHERE t.id = ?
     `;
 
@@ -207,6 +207,7 @@ router.post(
       .optional()
       .isIn(['New', 'Excellent', 'Good', 'Fair', 'Poor'])
       .withMessage('Invalid condition'),
+    body('copy_id').isNumeric().withMessage('Valid copy ID is required'),
   ],
   handle_validation_errors,
   async (req, res) => {

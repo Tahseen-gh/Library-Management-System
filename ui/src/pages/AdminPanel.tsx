@@ -13,17 +13,43 @@ import {
 import { Add, PersonAdd, Assignment, Assessment } from '@mui/icons-material';
 import CreateBookDrawer from '../components/books/CreateBookDrawer';
 import { useState } from 'react';
-import type { Book_Form_Data } from '../types';
+import type { Book_Form_Data, Patron_Form_Data } from '../types';
 import { useCreateBook } from '../hooks/useBooks';
 import { RecentTransactionsList } from '../components/common/RecentTransactionsList';
+import NewPatronModal from '../components/patrons/NewPatronModal';
+import { useCreatePatron } from '../hooks/usePatrons';
 
 export const AdminPanel = () => {
-  const [createBookDrawerOpen, setCreateBookDrawerOpen] = useState(false);
+  const [create_book_drawer_open, set_create_book_drawer_open] =
+    useState(false);
+  const [create_patron_modal_open, set_create_patron_modal_open] =
+    useState(false);
+  const [success_snackbar_open, set_success_snackbar_open] = useState(false);
+  const [error_snackbar_open, set_error_snackbar_open] = useState(false);
+  const [snackbar_message, set_snackbar_message] = useState('');
 
   const { mutate: createBook, error } = useCreateBook();
 
+  const { mutate: create_patron, isPending: create_patron_loading } =
+    useCreatePatron({
+      onSuccess: () => {
+        set_snackbar_message('Patron created successfully!');
+        set_success_snackbar_open(true);
+        set_create_patron_modal_open(false);
+      },
+      onError: (error: Error) => {
+        set_snackbar_message(error.message || 'Failed to create patron');
+        set_error_snackbar_open(true);
+      },
+    });
+
+  const handle_create_patron = (patron_data: Patron_Form_Data) => {
+    create_patron(patron_data);
+  };
+
   return (
     <Container sx={{ p: 3 }}>
+      {/* Existing book error snackbar */}
       <Snackbar
         anchorOrigin={{ horizontal: 'right', vertical: 'top' }}
         open={Boolean(error)}
@@ -33,6 +59,33 @@ export const AdminPanel = () => {
         <Alert severity="error">
           {error?.message}
           <AlertTitle>{error?.name}</AlertTitle>
+        </Alert>
+      </Snackbar>
+
+      {/* Success snackbar for patron creation */}
+      <Snackbar
+        anchorOrigin={{ horizontal: 'right', vertical: 'top' }}
+        open={success_snackbar_open}
+        onClose={() => set_success_snackbar_open(false)}
+        autoHideDuration={6000}
+      >
+        <Alert
+          severity="success"
+          onClose={() => set_success_snackbar_open(false)}
+        >
+          {snackbar_message}
+        </Alert>
+      </Snackbar>
+
+      {/* Error snackbar for patron creation */}
+      <Snackbar
+        anchorOrigin={{ horizontal: 'right', vertical: 'top' }}
+        open={error_snackbar_open}
+        onClose={() => set_error_snackbar_open(false)}
+        autoHideDuration={6000}
+      >
+        <Alert severity="error" onClose={() => set_error_snackbar_open(false)}>
+          {snackbar_message}
         </Alert>
       </Snackbar>
       <Typography
@@ -119,7 +172,7 @@ export const AdminPanel = () => {
                   startIcon={<Add />}
                   fullWidth
                   sx={{ justifyContent: 'flex-start', p: 2 }}
-                  onClick={() => setCreateBookDrawerOpen(true)}
+                  onClick={() => set_create_book_drawer_open(true)}
                 >
                   Add New Book
                 </Button>
@@ -129,6 +182,7 @@ export const AdminPanel = () => {
                   startIcon={<PersonAdd />}
                   fullWidth
                   sx={{ justifyContent: 'flex-start', p: 2 }}
+                  onClick={() => set_create_patron_modal_open(true)}
                 >
                   Register New Member
                 </Button>
@@ -158,12 +212,20 @@ export const AdminPanel = () => {
 
       <RecentTransactionsList />
       <CreateBookDrawer
-        open={createBookDrawerOpen}
-        onClose={() => setCreateBookDrawerOpen(false)}
+        open={create_book_drawer_open}
+        onClose={() => set_create_book_drawer_open(false)}
         onSubmit={(bookData: Book_Form_Data) => {
           createBook(bookData);
-          setCreateBookDrawerOpen(false);
+          set_create_book_drawer_open(false);
         }}
+      />
+      <NewPatronModal
+        open={create_patron_modal_open}
+        on_close={function (): void {
+          set_create_patron_modal_open(false);
+        }}
+        on_submit={handle_create_patron}
+        is_loading={create_patron_loading}
       />
     </Container>
   );

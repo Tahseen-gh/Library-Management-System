@@ -41,7 +41,7 @@ router.get('/', async (req, res) => {
       `SELECT ab.*, ci.title, ci.description, ci.publication_year
        FROM audiobooks ab
        JOIN LIBRARY_ITEMS ci ON ab.library_item_id = ci.id
-       ORDER BY ci.title ASC`
+       ORDER BY ci.title`
     );
 
     res.json({

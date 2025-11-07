@@ -17,7 +17,7 @@ import { useState } from 'react';
 export const CopiesDataGrid = ({
   on_copy_selected,
 }: {
-  on_copy_selected: (copy_id: string) => void;
+  on_copy_selected: (copy_id: number) => void;
 }) => {
   const { data: copies, isLoading: loading } = useAllCopies();
   const { data: branches } = useBranches();
@@ -145,10 +145,9 @@ export const CopiesDataGrid = ({
           params.row.status === 'Available'
         }
         onRowSelectionModelChange={(newSelection) => {
-          const selected_copy =
-            Array.from(newSelection.ids)[0]?.toString() || '';
+          const selected_copy = Array.from(newSelection.ids)[0] || 0;
           if (selected_copy) {
-            on_copy_selected(selected_copy);
+            on_copy_selected(Number(selected_copy));
           }
         }}
       />

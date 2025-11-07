@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { data_service } from '../services/dataService';
 import type { Item_Copy } from '../types';
 
-export const useCopies = (item_id: string) => {
+export const useCopies = (item_id: number) => {
   return useQuery({
     queryKey: ['item_copies', item_id],
     queryFn: () => data_service.get_all_copies_by_item_id(item_id),
@@ -24,7 +24,7 @@ export const useAllCopies = () => {
   });
 };
 
-export const useCopyById = (copy_id: string) => {
+export const useCopyById = (copy_id: number) => {
   return useQuery({
     queryKey: ['item_copy', copy_id],
     queryFn: () => data_service.get_copy_by_id(copy_id),

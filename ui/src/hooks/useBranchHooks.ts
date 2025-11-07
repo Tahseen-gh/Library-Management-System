@@ -11,7 +11,7 @@ export const useSelectedBranch = () => {
   return { selected_branch, set_selected_branch };
 };
 
-export const useBranchById = (id: string) => {
+export const useBranchById = (id: number) => {
   const { get_branch_by_id: getBranchById } = useBranchContext();
   return getBranchById(id);
 };

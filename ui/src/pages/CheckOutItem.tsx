@@ -86,14 +86,14 @@ const columns: GridColDef[] = [
 
 interface CheckOutFormData {
   patron_id: number;
-  item_id: string;
+  item_id: number;
   due_date: Date;
 }
 
 export const CheckOutItem: React.FC = () => {
   const [form_data, set_form_data] = useState<CheckOutFormData>({
     patron_id: 0,
-    item_id: '',
+    item_id: 0,
     due_date: two_weeks_from_now,
   });
 
@@ -154,7 +154,7 @@ export const CheckOutItem: React.FC = () => {
     set_form_data((prev) => ({ ...prev, patron_id: Number(patron_id) }));
   };
 
-  const handle_copy_selected = (copy_id: string) => {
+  const handle_copy_selected = (copy_id: number) => {
     set_form_data((prev) => ({ ...prev, item_id: copy_id }));
   };
 

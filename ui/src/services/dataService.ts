@@ -7,6 +7,7 @@ import type {
   Item_Copy,
   Branch,
   Patron,
+  Patron_Form_Data,
   Book_Form_Data,
   Create_Library_Item_Form_Data,
   Condition,
@@ -86,7 +87,7 @@ export const data_service = {
     const books = await api_request<Book[]>(`/library-items${query_string}`);
 
     // Filter only books from library items
-    return books.filter((item) => item.item_type === 'Book');
+    return books.filter((item) => item.item_type === 'BOOK');
   },
 
   async getBookById(id: string): Promise<Book | null> {
@@ -96,7 +97,7 @@ export const data_service = {
         `/library-items/${id}`
       );
 
-      if (!library_item || library_item.item_type !== 'Book') {
+      if (!library_item || library_item.item_type !== 'BOOK') {
         return null;
       }
 
@@ -206,7 +207,7 @@ export const data_service = {
   // Transaction operations
   async checkoutBook(
     patron_id: number,
-    copy_id: string,
+    copy_id: number,
     due_date?: Date
   ): Promise<Transaction> {
     const checkout_data = {
@@ -227,7 +228,7 @@ export const data_service = {
   },
 
   async return_book(
-    copy_id: string,
+    copy_id: number,
     new_condition?: Condition,
     new_location_id?: number,
     notes?: string
@@ -283,8 +284,8 @@ export const data_service = {
 
   // Reservation operations
   async reserveBook(
-    library_item_id: string,
-    patron_id?: string
+    library_item_id: number,
+    patron_id?: number
   ): Promise<Reservation> {
     const reservation_data = {
       library_item_id,
@@ -328,11 +329,11 @@ export const data_service = {
     });
   },
 
-  async get_all_copies_by_item_id(item_id: string): Promise<Item_Copy[]> {
+  async get_all_copies_by_item_id(item_id: number): Promise<Item_Copy[]> {
     return await api_request<Item_Copy[]>(`/item-copies/item/${item_id}`);
   },
 
-  async get_all_copy_ids(): Promise<string[]> {
+  async get_all_copy_ids(): Promise<number[]> {
     const copies = await api_request<Item_Copy[]>('/item-copies');
     return copies.map((item: Item_Copy) => item.id);
   },
@@ -341,7 +342,7 @@ export const data_service = {
     return await api_request<Item_Copy[]>('/item-copies');
   },
 
-  async get_copy_by_id(copy_id: string): Promise<Item_Copy | null> {
+  async get_copy_by_id(copy_id: number): Promise<Item_Copy | null> {
     try {
       return await api_request<Item_Copy>(`/item-copies/${copy_id}`);
     } catch (error: Error | unknown) {
@@ -369,5 +370,12 @@ export const data_service = {
       }
       throw error;
     }
+  },
+
+  async create_patron(patron_data: Patron_Form_Data): Promise<Patron> {
+    return await api_request<Patron>('/patrons', {
+      method: 'POST',
+      body: JSON.stringify(patron_data),
+    });
   },
 };

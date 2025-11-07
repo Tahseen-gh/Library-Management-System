@@ -50,7 +50,7 @@ async function create_tables() {
     // Create BRANCHES table first (referenced by other tables)
     await db.exec(`
       CREATE TABLE IF NOT EXISTS BRANCHES (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         branch_name TEXT NOT NULL DEFAULT 'Default Branch Name',
         address TEXT,
         phone TEXT,
@@ -62,7 +62,7 @@ async function create_tables() {
     // Create library_items table
     await db.exec(`
       CREATE TABLE IF NOT EXISTS LIBRARY_ITEMS (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         item_type TEXT NOT NULL,
         description TEXT,
@@ -93,8 +93,8 @@ async function create_tables() {
     // Create BOOKS table (extends LIBRARY_ITEMS)
     await db.exec(`
       CREATE TABLE IF NOT EXISTS BOOKS (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
-        library_item_id TEXT NOT NULL,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        library_item_id INTEGER NOT NULL,
         publisher TEXT,
         author TEXT NOT NULL DEFAULT '',
         genre TEXT,
@@ -108,7 +108,7 @@ async function create_tables() {
     // Create VIDEOS table (subclass of LIBRARY_ITEMS)
     await db.exec(`
       CREATE TABLE IF NOT EXISTS VIDEOS (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         director TEXT,
         studio TEXT,
         genre TEXT,
@@ -117,7 +117,7 @@ async function create_tables() {
         format TEXT,
         rating TEXT,
         isbn TEXT,
-        library_item_id TEXT NOT NULL,
+        library_item_id INTEGER NOT NULL,
         is_new_release BOOLEAN NOT NULL DEFAULT 0,
         FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE
       )
@@ -126,7 +126,7 @@ async function create_tables() {
     // Create VINYL_ALBUMS table (subclass of LIBRARY_ITEMS)
     await db.exec(`
       CREATE TABLE IF NOT EXISTS VINYL_ALBUMS (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         genre TEXT,
         artist TEXT,
         cover_image_url TEXT,
@@ -134,7 +134,7 @@ async function create_tables() {
         duration_seconds INTEGER,
         isbn TEXT,
         color TEXT,
-        library_item_id TEXT NOT NULL,
+        library_item_id INTEGER NOT NULL,
         FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE
       );
     `);
@@ -142,7 +142,7 @@ async function create_tables() {
     // Create Audiobooks table (subclass of LIBRARY_ITEMS)
     await db.exec(`
       CREATE TABLE IF NOT EXISTS AUDIOBOOKS (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         duration_in_seconds INTEGER,
         narrator TEXT,
         publisher TEXT,
@@ -151,7 +151,7 @@ async function create_tables() {
         format TEXT,
         rating TEXT,
         isbn TEXT,
-        library_item_id TEXT NOT NULL,
+        library_item_id INTEGER NOT NULL,
         FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE
       );
     `);
@@ -159,13 +159,13 @@ async function create_tables() {
     // Create Magazines table (subclass of LIBRARY_ITEMS)
     await db.exec(`
       CREATE TABLE IF NOT EXISTS MAGAZINES (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         subscription_cost REAL,
         publisher TEXT,
         issue_number TEXT,
         publication_month TEXT,
         publication_year INTEGER,
-        library_item_id TEXT NOT NULL,
+        library_item_id INTEGER NOT NULL,
         FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE
       );
     `);
@@ -173,35 +173,35 @@ async function create_tables() {
     // Create CDs table (subclass of LIBRARY_ITEMS)
     await db.exec(`
       CREATE TABLE IF NOT EXISTS CDS (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         cover_image_url TEXT,
         artist TEXT,
         genre TEXT,
         record_label TEXT,
         number_of_tracks INTEGER,
         duration_seconds INTEGER,
-        library_item_id TEXT NOT NULL,
+        library_item_id INTEGER NOT NULL,
         FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE
       );`);
 
     // Create Periodicals table (subclass of LIBRARY_ITEMS)
     await db.exec(`
       CREATE TABLE IF NOT EXISTS PERIODICALS (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         pages INTEGER,
         issue_number TEXT,
         publication_date DATE,
-        library_item_id TEXT NOT NULL,
+        library_item_id INTEGER NOT NULL,
         FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE
       );`);
 
     // Create library_item_copies table
     await db.exec(`
       CREATE TABLE IF NOT EXISTS LIBRARY_ITEM_COPIES (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
-        library_item_id TEXT,
-        owning_branch_id INTEGER,
-        current_location_id INTEGER NOT NULL DEFAULT 1,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        library_item_id INTEGER NOT NULL,
+        owning_branch_id INTEGER NOT NULL DEFAULT 1,
+        return_to_branch_id INTEGER NOT NULL DEFAULT 1,
         condition TEXT DEFAULT 'Good',
         status TEXT DEFAULT 'Available',
         cost REAL,
@@ -212,16 +212,16 @@ async function create_tables() {
         due_date DATE,
         FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE,
         FOREIGN KEY (owning_branch_id) REFERENCES BRANCHES(id) ON DELETE SET NULL,
-        FOREIGN KEY (current_location_id) REFERENCES BRANCHES(id) ON DELETE SET NULL
+        FOREIGN KEY (return_to_branch_id) REFERENCES BRANCHES(id) ON DELETE SET NULL
       );
     `);
 
     // Create reservations table
     await db.exec(`
       CREATE TABLE IF NOT EXISTS RESERVATIONS (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
-        library_item_id TEXT,
-        patron_id TEXT,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        library_item_id INTEGER NOT NULL,
+        patron_id INTEGER,
         reservation_date DATETIME DEFAULT CURRENT_TIMESTAMP,
         expiry_date DATE,
         status TEXT DEFAULT 'pending',
@@ -237,10 +237,10 @@ async function create_tables() {
     // Create transactions table
     await db.exec(`
       CREATE TABLE IF NOT EXISTS TRANSACTIONS (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
-        copy_id TEXT,
-        patron_id TEXT,
-        location_id TEXT,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        copy_id INTEGER,
+        patron_id INTEGER,
+        location_id INTEGER,
         transaction_type TEXT NOT NULL,
         checkout_date DATE,
         due_date DATE,
@@ -250,36 +250,18 @@ async function create_tables() {
         notes TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (copy_id) REFERENCES item_copies(id) ON DELETE CASCADE,
+        FOREIGN KEY (copy_id) REFERENCES LIBRARY_ITEM_COPIES(id) ON DELETE CASCADE,
         FOREIGN KEY (patron_id) REFERENCES PATRONS(id) ON DELETE CASCADE,
         FOREIGN KEY (location_id) REFERENCES BRANCHES(id) ON DELETE SET NULL
-      )
-    `);
-
-    // Create RESERVATIONS table
-    await db.exec(`
-      CREATE TABLE IF NOT EXISTS RESERVATIONS (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
-        library_item_id TEXT,
-        patron_id TEXT,
-        reservation_date TEXT,
-        expiry_date TEXT,
-        status TEXT,
-        queue_position INTEGER,
-        notification_sent TEXT,
-        created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT,
-        FOREIGN KEY(library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE SET NULL,
-        FOREIGN KEY(patron_id) REFERENCES PATRONS(id) ON DELETE SET NULL
       )
     `);
 
     // Create FINES table
     await db.exec(`
       CREATE TABLE IF NOT EXISTS FINES (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
-        transaction_id TEXT NOT NULL,
-        patron_id TEXT NOT NULL,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        transaction_id INTEGER NOT NULL,
+        patron_id INTEGER NOT NULL,
         amount REAL NOT NULL,
         reason TEXT,
         is_paid BOOLEAN DEFAULT 0,

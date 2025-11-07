@@ -57,7 +57,7 @@ router.get('/', async (req, res) => {
       params.push(library_item_id);
     }
     if (branch_id) {
-      filters.push('lic.branch_id = ?');
+      filters.push('lic.owning_branch_id = ?');
       params.push(branch_id);
     }
     if (status) {
@@ -83,7 +83,7 @@ router.get('/', async (req, res) => {
         b.branch_name
       FROM LIBRARY_ITEM_COPIES lic
       JOIN LIBRARY_ITEMS ci ON lic.library_item_id = ci.id
-      JOIN BRANCHES b ON lic.branch_id = b.id
+      JOIN BRANCHES b ON lic.owning_branch_id = b.id
       ${conditions}
       ORDER BY ci.title, lic.created_at
     `;
@@ -114,7 +114,7 @@ router.get('/:id', async (req, res) => {
         b.branch_name
       FROM LIBRARY_ITEM_COPIES lic
       JOIN LIBRARY_ITEMS li ON lic.library_item_id = li.id
-      JOIN BRANCHES b ON lic.branch_id = b.id
+      JOIN BRANCHES b ON lic.owning_branch_id = b.id
       WHERE lic.id = ?
     `;
 
@@ -147,7 +147,7 @@ router.get('/item/:library_item_id', async (req, res) => {
         ic.*,
         b.branch_name
       FROM LIBRARY_ITEM_COPIES ic
-      JOIN BRANCHES b ON ic.branch_id = b.id
+      JOIN BRANCHES b ON ic.owning_branch_id = b.id
       WHERE ic.library_item_id = ?
       ORDER BY b.branch_name, ic.status
     `;
@@ -188,7 +188,7 @@ router.post(
       }
 
       // Verify branch exists
-      const branch = await db.get_by_id('BRANCHES', req.body.branch_id);
+      const branch = await db.get_by_id('BRANCHES', req.body.owning_branch_id);
       if (!branch) {
         return res.status(400).json({
           error: 'Branch not found',
@@ -199,7 +199,7 @@ router.post(
         id: uuidv4(),
         condition: 'Good',
         status: 'Available',
-        location: req.body.branch_id, // Default location to branch
+        location: req.body.owning_branch_id, // Default location to branch
         ...req.body,
         created_at: new Date(),
         updated_at: new Date(),

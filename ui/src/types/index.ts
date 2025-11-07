@@ -1,7 +1,7 @@
 export interface Transaction {
-  id: string;
-  copy_id: string;
-  patron_id: string;
+  id: number;
+  copy_id: number;
+  patron_id: number;
   transaction_type: 'Checkout' | 'Checkin' | 'Balance' | 'Renewal';
   created_at: Date;
   updated_at: Date;
@@ -14,12 +14,12 @@ export interface Transaction {
   last_name?: string;
   title?: string;
   item_type?: Library_Item_Type;
-  branch_id: string;
+  branch_id: number;
 }
 
 export interface Reservation {
-  id: string;
-  book_id: string;
+  id: number;
+  book_id: number;
   reservation_date: string;
   status: 'pending' | 'fulfilled' | 'cancelled';
   expiry_date: string;
@@ -27,8 +27,8 @@ export interface Reservation {
 }
 
 export interface Fine {
-  id: string;
-  transaction_id: string;
+  id: number;
+  transaction_id: number;
   amount: number;
   reason: string;
   is_paid: boolean;
@@ -83,7 +83,7 @@ export interface Book_Form_Data {
 }
 
 export interface Patron {
-  id: string;
+  id: number;
   first_name: string;
   last_name: string;
   balance: number;
@@ -92,19 +92,30 @@ export interface Patron {
   image_url?: string;
 }
 
+export interface Patron_Form_Data {
+  first_name: string;
+  last_name: string;
+  balance?: number;
+  birthday?: Date;
+  card_expiration_date: Date;
+  image_url?: string;
+}
+
 export interface Branch {
-  id: string;
+  id: number;
   branch_name: string;
   is_main: boolean;
 }
 
 export enum Library_Item_Type {
-  Book = 'Book',
-  Periodical = 'Periodical',
-  Recording = 'Recording',
-  Video = 'Video',
-  Magazine = 'Magazine',
-  Audiobook = 'Audiobook',
+  Audiobook = 'AUDIOBOOK',
+  Book = 'BOOK',
+  CD = 'CD',
+  Magazine = 'MAGAZINE',
+  Periodical = 'PERIODICAL',
+  Recording = 'RECORDING',
+  Video = 'VIDEO',
+  Vinyl = 'VINYL',
 }
 
 export interface Create_Library_Item_Form_Data {
@@ -116,7 +127,7 @@ export interface Create_Library_Item_Form_Data {
 }
 
 export interface Library_Item {
-  id: string;
+  id: number;
   title: string;
   item_type: Library_Item_Type;
   description?: string;
@@ -134,9 +145,9 @@ export type Availability_Status =
   | 'Lost';
 
 export interface Item_Copy {
-  id: string;
-  library_item_id: string;
-  branch_id: string;
+  id: number;
+  library_item_id: number;
+  branch_id: number;
   status: Availability_Status;
   condition?: Condition;
   cost: number;
@@ -144,8 +155,8 @@ export interface Item_Copy {
 }
 
 export interface Book extends Library_Item {
-  id: string;
-  library_item_id: string;
+  id: number;
+  library_item_id: number;
   publisher: string;
   author: string;
   genre?: Genre[];
@@ -155,32 +166,32 @@ export interface Book extends Library_Item {
 
 export interface Recording extends Library_Item {
   artist: string;
-  library_item_id: string;
+  library_item_id: number;
   label: string;
   duration_seconds?: number;
 }
 
 export interface Video extends Library_Item {
   director: string;
-  library_item_id: string;
+  library_item_id: number;
   producer: string;
   duration_minutes?: number;
 }
 
 export interface Periodical extends Library_Item {
   issue_number: string;
-  library_item_id: string;
+  library_item_id: number;
   publisher: string;
 }
 
 export interface Magazine extends Library_Item {
   issue_number: string;
-  library_item_id: string;
+  library_item_id: number;
   publisher: string;
 }
 
 export interface Audiobook extends Library_Item, Book {
   narrator: string;
-  library_item_id: string;
+  library_item_id: number;
   duration_hours?: number;
 }

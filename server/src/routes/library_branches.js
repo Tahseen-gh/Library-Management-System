@@ -31,7 +31,7 @@ router.get('/', async (req, res) => {
   try {
     const branches = await db.get_all(
       'BRANCHES',
-      'ORDER BY is_main DESC, branch_name ASC'
+      'ORDER BY is_main DESC, branch_name'
     );
     res.json({
       success: true,
@@ -90,7 +90,7 @@ router.get('/:id/inventory', async (req, res) => {
         SUM(CASE WHEN ic.status = 'Checked Out' THEN 1 ELSE 0 END) as checked_out_copies
        FROM LIBRARY_ITEMS ci
        JOIN LIBRARY_ITEM_COPIES ic ON ci.id = ic.library_item_id
-       WHERE ic.branch_id = ?
+       WHERE ic.owning_branch_id = ?
        GROUP BY ci.id, ci.title, ci.item_type
        ORDER BY ci.title`,
       [req.params.id]

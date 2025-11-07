@@ -19,6 +19,8 @@ const ITEM_TYPE_COLOR_MAP: Record<Library_Item_Type, string> = {
   [Library_Item_Type.Recording]: CHIP_COLORS[3],
   [Library_Item_Type.Audiobook]: CHIP_COLORS[4],
   [Library_Item_Type.Video]: CHIP_COLORS[5],
+  [Library_Item_Type.CD]: CHIP_COLORS[0],
+  [Library_Item_Type.Vinyl]: CHIP_COLORS[1],
 };
 
 const STATUS_COLOR_MAP: Record<string, ChipColor> = {
@@ -48,5 +50,5 @@ export const get_status_color = (status: string): ChipColor => {
 };
 
 export const get_condition_color = (condition?: string): ChipColor => {
-  return condition ? (CONDITION_COLOR_MAP[condition] ?? 'default') : 'default';
+  return condition ? CONDITION_COLOR_MAP[condition] ?? 'default' : 'default';
 };

@@ -121,7 +121,7 @@ export const PatronPage = () => {
   }
 
   const patronTransactions = allTransactions?.filter(
-    (t) => t.patron_id === patron_id
+    (t) => t.patron_id === parseInt(patron_id)
   );
   const activeTransactions = patronTransactions?.filter(
     (t) => t.status.toLowerCase() === 'active'
