@@ -24,14 +24,13 @@
     "express-validator": "^7.3.0",
     "helmet": "^8.1.0",
     "morgan": "^1.10.1",
+    "picocolors": "^1.1.1",
     "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7",
-    "uuid": "^13.0.0"
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "eslint": "^9.39.1",
     "nodemon": "^3.1.10",
-    "picocolors": "^1.1.1",
     "prettier": "^3.6.2"
   }
 }

@@ -1,6 +1,5 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import { v4 as uuidv4 } from 'uuid';
 import * as db from '../config/database.js';
 
 const router = express.Router();
@@ -111,7 +110,6 @@ router.post(
       }
 
       const audiobook_data = {
-        id: uuidv4(),
         narrator: req.body.narrator || null,
         publisher: req.body.publisher || null,
         genre: req.body.genre || null,

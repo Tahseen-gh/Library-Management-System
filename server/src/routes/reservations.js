@@ -1,6 +1,5 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import { v4 as uuidv4 } from 'uuid';
 import * as db from '../config/database.js';
 
 const router = express.Router();
@@ -181,7 +180,6 @@ router.post(
       expiry_date.setDate(expiry_date.getDate() + 7);
 
       const reservation_data = {
-        id: uuidv4(),
         library_item_id: library_item.id,
         patron_id,
         reservation_date: new Date(),

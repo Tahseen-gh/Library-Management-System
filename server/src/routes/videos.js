@@ -1,6 +1,5 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import { v4 as uuidv4 } from 'uuid';
 import * as db from '../config/database.js';
 
 const router = express.Router();
@@ -105,7 +104,6 @@ router.post('/', validate_video, handle_validation_errors, function (req, res) {
       }
 
       const video_data = {
-        id: uuidv4(),
         director: req.body.director || null,
         studio: req.body.studio || null,
         genre: req.body.genre || null,

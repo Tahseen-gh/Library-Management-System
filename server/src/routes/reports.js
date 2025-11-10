@@ -339,4 +339,169 @@ router.get('/overview', function (req, res) {
     });
 });
 
+/**
+ * GET /api/v1/reports/stats/overview - Optimized overview statistics with single query
+ */
+router.get('/stats/overview', function (req, res) {
+  // Single optimized query to get all statistics at once
+  var optimized_query = `
+    WITH library_stats AS (
+      SELECT 
+        COUNT(*) as total_items,
+        SUM(CASE WHEN status = 'Available' THEN 1 ELSE 0 END) as available_items,
+        SUM(CASE WHEN status = 'Checked Out' THEN 1 ELSE 0 END) as borrowed_items,
+        SUM(CASE WHEN status = 'Unshelved' THEN 1 ELSE 0 END) as unshelved_items,
+        SUM(CASE WHEN status = 'Damaged' THEN 1 ELSE 0 END) as damaged_items,
+        SUM(CASE WHEN status = 'Reserved' THEN 1 ELSE 0 END) as reserved_items
+      FROM LIBRARY_ITEM_COPIES
+    ),
+    patron_stats AS (
+      SELECT 
+        COUNT(*) as total_active_patrons,
+        COALESCE(SUM(CASE WHEN balance > 0 THEN balance ELSE 0 END), 0) as total_outstanding_fines
+      FROM PATRONS 
+      WHERE is_active = 1
+    ),
+    transaction_stats AS (
+      SELECT 
+        SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) as active_checkouts,
+        SUM(CASE WHEN status = 'Active' AND due_date < datetime('now') THEN 1 ELSE 0 END) as overdue_items
+      FROM TRANSACTIONS
+    ),
+    reservation_stats AS (
+      SELECT 
+        COUNT(*) as total_reservations
+      FROM RESERVATIONS 
+      WHERE status IN ('pending', 'ready')
+    )
+    SELECT 
+      ls.total_items,
+      ls.available_items,
+      ls.borrowed_items,
+      ls.unshelved_items,
+      ls.damaged_items,
+      ls.reserved_items,
+      ps.total_active_patrons,
+      ps.total_outstanding_fines,
+      ts.active_checkouts,
+      ts.overdue_items,
+      rs.total_reservations
+    FROM library_stats ls
+    CROSS JOIN patron_stats ps
+    CROSS JOIN transaction_stats ts
+    CROSS JOIN reservation_stats rs
+  `;
+
+  db.execute_query(optimized_query)
+    .then(function (results) {
+      var stats = results[0];
+
+      res.json({
+        success: true,
+        report_type: 'overview',
+        query_performance: {
+          queries_executed: 1,
+          optimization: 'Single CTE query instead of 11 separate queries',
+        },
+        statistics: {
+          total_items: stats.total_items || 0,
+          available_items: stats.available_items || 0,
+          borrowed_items: stats.borrowed_items || 0,
+          damaged_items: stats.damaged_items || 0,
+          unshelved_items: stats.unshelved_items || 0,
+          reserved_items: stats.reserved_items || 0,
+          total_active_patrons: stats.total_active_patrons || 0,
+          active_checkouts: stats.active_checkouts || 0,
+          overdue_items: stats.overdue_items || 0,
+          total_reservations: stats.total_reservations || 0,
+          total_outstanding_fines: (stats.total_outstanding_fines || 0).toFixed(
+            2
+          ),
+        },
+      });
+    })
+    .catch(function (error) {
+      res.status(500).json({
+        error: 'Failed to fetch overview statistics',
+        message: error.message,
+      });
+    });
+});
+
+/**
+ * Alternative parallel implementation for comparison (if single CTE becomes too complex)
+ * This version uses Promise.all to execute queries in parallel instead of sequentially
+ */
+router.get('/stats/overview-parallel', function (req, res) {
+  // Execute all queries in parallel for better performance
+  var queries = [
+    db.execute_query('SELECT COUNT(*) as total_items FROM LIBRARY_ITEM_COPIES'),
+    db.execute_query(`
+      SELECT 
+        SUM(CASE WHEN status = 'Available' THEN 1 ELSE 0 END) as available_items,
+        SUM(CASE WHEN status = 'Checked Out' THEN 1 ELSE 0 END) as borrowed_items,
+        SUM(CASE WHEN status = 'Unshelved' THEN 1 ELSE 0 END) as unshelved_items,
+        SUM(CASE WHEN status = 'Damaged' THEN 1 ELSE 0 END) as damaged_items,
+        SUM(CASE WHEN status = 'Reserved' THEN 1 ELSE 0 END) as reserved_items
+      FROM LIBRARY_ITEM_COPIES
+    `),
+    db.execute_query(`
+      SELECT 
+        COUNT(*) as total_active_patrons,
+        COALESCE(SUM(CASE WHEN balance > 0 THEN balance ELSE 0 END), 0) as total_outstanding_fines
+      FROM PATRONS WHERE is_active = 1
+    `),
+    db.execute_query(`
+      SELECT 
+        SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) as active_checkouts,
+        SUM(CASE WHEN status = 'Active' AND due_date < datetime('now') THEN 1 ELSE 0 END) as overdue_items
+      FROM TRANSACTIONS
+    `),
+    db.execute_query(`
+      SELECT COUNT(*) as total_reservations 
+      FROM RESERVATIONS 
+      WHERE status IN ('pending', 'ready')
+    `),
+  ];
+
+  Promise.all(queries)
+    .then(function (results) {
+      var total_items = results[0][0];
+      var copy_stats = results[1][0];
+      var patron_stats = results[2][0];
+      var transaction_stats = results[3][0];
+      var reservation_stats = results[4][0];
+
+      res.json({
+        success: true,
+        report_type: 'overview-parallel',
+        query_performance: {
+          queries_executed: 5,
+          optimization: 'Parallel execution with Promise.all',
+        },
+        statistics: {
+          total_items: total_items.total_items || 0,
+          available_items: copy_stats.available_items || 0,
+          borrowed_items: copy_stats.borrowed_items || 0,
+          damaged_items: copy_stats.damaged_items || 0,
+          unshelved_items: copy_stats.unshelved_items || 0,
+          reserved_items: copy_stats.reserved_items || 0,
+          total_active_patrons: patron_stats.total_active_patrons || 0,
+          active_checkouts: transaction_stats.active_checkouts || 0,
+          overdue_items: transaction_stats.overdue_items || 0,
+          total_reservations: reservation_stats.total_reservations || 0,
+          total_outstanding_fines: (
+            patron_stats.total_outstanding_fines || 0
+          ).toFixed(2),
+        },
+      });
+    })
+    .catch(function (error) {
+      res.status(500).json({
+        error: 'Failed to fetch overview statistics (parallel)',
+        message: error.message,
+      });
+    });
+});
+
 export default router;

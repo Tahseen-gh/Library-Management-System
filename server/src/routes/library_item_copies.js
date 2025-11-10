@@ -1,6 +1,5 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import { v4 as uuidv4 } from 'uuid';
 import * as db from '../config/database.js';
 
 const router = express.Router();
@@ -196,7 +195,6 @@ router.post(
       }
 
       const item_copy_data = {
-        id: uuidv4(),
         condition: 'Good',
         status: 'Available',
         location: req.body.owning_branch_id, // Default location to branch

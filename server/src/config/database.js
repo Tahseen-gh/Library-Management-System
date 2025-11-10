@@ -25,6 +25,16 @@ async function init_database() {
     // Enable foreign keys
     await db.exec('PRAGMA foreign_keys = ON;');
 
+    // Performance optimization PRAGMAs
+    await db.exec(`
+      PRAGMA journal_mode = WAL;          -- Write-Ahead Logging for better concurrency
+      PRAGMA synchronous = NORMAL;        -- Balance between safety and performance
+      PRAGMA cache_size = 10000;          -- 10MB cache (10000 * 1KB pages)
+      PRAGMA temp_store = MEMORY;         -- Store temporary tables in memory
+      PRAGMA mmap_size = 268435456;       -- 256MB memory-mapped I/O
+      PRAGMA optimize;                    -- Analyze and optimize query planner
+    `);
+
     // Create tables if they don't exist
     await create_tables();
 
@@ -85,7 +95,7 @@ async function create_tables() {
         address TEXT,
         balance REAL NOT NULL DEFAULT 0.00,
         birthday DATE,
-        card_expiration DATE NOT NULL DEFAULT CURRENT_DATE,
+        card_expiration_date DATE NOT NULL DEFAULT CURRENT_DATE,
         is_active BOOLEAN NOT NULL DEFAULT 1
       )
     `);
@@ -274,17 +284,55 @@ async function create_tables() {
       )
     `);
 
-    // Create indexes for better performance
+    // Create optimized indexes for better performance
     await db.exec(`
+      -- Core entity indexes
       CREATE INDEX IF NOT EXISTS idx_library_items_type ON LIBRARY_ITEMS(item_type);
       CREATE INDEX IF NOT EXISTS idx_library_items_year ON LIBRARY_ITEMS(publication_year);
+      CREATE INDEX IF NOT EXISTS idx_library_items_title ON LIBRARY_ITEMS(title COLLATE NOCASE);
+      
+      -- Library item copies - critical for inventory management
       CREATE INDEX IF NOT EXISTS idx_library_item_copies_status ON LIBRARY_ITEM_COPIES(status);
       CREATE INDEX IF NOT EXISTS idx_library_item_copies_branch ON LIBRARY_ITEM_COPIES(owning_branch_id);
+      CREATE INDEX IF NOT EXISTS idx_library_item_copies_item_id ON LIBRARY_ITEM_COPIES(library_item_id);
+      CREATE INDEX IF NOT EXISTS idx_library_item_copies_composite ON LIBRARY_ITEM_COPIES(library_item_id, status, owning_branch_id);
+      CREATE INDEX IF NOT EXISTS idx_library_item_copies_dates ON LIBRARY_ITEM_COPIES(date_acquired, due_date);
+      
+      -- Patron indexes for search and active status
       CREATE INDEX IF NOT EXISTS idx_patrons_name ON PATRONS(last_name, first_name);
+      CREATE INDEX IF NOT EXISTS idx_patrons_email ON PATRONS(email);
+      CREATE INDEX IF NOT EXISTS idx_patrons_active_balance ON PATRONS(is_active, balance);
+      CREATE INDEX IF NOT EXISTS idx_patrons_card_expiry ON PATRONS(card_expiration_date) WHERE is_active = 1;
+      
+      -- Transaction indexes - critical for reports and active checkouts
       CREATE INDEX IF NOT EXISTS idx_transactions_status ON TRANSACTIONS(status);
+      CREATE INDEX IF NOT EXISTS idx_transactions_patron ON TRANSACTIONS(patron_id);
+      CREATE INDEX IF NOT EXISTS idx_transactions_copy ON TRANSACTIONS(copy_id);
+      CREATE INDEX IF NOT EXISTS idx_transactions_dates ON TRANSACTIONS(checkout_date, due_date, return_date);
+      CREATE INDEX IF NOT EXISTS idx_transactions_overdue ON TRANSACTIONS(status, due_date) WHERE status = 'Active';
+      CREATE INDEX IF NOT EXISTS idx_transactions_type_status ON TRANSACTIONS(transaction_type, status);
+      
+      -- Reservation indexes for queue management
       CREATE INDEX IF NOT EXISTS idx_reservations_status ON RESERVATIONS(status);
+      CREATE INDEX IF NOT EXISTS idx_reservations_item_queue ON RESERVATIONS(library_item_id, queue_position, status);
+      CREATE INDEX IF NOT EXISTS idx_reservations_patron ON RESERVATIONS(patron_id);
+      CREATE INDEX IF NOT EXISTS idx_reservations_dates ON RESERVATIONS(reservation_date, expiry_date);
+      CREATE INDEX IF NOT EXISTS idx_reservations_active ON RESERVATIONS(status, expiry_date) WHERE status IN ('pending', 'ready');
+      
+      -- Fine indexes for patron balance management
       CREATE INDEX IF NOT EXISTS idx_fines_patron ON FINES(patron_id);
       CREATE INDEX IF NOT EXISTS idx_fines_paid ON FINES(is_paid);
+      CREATE INDEX IF NOT EXISTS idx_fines_transaction ON FINES(transaction_id);
+      CREATE INDEX IF NOT EXISTS idx_fines_unpaid_patron ON FINES(patron_id, is_paid, amount) WHERE is_paid = 0;
+      
+      -- Foreign key relationship indexes for better JOIN performance
+      CREATE INDEX IF NOT EXISTS idx_books_library_item ON BOOKS(library_item_id);
+      CREATE INDEX IF NOT EXISTS idx_videos_library_item ON VIDEOS(library_item_id);
+      CREATE INDEX IF NOT EXISTS idx_audiobooks_library_item ON AUDIOBOOKS(library_item_id);
+      CREATE INDEX IF NOT EXISTS idx_magazines_library_item ON MAGAZINES(library_item_id);
+      CREATE INDEX IF NOT EXISTS idx_cds_library_item ON CDS(library_item_id);
+      CREATE INDEX IF NOT EXISTS idx_periodicals_library_item ON PERIODICALS(library_item_id);
+      CREATE INDEX IF NOT EXISTS idx_vinyl_albums_library_item ON VINYL_ALBUMS(library_item_id);
     `);
 
     // Insert default branch if none exists
@@ -348,23 +396,68 @@ async function get_database() {
 init_database();
 
 /**
- * Generic query function with error handling
+ * Optimized generic query function with error handling and query type detection
  * @param {string} query - The SQL query to execute
  * @param {Array} params - Parameters for the SQL query
+ * @param {Object} options - Query options like timeout, prepare statements
  * @returns {Promise<Array|Object>} Query result
  */
-async function execute_query(query, params) {
+async function execute_query(query, params = [], options = {}) {
   try {
     const database = await get_database();
-    // Check if it's a SELECT query
-    if (query.trim().toLowerCase().startsWith('select')) {
+    const trimmedQuery = query.trim().toLowerCase();
+
+    // Performance: Use prepared statements for repeated queries
+    if (options.prepare) {
+      const stmt = await database.prepare(query);
+      try {
+        if (trimmedQuery.startsWith('select')) {
+          return await stmt.all(params);
+        } else {
+          return await stmt.run(params);
+        }
+      } finally {
+        await stmt.finalize();
+      }
+    }
+
+    // Optimize based on query type
+    if (trimmedQuery.startsWith('select')) {
+      // For SELECT queries that might return large results
+      if (options.limit && !query.toLowerCase().includes('limit')) {
+        query += ` LIMIT ${options.limit}`;
+      }
+      return await database.all(query, params);
+    } else if (trimmedQuery.startsWith('insert') && options.batch) {
+      // Batch insert optimization
+      return await database.exec(query);
+    } else if (trimmedQuery.startsWith('with')) {
+      // CTE queries (Common Table Expressions)
       return await database.all(query, params);
     } else {
       // For INSERT, UPDATE, DELETE queries
-      return await database.run(query, params);
+      const result = await database.run(query, params);
+
+      // Add performance metrics for monitoring
+      if (options.includeMetrics) {
+        return {
+          ...result,
+          performance: {
+            changes: result.changes,
+            lastID: result.lastID,
+            queryType: trimmedQuery.split(' ')[0].toUpperCase(),
+          },
+        };
+      }
+
+      return result;
     }
   } catch (error) {
-    console.error('Database query error:', error);
+    console.error('Database query error:', {
+      query: query.substring(0, 200) + '...',
+      params: params,
+      error: error.message,
+    });
     throw error;
   }
 }
@@ -445,6 +538,139 @@ async function delete_record(table_name, id) {
   return !Array.isArray(result) ? (result.changes || 0) > 0 : false;
 }
 
+/**
+ * Optimized batch operations for better performance
+ * @param {Array} operations - Array of {type, table, data, id} objects
+ * @returns {Promise<Object>} Batch operation results
+ */
+async function execute_batch(operations) {
+  const database = await get_database();
+
+  try {
+    await database.exec('BEGIN TRANSACTION');
+
+    const results = [];
+    let totalChanges = 0;
+
+    for (const op of operations) {
+      let result;
+
+      switch (op.type) {
+        case 'insert':
+          result = await create_record(op.table, op.data);
+          results.push({ type: 'insert', id: result, table: op.table });
+          totalChanges++;
+          break;
+
+        case 'update':
+          result = await update_record(op.table, op.id, op.data);
+          results.push({
+            type: 'update',
+            success: result,
+            table: op.table,
+            id: op.id,
+          });
+          if (result) totalChanges++;
+          break;
+
+        case 'delete':
+          result = await delete_record(op.table, op.id);
+          results.push({
+            type: 'delete',
+            success: result,
+            table: op.table,
+            id: op.id,
+          });
+          if (result) totalChanges++;
+          break;
+      }
+    }
+
+    await database.exec('COMMIT');
+
+    return {
+      success: true,
+      totalOperations: operations.length,
+      totalChanges,
+      results,
+    };
+  } catch (error) {
+    await database.exec('ROLLBACK');
+    throw error;
+  }
+}
+
+/**
+ * Optimized search function with full-text search capabilities
+ * @param {string} table_name - Name of the database table
+ * @param {string} search_term - Term to search for
+ * @param {Array} search_fields - Fields to search in
+ * @param {Object} options - Search options (limit, offset, etc.)
+ * @returns {Promise<Array>} Search results
+ */
+async function search_records(
+  table_name,
+  search_term,
+  search_fields = [],
+  options = {}
+) {
+  const limit = options.limit || 50;
+  const offset = options.offset || 0;
+
+  if (!search_fields.length) {
+    // Fallback to basic search if no fields specified
+    return get_all(table_name, `LIMIT ${limit} OFFSET ${offset}`);
+  }
+
+  // Build LIKE conditions for each field
+  const conditions = search_fields
+    .map((field) => `${field} LIKE ?`)
+    .join(' OR ');
+  const params = search_fields.map(() => `%${search_term}%`);
+
+  const query = `
+    SELECT * FROM ${table_name} 
+    WHERE ${conditions}
+    ORDER BY 
+      CASE 
+        ${search_fields.map((field) => `WHEN ${field} LIKE '${search_term}%' THEN 1`).join(' ')}
+        ELSE 2 
+      END,
+      id
+    LIMIT ${limit} OFFSET ${offset}
+  `;
+
+  return execute_query(query, params);
+}
+
+/**
+ * Get database statistics for performance monitoring
+ * @returns {Promise<Object>} Database statistics
+ */
+async function get_database_stats() {
+  const database = await get_database();
+
+  const stats = await Promise.all([
+    database.get('PRAGMA database_list'),
+    database.get('PRAGMA cache_size'),
+    database.get('PRAGMA page_count'),
+    database.get('PRAGMA page_size'),
+    database.get('PRAGMA journal_mode'),
+    database.all('SELECT name, sql FROM sqlite_master WHERE type="index"'),
+  ]);
+
+  return {
+    database_info: stats[0],
+    cache_size: stats[1],
+    page_count: stats[2],
+    page_size: stats[3],
+    journal_mode: stats[4],
+    indexes: stats[5],
+    estimated_size_mb:
+      (stats[2]['page_count'] * stats[3]['page_size']) / (1024 * 1024),
+  };
+}
+
 export {
   get_database as db,
   execute_query,
@@ -453,4 +679,7 @@ export {
   create_record,
   update_record,
   delete_record,
+  execute_batch,
+  search_records,
+  get_database_stats,
 };

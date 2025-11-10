@@ -1,6 +1,5 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import { v4 as uuidv4 } from 'uuid';
 import * as db from '../config/database.js';
 
 const router = express.Router();
@@ -9,7 +8,24 @@ const router = express.Router();
 const validate_library_item = [
   body('title').notEmpty().withMessage('Title is required'),
   body('item_type')
-    .isIn(['Book', 'Magazine', 'Periodical', 'Recording', 'Audiobook', 'Video'])
+    .isIn([
+      'Book',
+      'BOOK',
+      'Magazine',
+      'MAGAZINE',
+      'Periodical',
+      'PERIODICAL',
+      'Recording',
+      'RECORDING',
+      'Audiobook',
+      'AUDIOBOOK',
+      'Video',
+      'VIDEO',
+      'cd',
+      'CD',
+      'Vinyl',
+      'VINYL',
+    ])
     .withMessage('Invalid item type'),
   body('publication_year')
     .optional()
@@ -96,7 +112,6 @@ router.post(
   async (req, res) => {
     try {
       const library_item_data = {
-        id: uuidv4(),
         ...req.body,
         created_at: new Date(),
         updated_at: new Date(),

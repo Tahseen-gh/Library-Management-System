@@ -1,6 +1,5 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import { v4 as uuidv4 } from 'uuid';
 import * as db from '../config/database.js';
 
 var router = express.Router();
@@ -84,7 +83,6 @@ router.post(
   async function (req, res) {
     try {
       var fine_data = {
-        id: uuidv4(),
         transaction_id: req.body.transaction_id,
         patron_id: req.body.patron_id,
         amount: req.body.amount,
