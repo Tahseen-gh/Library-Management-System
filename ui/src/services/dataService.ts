@@ -378,4 +378,23 @@ export const data_service = {
       body: JSON.stringify(patron_data),
     });
   },
+
+  async get_stats(): Promise<Record<string, number>> {
+    try {
+      const result = await api_request<{ statistics: Record<string, number> }>(
+        '/reports/stats/overview'
+      );
+      return result.statistics;
+    } catch (error: Error | unknown) {
+      if (error instanceof Error) {
+        throw error;
+      }
+    }
+    return {
+      total: 0,
+      checked_out: 0,
+      available: 0,
+      reserved: 0,
+    };
+  },
 };

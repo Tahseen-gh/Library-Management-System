@@ -1,3 +1,4 @@
+import { PieChart } from '@mui/x-charts/PieChart';
 import {
   Container,
   Typography,
@@ -5,11 +6,15 @@ import {
   Card,
   CardContent,
   Box,
+  Skeleton,
 } from '@mui/material';
 import { LibraryBooks, EventNote, AttachMoney } from '@mui/icons-material';
 import type { FC } from 'react';
+import { useStats } from '../hooks/useStats';
 
-export const Dashboard: FC = () => {
+export const DashboardPage: FC = () => {
+  const { data, isLoading, error } = useStats();
+
   return (
     <Container sx={{ pt: 4, maxWidth: '7xl' }}>
       <Typography
@@ -32,15 +37,19 @@ export const Dashboard: FC = () => {
                   component="h3"
                   sx={{ fontWeight: 600 }}
                 >
-                  Books Borrowed
+                  Items Borrowed
                 </Typography>
               </Box>
-              <Typography
-                variant="h3"
-                sx={{ fontWeight: 'bold', color: 'primary.main' }}
-              >
-                0
-              </Typography>
+              {isLoading && <Skeleton variant="text" width={100} height={30} />}
+              {error && <Typography>-</Typography>}
+              {data && !isLoading && !error && (
+                <Typography
+                  variant="h3"
+                  sx={{ fontWeight: 'bold', color: 'primary.main' }}
+                >
+                  {data.borrowed_items}
+                </Typography>
+              )}
             </CardContent>
           </Card>
         </Grid>
@@ -58,12 +67,16 @@ export const Dashboard: FC = () => {
                   Reservations
                 </Typography>
               </Box>
-              <Typography
-                variant="h3"
-                sx={{ fontWeight: 'bold', color: 'secondary.main' }}
-              >
-                0
-              </Typography>
+              {isLoading && <Skeleton variant="text" width={100} height={30} />}
+              {error && <Typography>-</Typography>}
+              {data && !isLoading && !error && (
+                <Typography
+                  variant="h3"
+                  sx={{ fontWeight: 'bold', color: 'secondary.main' }}
+                >
+                  {data ? data.total_reservations : 0}
+                </Typography>
+              )}
             </CardContent>
           </Card>
         </Grid>
@@ -81,12 +94,16 @@ export const Dashboard: FC = () => {
                   Outstanding Fines
                 </Typography>
               </Box>
-              <Typography
-                variant="h3"
-                sx={{ fontWeight: 'bold', color: 'error.main' }}
-              >
-                $0.00
-              </Typography>
+              {isLoading && <Skeleton variant="text" width={100} height={30} />}
+              {error && <Typography>-</Typography>}
+              {data && !isLoading && !error && (
+                <Typography
+                  variant="h3"
+                  sx={{ fontWeight: 'bold', color: 'error.main' }}
+                >
+                  ${Number(data.total_outstanding_fines).toFixed(2)}
+                </Typography>
+              )}
             </CardContent>
           </Card>
         </Grid>
@@ -102,9 +119,40 @@ export const Dashboard: FC = () => {
                 gutterBottom
                 sx={{ fontWeight: 600 }}
               >
-                Recent Activity
+                Inventory Status
               </Typography>
-              <Typography color="text.secondary">No recent activity</Typography>
+              {data && !isLoading && !error && (
+                <PieChart
+                  series={[
+                    {
+                      data: [
+                        {
+                          id: 0,
+                          value: data.available_items,
+                          label: 'Available',
+                        },
+                        {
+                          id: 1,
+                          value: data.borrowed_items,
+                          label: 'Checked Out',
+                        },
+                        {
+                          id: 2,
+                          value: data.unshelved_items,
+                          label: 'Unshelved',
+                        },
+                        {
+                          id: 3,
+                          value: data.reserved_items,
+                          label: 'Reserved',
+                        },
+                      ],
+                    },
+                  ]}
+                  width={200}
+                  height={200}
+                />
+              )}
             </CardContent>
           </Card>
         </Grid>
@@ -118,11 +166,9 @@ export const Dashboard: FC = () => {
                 gutterBottom
                 sx={{ fontWeight: 600 }}
               >
-                Upcoming Due Dates
+                TODO
               </Typography>
-              <Typography color="text.secondary">
-                No upcoming due dates
-              </Typography>
+              <Typography color="text.secondary">-</Typography>
             </CardContent>
           </Card>
         </Grid>

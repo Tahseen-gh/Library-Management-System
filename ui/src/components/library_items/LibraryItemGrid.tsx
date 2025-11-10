@@ -59,7 +59,7 @@ export const LibraryItemDataGrid = () => {
           rows={rows}
           columns={columns}
           loading={loading}
-          pageSizeOptions={[10, 25, 50]}
+          pageSizeOptions={[10, 25, 50, 100]}
           onRowDoubleClick={(params) =>
             handle_item_selected(params.row as Library_Item)
           }

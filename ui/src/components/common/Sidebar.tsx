@@ -14,7 +14,6 @@ import {
 import {
   Home,
   Dashboard,
-  Settings,
   SsidChart,
   Groups2,
   Book,
@@ -61,12 +60,8 @@ export const Sidebar = ({
       path: '/checkout',
       icon: <Output sx={{ transform: 'rotate(180deg)' }} />,
     },
-    { text: 'Mark Available', path: '/mark-available', icon: <CheckCircle /> },
+    { text: 'Mark Available', path: '/available', icon: <CheckCircle /> },
     { text: 'Reshelve', path: '/reshelve', icon: <Shelves /> },
-  ];
-
-  const admin_items = [
-    { text: 'Admin Panel', path: '/admin', icon: <Settings /> },
   ];
 
   const Get_Drawer_Component = ({ children }: PropsWithChildren) => {
@@ -175,44 +170,6 @@ export const Sidebar = ({
                   primary={item.text}
                   slotProps={{
                     primary: { fontWeight: isActive(item.path) ? 600 : 400 },
-                  }}
-                />
-              </ListItemButton>
-            </ListItem>
-          ))}
-
-          <Divider sx={{ my: 1, mx: 2 }} />
-
-          {admin_items.map((item) => (
-            <ListItem key={item.text} disablePadding>
-              <ListItemButton
-                component={Link}
-                to={item.path}
-                selected={isActive(item.path)}
-                sx={{
-                  mx: 1,
-                  borderRadius: 1,
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.50',
-                    color: 'primary.main',
-                    '&:hover': {
-                      backgroundColor: 'primary.100',
-                    },
-                  },
-                }}
-              >
-                <ListItemIcon
-                  sx={{
-                    color: isActive(item.path) ? 'primary.main' : 'inherit',
-                    minWidth: 40,
-                  }}
-                >
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText
-                  primary={item.text}
-                  sx={{
-                    fontWeight: isActive(item.path) ? 600 : 400,
                   }}
                 />
               </ListItemButton>
