@@ -65,3 +65,10 @@ export const useReturnBook = () => {
     },
   });
 };
+
+export const useGetTransactionsByPatronId = (patron_id: number) => {
+  return useQuery({
+    queryKey: ['transactions', 'patron', patron_id],
+    queryFn: () => data_service.getTransactionsByPatronId(patron_id),
+  });
+};

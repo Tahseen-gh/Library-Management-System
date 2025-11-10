@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Container, Typography, Fab } from '@mui/material';
+import { Container, Fab } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import { LibraryItemDataGrid } from '../components/library_items/LibraryItemGrid';
 import { CreateLibraryItemDialog } from '../components/library_items/CreateLibraryItemDialog';
@@ -25,14 +25,6 @@ export const LibraryItemsPage = () => {
         flexDirection: 'column',
       }}
     >
-      <Typography
-        variant="h3"
-        component="h1"
-        gutterBottom
-        sx={{ fontWeight: 'bold', mb: 3 }}
-      >
-        Library Items
-      </Typography>
       <>
         <LibraryItemDataGrid />
         <Fab

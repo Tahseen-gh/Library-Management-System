@@ -6,17 +6,18 @@ import {
   type GridRowSelectionModel,
 } from '@mui/x-data-grid';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useAllPatrons } from '../../hooks/usePatrons';
 import { format_date, is_overdue } from '../../utils/dateUtils';
-import { Alert, Box, Snackbar, Typography } from '@mui/material';
+import { Alert, Box, Chip, Snackbar, Typography } from '@mui/material';
 import { Link } from 'react-router-dom';
+import { CustomToolbar } from '../common/CustomDataGridToolbar';
 
 const columns: GridColDef[] = [
   {
     field: 'id',
     headerName: 'ID',
-    width: 50,
+    width: 90,
   },
   {
     field: 'first_name',
@@ -52,11 +53,15 @@ const columns: GridColDef[] = [
     headerName: 'Birthday',
     valueGetter: (value) => {
       if (!value || typeof value !== 'string') return '(No birthdate listed)';
-      if (typeof value === 'string' && (value as string).length !== 10)
+      if (typeof value === 'string' && (value as string).length !== 10) {
+        if ((value as string).includes('T')) {
+          return format_date((value as string).split('T')[0]);
+        }
         return '(Invalid Format)';
+      }
       return format_date(value);
     },
-    flex: 3,
+    flex: 2,
     renderCell: (params: GridRenderCellParams) => <Box>{params.value}</Box>,
   },
   {
@@ -67,7 +72,7 @@ const columns: GridColDef[] = [
         return '(No expiration date listed)';
       return format_date(value);
     },
-    flex: 3,
+    flex: 2,
     renderCell: (params: GridRenderCellParams) => (
       <Box
         sx={{
@@ -78,32 +83,40 @@ const columns: GridColDef[] = [
       </Box>
     ),
   },
+  { field: 'email', headerName: 'Email', flex: 2 },
+  { field: 'phone', headerName: 'Phone #', flex: 2 },
+  {
+    field: 'is_active',
+    headerName: 'Status',
+    flex: 1,
+    renderCell: (params) => (
+      <>
+        {params.value ? (
+          <Chip variant="outlined" color="success" label="Active"></Chip>
+        ) : (
+          <Chip variant="outlined" color="error" label="Inactive"></Chip>
+        )}
+      </>
+    ),
+  },
 ];
 
 interface PatronsDataGridProps {
-  onError?: (error: string) => void;
   cols?: GridColDef[];
   onPatronSelected?: (patronId: string) => void;
   check_overdue?: boolean;
-  density?: GridDensity;
 }
 
 export const PatronsDataGrid: React.FC<PatronsDataGridProps> = ({
-  onError,
   cols = columns,
   onPatronSelected = undefined,
   check_overdue: check_card_and_blanance = false,
-  density = 'standard',
 }) => {
-  const { data: patrons, isLoading: loading, error } = useAllPatrons();
+  const { data: patrons, isLoading: loading } = useAllPatrons();
 
   const [snack, set_snack] = useState<boolean>(false);
 
-  useEffect(() => {
-    if (error && onError) {
-      onError(error.message);
-    }
-  }, [error, onError]);
+  const [density, set_density] = useState<GridDensity>('standard');
 
   const patron_can_be_selected = (row: {
     card_expiration_date: Date;
@@ -128,7 +141,6 @@ export const PatronsDataGrid: React.FC<PatronsDataGridProps> = ({
         rows={patrons || []}
         columns={cols}
         loading={loading}
-        label="Patrons"
         pageSizeOptions={[50, 20, 15, 10, 5]}
         initialState={{
           pagination: {
@@ -148,8 +160,12 @@ export const PatronsDataGrid: React.FC<PatronsDataGridProps> = ({
             },
           },
         }}
+        slots={{ toolbar: CustomToolbar }}
         slotProps={{
           toolbar: {
+            density: density,
+            onDensityChange: set_density,
+            label: 'Patrons',
             printOptions: { disableToolbarButton: true },
             csvOptions: { disableToolbarButton: true },
           },

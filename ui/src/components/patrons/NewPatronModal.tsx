@@ -219,7 +219,7 @@ const New_Patron_Modal: FC<New_Patron_Modal_Props> = ({
               <DatePicker
                 label="Birthday (Optional)"
                 value={form_data.birthday}
-                onChange={handle_date_change('birthday')}
+                onChange={() => handle_date_change('birthday')}
                 disabled={is_loading}
                 maxDate={new Date()}
                 slotProps={{
@@ -233,7 +233,7 @@ const New_Patron_Modal: FC<New_Patron_Modal_Props> = ({
               <DatePicker
                 label="Card Expiration Date"
                 value={form_data.card_expiration_date}
-                onChange={handle_date_change('card_expiration_date')}
+                onChange={() => handle_date_change('card_expiration_date')}
                 disabled={is_loading}
                 minDate={new Date()}
                 slotProps={{

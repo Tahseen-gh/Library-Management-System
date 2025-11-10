@@ -20,16 +20,21 @@ const PatronsList: FC = () => {
         borderColor: 'divider',
         borderRadius: 1,
         py: 0,
+        maxHeight: '75vh',
+        overflow: 'auto',
       }}
     >
       {patrons.map((patron, index) => (
         <ListItem
           key={patron.id}
-          sx={{
+          sx={(theme) => ({
             borderBottom: index < patrons.length - 1 ? '1px solid' : 'none',
             borderColor: 'divider',
-            bgcolor: index % 2 === 0 ? 'background.paper' : '#1811d610',
-          }}
+            bgcolor:
+              index % 2 === 0
+                ? theme.palette.background.paper
+                : theme.alpha(theme.palette.background.paper, 0.6),
+          })}
         >
           <ListViewCell
             key={patron.id}

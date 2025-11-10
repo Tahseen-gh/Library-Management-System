@@ -1,26 +1,22 @@
 import { useState } from 'react';
-import { DataGrid, type GridColDef } from '@mui/x-data-grid';
+import { DataGrid, type GridColDef, type GridDensity } from '@mui/x-data-grid';
 import { type Library_Item } from '../../types';
-import { Snackbar, Alert, Chip, AlertTitle, Box } from '@mui/material';
+import { Snackbar, Alert, AlertTitle, Box } from '@mui/material';
 import { LibraryItemDetails } from './LibraryItemDetails';
-import { get_color_for_item_type } from '../../utils/colors';
 import { useLibraryItems } from '../../hooks/useLibraryItems';
+import ItemTypeChip from './ItemTypeChip';
+import { CustomToolbar } from '../common/CustomDataGridToolbar';
 
 const columns: GridColDef[] = [
-  { field: 'id', headerName: 'ID', width: 90 },
+  { field: 'id', headerName: 'ID', width: 60 },
   { field: 'title', headerName: 'Title', width: 150, editable: false },
   {
     field: 'item_type',
     headerName: 'Type',
-    width: 110,
+    width: 100,
     editable: false,
     renderCell: (params) => {
-      return (
-        <Chip
-          label={params.value}
-          sx={{ backgroundColor: get_color_for_item_type(params.value) }}
-        />
-      );
+      return <ItemTypeChip item_type={params.value} />;
     },
   },
   {
@@ -43,6 +39,7 @@ export const LibraryItemDataGrid = () => {
   const [selected_item, set_selected_item] = useState<Library_Item | null>(
     null
   );
+  const [density, set_density] = useState<GridDensity>('standard');
 
   const { data: rows, isLoading: loading, error } = useLibraryItems();
 
@@ -63,14 +60,17 @@ export const LibraryItemDataGrid = () => {
           onRowDoubleClick={(params) =>
             handle_item_selected(params.row as Library_Item)
           }
+          slots={{ toolbar: CustomToolbar }}
           slotProps={{
             toolbar: {
+              density: density,
+              onDensityChange: set_density,
+              label: 'Library Items',
               printOptions: { disableToolbarButton: true },
               csvOptions: { disableToolbarButton: true },
             },
           }}
           showToolbar
-          label="Library Items"
         />
       </Box>
       <LibraryItemDetails
