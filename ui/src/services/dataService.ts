@@ -111,7 +111,7 @@ export const data_service = {
         publication_year: library_item.publication_year,
         congress_code: library_item.congress_code,
         author: '', // These would come from books table
-        genre: '',
+        genre: [],
         publisher: '',
         cover_image_url: '',
         library_item_id: library_item.id,
@@ -144,7 +144,7 @@ export const data_service = {
     return {
       ...created_item,
       author: book.author || '',
-      genre: book?.genre || '',
+      genre: book?.genre || [],
       publisher: book?.publisher || '',
       cover_image_url: book?.cover_image_url || '',
       library_item_id: created_item.id,
