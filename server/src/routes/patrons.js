@@ -9,6 +9,7 @@ const validate_patron = [
   body('first_name').notEmpty().withMessage('First name is required'),
   body('last_name').notEmpty().withMessage('Last name is required'),
   body('email').optional().isEmail().withMessage('Invalid email format'),
+  body('phone').optional().isString().withMessage('Phone must be a string'),
   body('balance').optional().isFloat().withMessage('Balance must be a number'),
 ];
 

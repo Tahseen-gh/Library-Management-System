@@ -27,12 +27,13 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import type { Condition } from '../types';
 import { useReturnBook } from '../hooks/useTransactions';
+import { useCopyById } from '../hooks/useCopies';
 
 const conditions: string[] = ['New', 'Excellent', 'Good', 'Fair', 'Poor'];
 const steps = ['Select Item', 'Confirm Details'];
 
 interface CheckInFormData {
-  copy_id: number;
+  copy_id: number | null;
   new_condition?: Condition;
   new_location_id?: number;
   notes?: string;
@@ -40,7 +41,7 @@ interface CheckInFormData {
 
 export const CheckInItem: FC = () => {
   const [form_data, set_form_data] = useState<CheckInFormData>({
-    copy_id: 0,
+    copy_id: null,
   });
 
   const [active_step, set_active_step] = useState(0);
@@ -50,6 +51,15 @@ export const CheckInItem: FC = () => {
   const { branches, loading } = useBranchesContext();
 
   const [condition, set_condition] = useState<Condition>('Excellent');
+
+  const { data: copy_data } = useCopyById(form_data.copy_id ?? 0);
+
+  // Update condition when copy data is fetched
+  useEffect(() => {
+    if (copy_data?.condition) {
+      set_condition(copy_data.condition);
+    }
+  }, [copy_data]);
 
   const {
     mutate: return_book,
@@ -65,7 +75,7 @@ export const CheckInItem: FC = () => {
       // Reset form and go to completion step
       setTimeout(() => {
         set_active_step(steps.length);
-        set_form_data({ copy_id: 0 });
+        set_form_data({ copy_id: null });
         set_condition('Excellent');
       }, 1000);
     } else if (isError) {
@@ -79,12 +89,28 @@ export const CheckInItem: FC = () => {
 
   const handle_next = () => {
     if (active_step === steps.length - 1) {
-      return_book({
-        copy_id: form_data.copy_id,
-        new_condition: condition,
-        new_location_id: form_data?.new_location_id || 0,
-        notes: form_data?.notes,
-      });
+      return_book(
+        {
+          copy_id: form_data.copy_id || 0,
+          new_condition: condition,
+          new_location_id: form_data?.new_location_id || 0,
+          notes: form_data?.notes,
+        },
+        {
+          onSuccess: () => {
+            set_snackbar_open(true);
+            // Reset form and go to completion step
+            setTimeout(() => {
+              set_active_step(steps.length);
+              set_form_data({ copy_id: null });
+              set_condition('Excellent');
+            }, 1000);
+          },
+          onError: () => {
+            set_snackbar_open(true);
+          },
+        }
+      );
       return;
     }
     let new_skipped = skipped;
@@ -103,7 +129,7 @@ export const CheckInItem: FC = () => {
 
   const handleReset = () => {
     set_active_step(0);
-    set_form_data({ copy_id: 0 });
+    set_form_data({ copy_id: null });
     set_condition('Excellent');
   };
 
@@ -112,7 +138,7 @@ export const CheckInItem: FC = () => {
   };
 
   const is_next_disabled = () => {
-    if (active_step === 0 && (!form_data.copy_id || form_data.copy_id === 0))
+    if (active_step === 0 && (!form_data.copy_id || form_data.copy_id === null))
       return true;
 
     return false;
@@ -139,7 +165,7 @@ export const CheckInItem: FC = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Container sx={{ pt: 4, maxWidth: '7xl', height: '100%' }}>
+      <Container maxWidth="xl" sx={{ pt: 4, height: '100%' }}>
         <Typography
           variant="h4"
           component="h1"
@@ -151,8 +177,7 @@ export const CheckInItem: FC = () => {
             fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
           }}
         >
-          {'Check In Item' +
-            (form_data.copy_id ? `: ${form_data.copy_id}` : '')}
+          {`Check In Item | Copy ID: ${form_data.copy_id || ''}`}
         </Typography>
 
         <Stepper activeStep={active_step}>
@@ -305,6 +330,8 @@ export const CheckInItem: FC = () => {
                     ? `Select ${
                         active_step === 0 ? 'patron' : 'item'
                       } to proceed`
+                    : active_step === steps.length - 1
+                    ? 'Finish Check-In'
                     : 'Next page'
                 }
               ></Tooltip>

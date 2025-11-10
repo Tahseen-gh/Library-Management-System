@@ -108,7 +108,9 @@ export const HomePage = () => {
                 </Typography>
               }
             />
-            <CardContent sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}>
+            <CardContent
+              sx={{ display: 'flex', flexDirection: 'row', gap: 1, mb: 1 }}
+            >
               <Stack sx={{ flexGrow: 1, gap: 1 }}>
                 <ActionButton
                   onClick={() => set_create_book_drawer_open(true)}
@@ -127,13 +129,13 @@ export const HomePage = () => {
                   label="Process Returns"
                   key="process-returns-button"
                 ></ActionButton>
+              </Stack>
+              <Stack sx={{ flexGrow: 1, gap: 1 }}>
                 <ActionButton
                   icon={<Assessment />}
                   label="Generate Reports"
                   key="generate-reports-button"
                 ></ActionButton>
-              </Stack>
-              <Stack sx={{ flexGrow: 1, gap: 1 }}>
                 <ActionLink url="/checkin">
                   <ActionButton
                     label="Check In"
@@ -148,6 +150,8 @@ export const HomePage = () => {
                     icon={<LibraryAdd />}
                   />
                 </ActionLink>
+              </Stack>
+              <Stack sx={{ flexGrow: 1, gap: 1 }}>
                 <ActionLink url="/available">
                   <ActionButton
                     label="Mark Items Available"
@@ -162,6 +166,11 @@ export const HomePage = () => {
                     icon={<Shelves />}
                   />
                 </ActionLink>
+                <ActionButton
+                  label="Something Else"
+                  key="something-else-button"
+                  icon={<Shelves />}
+                />
               </Stack>
             </CardContent>
           </Card>
@@ -269,14 +278,14 @@ function ActionButton({
       startIcon={icon}
       sx={{
         justifyContent: 'flex-start',
-        p: 2,
-        height: '100%',
+        p: 1.5,
         position: 'relative',
         overflow: 'hidden',
         '& .MuiButton-startIcon': { color: colors.contrast },
         background: `linear-gradient(90deg, ${colors.active_primary} 20%, ${colors.active_secondary} 85%)`,
         '&::before': {
           content: '""',
+          lineHeight: '1em',
           position: 'absolute',
           top: 0,
           left: 0,

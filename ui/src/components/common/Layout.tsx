@@ -25,18 +25,10 @@ export const Layout = () => {
             component="main"
             sx={(theme) => ({
               flexGrow: 1,
-              bgcolor: 'background.default',
+              bgcolor:
+                theme.palette.mode === 'dark' ? '#292929ff' : '#eeeeeeff',
               width: 1,
               overflow: 'auto',
-              '& ::-webkit-scrollbar': { width: '4px', height: '4px' },
-              '& ::-webkit-scrollbar-track': {
-                background: theme.palette.divider,
-                borderRadius: '100vw',
-              },
-              '& ::-webkit-scrollbar-thumb': {
-                backgroundColor: theme.palette.text.primary,
-                borderRadius: '100vw',
-              },
             })}
           >
             <Outlet />

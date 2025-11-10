@@ -38,11 +38,9 @@ export const Header = ({
           direction="row"
           spacing={1}
         >
-          {!xsUp && (
-            <IconButton onClick={() => setSidebarOpen(!sidebarOpen)}>
-              <Menu />
-            </IconButton>
-          )}
+          <IconButton onClick={() => setSidebarOpen(!sidebarOpen)}>
+            <Menu />
+          </IconButton>
           <Typography
             variant="h6"
             component={Link}

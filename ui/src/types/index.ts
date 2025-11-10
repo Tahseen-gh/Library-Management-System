@@ -1,14 +1,29 @@
+export type Transaction_Type =
+  | 'CHECKOUT'
+  | 'CHECKIN'
+  | 'BALANCE'
+  | 'RENEWAL'
+  | 'DAMAGED'
+  | 'LOST';
+
+export type Transaction_Status =
+  | 'Active'
+  | 'Returned'
+  | 'Overdue'
+  | 'Lost'
+  | 'Completed';
+
 export interface Transaction {
   id: number;
   copy_id: number;
   patron_id: number;
-  transaction_type: 'Checkout' | 'Checkin' | 'Balance' | 'Renewal';
+  transaction_type: Transaction_Type;
   created_at: Date;
   updated_at: Date;
   due_date?: string;
   return_date?: string;
   fine_amount?: number;
-  status: 'Active' | 'Returned' | 'Overdue' | 'Lost' | 'Completed';
+  status: Transaction_Status;
   notes: string;
   first_name?: string;
   last_name?: string;
@@ -17,13 +32,25 @@ export interface Transaction {
   branch_id: number;
 }
 
+export type ReservationStatus =
+  | 'pending'
+  | 'fulfilled'
+  | 'cancelled'
+  | 'ready'
+  | 'expired';
+
 export interface Reservation {
   id: number;
-  book_id: number;
+  library_item_id: number;
+  patron_id: number;
   reservation_date: string;
-  status: 'pending' | 'fulfilled' | 'cancelled';
   expiry_date: string;
-  book?: Book;
+  status: ReservationStatus;
+  queue_position?: number;
+  title: string;
+  item_type: Library_Item_Type;
+  first_name?: string;
+  last_name?: string;
 }
 
 export interface Fine {
@@ -88,6 +115,8 @@ export interface Patron {
   last_name: string;
   balance: number;
   birthday?: Date;
+  email?: string;
+  phone?: string;
   card_expiration_date: Date;
   image_url?: string;
 }
@@ -97,6 +126,8 @@ export interface Patron_Form_Data {
   last_name: string;
   balance?: number;
   birthday?: Date;
+  email?: string;
+  phone?: string;
   card_expiration_date: Date;
   image_url?: string;
 }

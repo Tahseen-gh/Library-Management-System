@@ -1,9 +1,18 @@
-import { Container, Typography, Chip } from '@mui/material';
-import { DataGrid, type GridColDef } from '@mui/x-data-grid';
+import { Container } from '@mui/material';
+import { DataGrid, type GridColDef, type GridDensity } from '@mui/x-data-grid';
 import { useTransactions } from '../hooks/useTransactions';
+import { TransactionStatusChip } from '../components/transactions/TransactionStatusChip';
+import { TransactionTypeChip } from '../components/transactions/TransactionTypeChip';
+import { useState } from 'react';
+import { CustomToolbar } from '../components/common/CustomDataGridToolbar';
 
-// Columns for patron's transaction history
 const transaction_cols: GridColDef[] = [
+  {
+    field: 'id',
+    headerName: 'ID',
+    width: 90,
+    valueGetter: (value) => Number(value),
+  },
   {
     field: 'title',
     headerName: 'Item',
@@ -14,10 +23,7 @@ const transaction_cols: GridColDef[] = [
     field: 'transaction_type',
     headerName: 'Type',
     width: 120,
-    valueFormatter: (value) => {
-      const str = String(value);
-      return str.charAt(0).toUpperCase() + str.slice(1);
-    },
+    renderCell: (params) => <TransactionTypeChip status={params.value} />,
   },
   {
     field: 'checkout_date',
@@ -47,22 +53,7 @@ const transaction_cols: GridColDef[] = [
     field: 'status',
     headerName: 'Status',
     width: 120,
-    renderCell: (params) => (
-      <Chip
-        label={params.value}
-        color={
-          params.value === 'Active'
-            ? 'primary'
-            : params.value === 'Overdue'
-            ? 'warning'
-            : params.value === 'Returned'
-            ? 'success'
-            : 'error'
-        }
-        size="small"
-        variant="outlined"
-      />
-    ),
+    renderCell: (params) => <TransactionStatusChip status={params.value} />,
   },
   {
     field: 'fine_amount',
@@ -76,12 +67,24 @@ const transaction_cols: GridColDef[] = [
 
 export const TransactionsPage = () => {
   const { data: transactions } = useTransactions();
+  const [density, set_density] = useState<GridDensity>('standard');
+
   return (
     <Container maxWidth="xl" sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Transaction
-      </Typography>
-      <DataGrid rows={transactions || []} columns={transaction_cols} />
+      <DataGrid
+        showToolbar
+        rows={transactions || []}
+        columns={transaction_cols}
+        density={density}
+        slots={{ toolbar: CustomToolbar }}
+        slotProps={{
+          toolbar: {
+            density: density,
+            onDensityChange: set_density,
+            label: 'Transactions',
+          },
+        }}
+      />
     </Container>
   );
 };

@@ -264,6 +264,12 @@ export const data_service = {
     return await api_request<Transaction[]>('/transactions');
   },
 
+  async getTransactionsByPatronId(patron_id: number): Promise<Transaction[]> {
+    return await api_request<Transaction[]>(
+      `/transactions?patron_id=${patron_id}`
+    );
+  },
+
   async getOverdueTransactions(): Promise<Transaction[]> {
     // Get all active transactions and filter overdue on client side
     // TODO: Add server-side filtering for overdue transactions
@@ -379,6 +385,23 @@ export const data_service = {
       method: 'POST',
       body: JSON.stringify(patron_data),
     });
+  },
+
+  async update_patron(
+    patron_id: number,
+    patron_data: Partial<Patron_Form_Data>
+  ): Promise<Patron> {
+    return await api_request<Patron>(`/patrons/${patron_id}`, {
+      method: 'PUT',
+      body: JSON.stringify(patron_data),
+    });
+  },
+
+  async delete_patron_by_id(patron_id: number): Promise<boolean> {
+    await api_request(`/patrons/${patron_id}`, {
+      method: 'DELETE',
+    });
+    return true;
   },
 
   async get_stats(): Promise<Record<string, number>> {

@@ -254,7 +254,6 @@ export const CheckOutItem: React.FC = () => {
               {active_step === 0 && (
                 <PatronsDataGrid
                   cols={columns}
-                  onError={set_error}
                   onPatronSelected={handle_patron_selected}
                   check_overdue={true}
                 />
@@ -285,7 +284,9 @@ export const CheckOutItem: React.FC = () => {
                     onChange={(new_value) =>
                       set_form_data((prev) => ({
                         ...prev,
-                        due_date: new_value || two_weeks_from_now,
+                        due_date: new_value
+                          ? new Date(new_value.toString())
+                          : two_weeks_from_now,
                       }))
                     }
                   />
