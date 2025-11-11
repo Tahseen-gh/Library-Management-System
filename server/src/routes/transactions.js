@@ -5,8 +5,7 @@ import * as db from '../config/database.js';
 const router = express.Router();
 
 const validate_checkout = [
-  body('patron_id').isInt({ min: 1 }).withMessage('Valid patron ID is required'),
-  body('copy_id').isInt({ min: 1 }).withMessage('Valid copy ID is required'),
+  body('patron_id').isString().withMessage('Valid patron ID is required'),
   body('due_date')
     .optional()
     .isISO8601()
@@ -133,7 +132,7 @@ router.post(
       const { copy_id, patron_id, due_date } = req.body;
 
       // Verify item copy exists and is available
-      const item_copy = await db.get_by_id('LIBRARY_ITEM_COPIES', copy_id);
+      const item_copy = await db.get_by_id('item_copies', copy_id);
       if (!item_copy) {
         return res.status(400).json({
           error: 'Item copy not found',
@@ -184,38 +183,10 @@ router.post(
         updated_at: new Date(),
       });
 
-      // Fetch enriched data for receipt
-      const query = `
-        SELECT
-          t.*,
-          p.first_name,
-          p.last_name,
-          li.title,
-          li.item_type,
-          li.publication_year,
-          b.author,
-          b.publisher,
-          v.director,
-          v.studio,
-          v.is_new_release
-        FROM TRANSACTIONS t
-        JOIN PATRONS p ON t.patron_id = p.id
-        JOIN LIBRARY_ITEM_COPIES ic ON t.copy_id = ic.id
-        JOIN LIBRARY_ITEMS li ON ic.library_item_id = li.id
-        LEFT JOIN BOOKS b ON li.id = b.library_item_id
-        LEFT JOIN VIDEOS v ON li.id = v.library_item_id
-        WHERE t.copy_id = ? AND t.patron_id = ? AND t.status = 'Active'
-        ORDER BY t.created_at DESC
-        LIMIT 1
-      `;
-
-      const results = await db.execute_query(query, [copy_id, patron_id]);
-      const enriched_transaction = results[0];
-
       res.status(201).json({
         success: true,
         message: 'Item checked out successfully',
-        data: enriched_transaction,
+        data: transaction_data,
       });
     } catch (error) {
       res.status(500).json({
@@ -257,14 +228,6 @@ router.post(
       const return_date = new Date(); // today
       const due_date = new Date(transaction.due_date);
 
-      // Get item copy details
-      const item_copy = await db.get_by_id('LIBRARY_ITEM_COPIES', copy_id);
-      if (!item_copy) {
-        return res.status(400).json({
-          error: 'Item copy not found',
-        });
-      }
-
       // Calculate fine if overdue
       let fine_amount = 0;
       if (return_date > due_date) {
@@ -283,14 +246,13 @@ router.post(
         updated_at: new Date(),
       });
 
-      // Update item copy - use owning_branch_id as default if no new location specified
-      // Status set to 'returned' so it can be reshelved later
+      // Update item copy
       const update_data = {
-        status: 'returned',
+        status: 'Available',
         checked_out_by: null,
         due_date: null,
-        current_branch_id: new_location_id || item_copy.owning_branch_id,
-        condition: new_condition || item_copy.condition,
+        location: new_location_id || transaction.location_id,
+        condition: new_condition || transaction.condition,
         updated_at: new Date(),
       };
 
@@ -388,49 +350,5 @@ router.put('/:id/renew', async (req, res) => {
     });
   }
 });
-
-// POST /api/v1/transactions/reshelve - Mark item as available (reshelve process)
-router.post(
-  '/reshelve',
-  [body('copy_id').isNumeric().withMessage('Valid copy ID is required')],
-  handle_validation_errors,
-  async (req, res) => {
-    try {
-      const { copy_id, branch_id } = req.body;
-
-      // Get item copy
-      const item_copy = await db.get_by_id('LIBRARY_ITEM_COPIES', copy_id);
-      if (!item_copy) {
-        return res.status(400).json({
-          error: 'Item copy not found',
-        });
-      }
-
-      // Update item copy status to Available
-      await db.update_record('LIBRARY_ITEM_COPIES', copy_id, {
-        status: 'Available',
-        current_branch_id: branch_id || item_copy.owning_branch_id,
-        checked_out_by: null,
-        due_date: null,
-        updated_at: new Date(),
-      });
-
-      res.json({
-        success: true,
-        message: 'Item marked as available successfully',
-        data: {
-          copy_id,
-          status: 'Available',
-          branch_id: branch_id || item_copy.owning_branch_id,
-        },
-      });
-    } catch (error) {
-      res.status(500).json({
-        error: 'Failed to mark item as available',
-        message: error.message,
-      });
-    }
-  }
-);
 
 export default router;

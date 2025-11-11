@@ -7,10 +7,7 @@ export function TransactionTypeChip({
 }: {
   status: Transaction_Type;
 }): JSX.Element {
-  // Convert to uppercase for case-insensitive matching
-  const normalizedStatus = status?.toUpperCase();
-
-  switch (normalizedStatus) {
+  switch (status) {
     case 'CHECKOUT':
       return <Chip variant="outlined" label="Checkout" color="info" />;
     case 'CHECKIN':

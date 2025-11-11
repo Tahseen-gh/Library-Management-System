@@ -157,7 +157,7 @@ router.post(
 
       // Check if item is available
       const available_copies = await db.execute_query(
-        'SELECT COUNT(*) as count FROM LIBRARY_ITEM_COPIES WHERE library_item_id = ? AND status = "Available"',
+        'SELECT COUNT(*) as count FROM ITEM_COPIES WHERE library_item_id = ? AND status = "Available"',
         [library_item.id]
       );
 
@@ -243,7 +243,7 @@ router.put('/:id/fulfill', async (req, res) => {
     });
 
     // Reserve the item copy
-    await db.update_record('LIBRARY_ITEM_COPIES', available_copies[0].id, {
+    await db.update_record('ITEM_COPIES', available_copies[0].id, {
       status: 'Reserved',
       updated_at: new Date(),
     });

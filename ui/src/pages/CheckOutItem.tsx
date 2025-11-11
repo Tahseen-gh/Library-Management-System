@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Container,
   Typography,
@@ -9,9 +9,9 @@ import {
   Step,
   StepLabel,
   Stepper,
+  Paper,
   Snackbar,
   Tooltip,
-  CircularProgress,
 } from '@mui/material';
 import { LibraryAdd } from '@mui/icons-material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -19,14 +19,19 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { PatronsDataGrid } from '../components/patrons/PatronsDataGrid';
 import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { CopiesDataGrid } from '../components/copies/CopiesDataGrid';
-import { format_date, is_overdue, calculate_due_date } from '../utils/dateUtils';
+import { format_date, is_overdue } from '../utils/dateUtils';
+import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 import { useCheckoutBook } from '../hooks/useTransactions';
 import { ConfirmCheckoutDetails } from '../components/common/ConfirmCheckoutDetails';
-import { useCopyById } from '../hooks/useCopies';
 
 const two_weeks_from_now = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // Default 2 weeks from now
 
-const steps = ['Select Patron', 'Select Item', 'Confirm Details'];
+const steps = [
+  'Select Patron',
+  'Select Item',
+  'Select Due Date',
+  'Confirm Details',
+];
 
 const columns: GridColDef[] = [
   { field: 'id', headerName: 'ID', width: 50 },
@@ -97,26 +102,8 @@ export const CheckOutItem: React.FC = () => {
 
   const [active_step, set_active_step] = useState(0);
   const [skipped, set_skipped] = useState(new Set<number>());
-  const [is_validation_passing, set_is_validation_passing] = useState(true);
 
-  const {
-    mutate: checkoutBook,
-    isPending: is_checking_out,
-  } = useCheckoutBook();
-
-  // Fetch item details to calculate due date
-  const { data: selected_item } = useCopyById(form_data.item_id || 0);
-
-  // Automatically calculate due date when item is selected
-  useEffect(() => {
-    if (selected_item && form_data.item_id) {
-      const item_type = (selected_item as any).item_type || 'BOOK';
-      // TODO: Add logic to determine if item is "new" based on publication date or status
-      const is_new = false;
-      const calculated_due_date = calculate_due_date(item_type, is_new);
-      set_form_data((prev) => ({ ...prev, due_date: calculated_due_date }));
-    }
-  }, [selected_item, form_data.item_id]);
+  const { mutate: checkoutBook } = useCheckoutBook();
 
   const handle_retry = useCallback(() => {
     set_error(null);
@@ -129,24 +116,11 @@ export const CheckOutItem: React.FC = () => {
 
   const handle_next = () => {
     if (active_step === steps.length - 1) {
-      checkoutBook(
-        {
-          patron_id: form_data.patron_id,
-          copy_id: form_data.item_id,
-          due_date: form_data.due_date,
-        },
-        {
-          onSuccess: () => {
-            set_success(
-              `Successfully checked out item ${form_data.item_id} to patron ${form_data.patron_id}`
-            );
-            set_active_step(steps.length);
-          },
-          onError: (error: Error) => {
-            set_error(error.message || 'Failed to checkout item');
-          },
-        }
-      );
+      checkoutBook({
+        patron_id: form_data.patron_id,
+        copy_id: form_data.item_id,
+        due_date: form_data.due_date,
+      });
       return;
     }
     let new_skipped = skipped;
@@ -165,13 +139,6 @@ export const CheckOutItem: React.FC = () => {
 
   const handleReset = () => {
     set_active_step(0);
-    set_form_data({
-      patron_id: 0,
-      item_id: 0,
-      due_date: two_weeks_from_now,
-    });
-    set_error(null);
-    set_success(null);
   };
 
   const is_next_disabled = () => {
@@ -179,9 +146,7 @@ export const CheckOutItem: React.FC = () => {
 
     if (active_step === 1 && !form_data.item_id) return true;
 
-    // Block on confirmation step if validation fails
-    if (active_step === 2 && !is_validation_passing) return true;
-
+    if (active_step === 2 && !form_data.due_date) return true;
     return false;
   };
 
@@ -297,13 +262,43 @@ export const CheckOutItem: React.FC = () => {
                 <CopiesDataGrid on_copy_selected={handle_copy_selected} />
               )}
               {active_step === 2 && (
+                <Paper
+                  elevation={4}
+                  sx={{
+                    height: 'min-content',
+                    width: 'min-content',
+                    mx: 'auto',
+                    mt: 2,
+                  }}
+                >
+                  <Typography
+                    variant="h6"
+                    sx={{ p: 2, pb: 0 }}
+                    color="text.secondary"
+                    fontSize={{ xs: '0.9rem', sm: '1rem', md: '1.2rem' }}
+                  >
+                    Select Due Date
+                  </Typography>
+                  <DateCalendar
+                    value={form_data.due_date}
+                    onChange={(new_value) =>
+                      set_form_data((prev) => ({
+                        ...prev,
+                        due_date: new_value
+                          ? new Date(new_value.toString())
+                          : two_weeks_from_now,
+                      }))
+                    }
+                  />
+                </Paper>
+              )}
+              {active_step === 3 && (
                 <ConfirmCheckoutDetails
                   patron_id={form_data.patron_id}
                   copy_id={form_data.item_id}
                   due_date={form_data.due_date}
                   on_confirm={() => {}}
                   on_cancel={() => {}}
-                  on_validation_change={set_is_validation_passing}
                 />
               )}
               <Box />
@@ -331,18 +326,9 @@ export const CheckOutItem: React.FC = () => {
                     <Button
                       variant="outlined"
                       onClick={handle_next}
-                      disabled={is_next_disabled() || is_checking_out}
-                      startIcon={
-                        is_checking_out && active_step === steps.length - 1 ? (
-                          <CircularProgress size={20} />
-                        ) : null
-                      }
+                      disabled={is_next_disabled()}
                     >
-                      {active_step === steps.length - 1
-                        ? is_checking_out
-                          ? 'Processing...'
-                          : 'Complete'
-                        : 'Next'}
+                      {active_step === steps.length - 1 ? 'Complete' : 'Next'}
                     </Button>
                   </span>
                 }

@@ -212,7 +212,6 @@ async function create_tables() {
         library_item_id INTEGER NOT NULL,
         owning_branch_id INTEGER NOT NULL DEFAULT 1,
         return_to_branch_id INTEGER NOT NULL DEFAULT 1,
-        current_branch_id INTEGER DEFAULT 1,
         condition TEXT DEFAULT 'Good',
         status TEXT DEFAULT 'Available',
         cost REAL,
@@ -221,12 +220,9 @@ async function create_tables() {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         date_acquired DATE,
         due_date DATE,
-        checked_out_by INTEGER,
         FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE,
         FOREIGN KEY (owning_branch_id) REFERENCES BRANCHES(id) ON DELETE SET NULL,
-        FOREIGN KEY (return_to_branch_id) REFERENCES BRANCHES(id) ON DELETE SET NULL,
-        FOREIGN KEY (current_branch_id) REFERENCES BRANCHES(id) ON DELETE SET NULL,
-        FOREIGN KEY (checked_out_by) REFERENCES PATRONS(id) ON DELETE SET NULL
+        FOREIGN KEY (return_to_branch_id) REFERENCES BRANCHES(id) ON DELETE SET NULL
       );
     `);
 
@@ -288,25 +284,6 @@ async function create_tables() {
       )
     `);
 
-    // Migration: Add missing columns to existing LIBRARY_ITEM_COPIES table
-    // Check if columns exist and add them if they don't
-    try {
-      const tableInfo = await db.all('PRAGMA table_info(LIBRARY_ITEM_COPIES)');
-      const columnNames = tableInfo.map(col => col.name);
-
-      if (!columnNames.includes('checked_out_by')) {
-        await db.exec('ALTER TABLE LIBRARY_ITEM_COPIES ADD COLUMN checked_out_by INTEGER REFERENCES PATRONS(id) ON DELETE SET NULL');
-        console.log(pico.bgYellow(pico.bold('✓ Added checked_out_by column to LIBRARY_ITEM_COPIES')));
-      }
-
-      if (!columnNames.includes('current_branch_id')) {
-        await db.exec('ALTER TABLE LIBRARY_ITEM_COPIES ADD COLUMN current_branch_id INTEGER DEFAULT 1 REFERENCES BRANCHES(id) ON DELETE SET NULL');
-        console.log(pico.bgYellow(pico.bold('✓ Added current_branch_id column to LIBRARY_ITEM_COPIES')));
-      }
-    } catch (migrationError) {
-      console.error(pico.bgYellow(pico.bold('Migration warning: ')), migrationError.message);
-    }
-
     // Create optimized indexes for better performance
     await db.exec(`
       -- Core entity indexes
@@ -320,8 +297,6 @@ async function create_tables() {
       CREATE INDEX IF NOT EXISTS idx_library_item_copies_item_id ON LIBRARY_ITEM_COPIES(library_item_id);
       CREATE INDEX IF NOT EXISTS idx_library_item_copies_composite ON LIBRARY_ITEM_COPIES(library_item_id, status, owning_branch_id);
       CREATE INDEX IF NOT EXISTS idx_library_item_copies_dates ON LIBRARY_ITEM_COPIES(date_acquired, due_date);
-      CREATE INDEX IF NOT EXISTS idx_library_item_copies_checked_out_by ON LIBRARY_ITEM_COPIES(checked_out_by);
-      CREATE INDEX IF NOT EXISTS idx_library_item_copies_current_branch ON LIBRARY_ITEM_COPIES(current_branch_id);
       
       -- Patron indexes for search and active status
       CREATE INDEX IF NOT EXISTS idx_patrons_name ON PATRONS(last_name, first_name);

@@ -66,17 +66,39 @@ const InfoItem = ({ icon, value, label }: InfoItemProps) => (
   </Stack>
 );
 
+interface StatCardProps {
+  value: string | number;
+  label: string;
+}
+
+const StatCard = ({ value, label }: StatCardProps) => (
+  <Grid size={{ xs: 4 }}>
+    <Box sx={{ p: { xs: 1, md: 2 }, textAlign: 'center' }}>
+      <Typography
+        variant="h4"
+        sx={{
+          fontWeight: 700,
+          fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
+        }}
+      >
+        {value}
+      </Typography>
+      <Typography
+        variant="body2"
+        sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' } }}
+      >
+        {label}
+      </Typography>
+    </Box>
+  </Grid>
+);
+
 // Columns for patron's transaction history
 const cols: GridColDef[] = [
   {
     field: 'title',
     headerName: 'Item',
     width: 250,
-  },
-  {
-    field: 'copy_id',
-    headerName: 'Copy ID',
-    width: 100,
   },
   {
     field: 'transaction_type',
@@ -317,11 +339,13 @@ export const PatronPage = () => {
   }
 
   const is_card_expired = new Date(patron.card_expiration_date) < new Date();
+  const total_fines =
+    pt?.reduce((sum, t) => sum + (t.fine_amount || 0), 0) || 0;
 
   return (
     <Container maxWidth="xl" sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
       <Grid container spacing={{ xs: 2, md: 3 }}>
-        <Grid size={{ xs: 12 }}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ borderRadius: 3 }}>
             <CardHeader
               action={
@@ -449,6 +473,34 @@ export const PatronPage = () => {
                 </Stack>
               }
             />
+          </Card>
+        </Grid>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card
+            sx={{
+              borderRadius: 3,
+            }}
+          >
+            <CardContent>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 600,
+                  mb: 2,
+                  fontSize: { xs: '1rem', md: '1.25rem' },
+                }}
+              >
+                Statistics
+              </Typography>
+              <Grid container spacing={1}>
+                <StatCard value={5} label="Active Checkouts" />
+                <StatCard value={5} label="Total Returns" />
+                <StatCard
+                  value={`$${total_fines.toFixed(2)}`}
+                  label="Total Fines"
+                />
+              </Grid>
+            </CardContent>
           </Card>
         </Grid>
         <Grid size={{ xs: 12 }}>

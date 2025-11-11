@@ -20,16 +20,12 @@ const API_BASE_URL = is_dev
   ? 'http://localhost:3000/api/v1'
   : import.meta.env.VITE_API_BASE_URL;
 
-console.log('[DataService] Environment:', import.meta.env.MODE);
-console.log('[DataService] API_BASE_URL:', API_BASE_URL);
-
 // Generic HTTP request function
 const api_request = async <T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`;
-  console.log('[DataService] Making request to:', url);
 
   const config: RequestInit = {
     headers: {
@@ -41,7 +37,6 @@ const api_request = async <T>(
 
   try {
     const response = await fetch(url, config);
-    console.log('[DataService] Response status:', response.status, 'for', url);
 
     if (!response.ok) {
       const error_data = await response.json().catch(() => ({}));
@@ -53,10 +48,7 @@ const api_request = async <T>(
     }
 
     const data = await response.json();
-    console.log('[DataService] Raw response data:', data);
-    const result = data.data || data;
-    console.log('[DataService] Returning:', result);
-    return result;
+    return data.data || data;
   } catch (error: Error | unknown) {
     if (error instanceof Error) {
       throw error;

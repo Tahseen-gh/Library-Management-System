@@ -70,98 +70,13 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    // Get active checkout count
-    const active_checkout_count = await db.execute_query(
-      'SELECT COUNT(*) as count FROM TRANSACTIONS WHERE patron_id = ? AND status = "Active"',
-      [req.params.id]
-    );
-
     res.json({
       success: true,
-      data: {
-        ...patron,
-        active_checkouts: active_checkout_count[0].count,
-      },
+      data: patron,
     });
   } catch (error) {
     res.status(500).json({
       error: 'Failed to fetch patron',
-      message: error.message,
-    });
-  }
-});
-
-// GET /api/v1/patrons/:id/validate - Validate patron for checkout
-router.get('/:id/validate', async (req, res) => {
-  try {
-    const patron = await db.get_by_id('PATRONS', req.params.id);
-
-    if (!patron) {
-      return res.status(404).json({
-        success: false,
-        valid: false,
-        error: 'Patron not found',
-        error_type: 'not_found',
-      });
-    }
-
-    // Get active checkout count
-    const active_checkout_count = await db.execute_query(
-      'SELECT COUNT(*) as count FROM TRANSACTIONS WHERE patron_id = ? AND status = "Active"',
-      [req.params.id]
-    );
-
-    const checkout_count = active_checkout_count[0].count;
-    const current_date = new Date().toISOString().split('T')[0];
-    const card_expiration = patron.card_expiration_date;
-
-    // Check all validation rules
-    const validations = {
-      patron_exists: true,
-      card_valid: card_expiration >= current_date,
-      no_fines: patron.balance <= 0,
-      under_limit: checkout_count < 20,
-    };
-
-    const is_valid = Object.values(validations).every(v => v === true);
-
-    // Determine error type and message
-    let error_type = null;
-    let error_message = null;
-
-    if (!validations.card_valid) {
-      error_type = 'card_expired';
-      error_message = 'Patron card has expired';
-    } else if (!validations.no_fines) {
-      error_type = 'has_fines';
-      error_message = `Patron owes $${patron.balance.toFixed(2)} in fines`;
-    } else if (!validations.under_limit) {
-      error_type = 'too_many_books';
-      error_message = 'Patron has reached the maximum checkout limit (20 books)';
-    }
-
-    res.json({
-      success: true,
-      valid: is_valid,
-      patron: {
-        id: patron.id,
-        first_name: patron.first_name,
-        last_name: patron.last_name,
-        email: patron.email,
-        balance: patron.balance,
-        card_expiration_date: patron.card_expiration_date,
-        active_checkouts: checkout_count,
-        is_active: patron.is_active,
-      },
-      validations,
-      error_type,
-      error_message,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      valid: false,
-      error: 'Failed to validate patron',
       message: error.message,
     });
   }
@@ -179,11 +94,11 @@ router.get('/:id/transactions', async (req, res) => {
     }
 
     const transactions = await db.execute_query(
-      `SELECT t.*, ci.title, ci.item_type
-       FROM TRANSACTIONS t
-       JOIN LIBRARY_ITEM_COPIES ic ON t.copy_id = ic.id
-       JOIN LIBRARY_ITEMS ci ON ic.library_item_id = ci.id
-       WHERE t.patron_id = ?
+      `SELECT t.*, ci.title, ci.item_type 
+       FROM TRANSACTIONS t 
+       JOIN ITEM_COPIES ic ON t.copy_id = ic.id 
+       JOIN LIBRARY_ITEMS ci ON ic.library_item_id = ci.id 
+       WHERE t.patron_id = ? 
        ORDER BY t.created_at DESC`,
       [req.params.id]
     );
