@@ -119,6 +119,7 @@ export interface Patron {
   phone?: string;
   card_expiration_date: Date;
   image_url?: string;
+  active_checkouts?: number;
 }
 
 export interface Patron_Form_Data {

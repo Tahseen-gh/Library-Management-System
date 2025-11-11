@@ -1,4 +1,4 @@
-import { type FC } from 'react';
+import { type FC, useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -12,10 +12,15 @@ import {
   Skeleton,
   Grid,
   Container,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
 } from '@mui/material';
-import { Person, LibraryBooks, CalendarToday } from '@mui/icons-material';
+import { Person, LibraryBooks, CalendarToday, Warning } from '@mui/icons-material';
 import { format_date, is_overdue } from '../../utils/dateUtils';
-import { usePatronById } from '../../hooks/usePatrons';
+import { usePatronById, useUpdatePatron } from '../../hooks/usePatrons';
 import { useCopyById } from '../../hooks/useCopies';
 
 interface ConfirmCheckoutDetailsProps {
@@ -24,6 +29,7 @@ interface ConfirmCheckoutDetailsProps {
   due_date: Date;
   on_confirm: () => void;
   on_cancel: () => void;
+  on_validation_change?: (is_valid: boolean) => void;
 }
 
 export const ConfirmCheckoutDetails: FC<ConfirmCheckoutDetailsProps> = ({
@@ -31,17 +37,82 @@ export const ConfirmCheckoutDetails: FC<ConfirmCheckoutDetailsProps> = ({
   copy_id,
   due_date,
   on_cancel,
+  on_validation_change,
 }) => {
   const { data: patron, isLoading: loading_patron } = usePatronById(patron_id);
   const { data: item_copy, isLoading: loading_copy } = useCopyById(copy_id);
+  const { mutate: updatePatron } = useUpdatePatron();
+
+  // Validation override states
+  const [card_override, set_card_override] = useState(false);
+  const [fine_resolved, set_fine_resolved] = useState(false);
+  const [show_fine_dialog, set_show_fine_dialog] = useState(false);
+  const [fine_amount_input, set_fine_amount_input] = useState('');
+  const [show_override_dialog, set_show_override_dialog] = useState(false);
 
   const hasOutstandingBalance = patron ? patron.balance > 0 : false;
   const isCardExpired = patron
     ? patron.card_expiration_date &&
       is_overdue(new Date(patron.card_expiration_date))
     : false;
+  const hasTooManyBooks = patron ? (patron.active_checkouts || 0) >= 20 : false;
+
+  // Blocking conditions
+  const has_blocking_issues =
+    hasTooManyBooks || // HARD BLOCK
+    (isCardExpired && !card_override) || // Can be overridden
+    (hasOutstandingBalance && !fine_resolved); // Can be resolved
+
+  // Notify parent of validation status
+  useEffect(() => {
+    if (on_validation_change) {
+      on_validation_change(!has_blocking_issues);
+    }
+  }, [has_blocking_issues, on_validation_change]);
 
   const is_any_loading = loading_patron || loading_copy;
+
+  const handle_collect_fine = () => {
+    if (patron && fine_amount_input) {
+      const amount = parseFloat(fine_amount_input);
+      if (amount >= patron.balance) {
+        updatePatron(
+          {
+            patron_id: patron.id,
+            patron_data: { balance: 0 },
+          },
+          {
+            onSuccess: () => {
+              set_fine_resolved(true);
+              set_show_fine_dialog(false);
+            },
+          }
+        );
+      }
+    }
+  };
+
+  const handle_waive_fine = () => {
+    if (patron) {
+      updatePatron(
+        {
+          patron_id: patron.id,
+          patron_data: { balance: 0 },
+        },
+        {
+          onSuccess: () => {
+            set_fine_resolved(true);
+            set_show_fine_dialog(false);
+          },
+        }
+      );
+    }
+  };
+
+  const handle_override_card = () => {
+    set_card_override(true);
+    set_show_override_dialog(false);
+  };
 
   // If still loading essential data, show loading skeleton
   if (is_any_loading) {
@@ -186,25 +257,158 @@ export const ConfirmCheckoutDetails: FC<ConfirmCheckoutDetailsProps> = ({
   }
   return (
     <Container sx={{ p: 2 }}>
-      {/* Warnings */}
-      {(hasOutstandingBalance || isCardExpired) && (
+      {/* Blocking Errors and Warnings */}
+      {(hasTooManyBooks || hasOutstandingBalance || isCardExpired) && (
         <Box sx={{ mb: 3 }}>
-          {hasOutstandingBalance && (
-            <Alert severity="warning" sx={{ mb: 1 }}>
-              <AlertTitle>Outstanding Balance</AlertTitle>
-              This patron has an outstanding balance of $
-              {patron.balance.toFixed(2)}.
+          {/* HARD BLOCK: Too Many Books */}
+          {hasTooManyBooks && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              <AlertTitle>⛔ Too Many Books - CANNOT PROCEED</AlertTitle>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                Patron has {patron?.active_checkouts || 0} books checked out.
+                Maximum allowed is 20 books.
+              </Typography>
+              <Typography variant="body2" fontWeight="bold">
+                Transaction must be terminated. Patron must return books before
+                checking out more items.
+              </Typography>
             </Alert>
           )}
-          {isCardExpired && (
-            <Alert severity="error" sx={{ mb: 1 }}>
-              <AlertTitle>Expired Library Card</AlertTitle>
+
+          {/* Outstanding Balance - Can be resolved */}
+          {hasOutstandingBalance && !fine_resolved && !hasTooManyBooks && (
+            <Alert
+              severity="warning"
+              sx={{ mb: 2 }}
+              action={
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={() => set_show_fine_dialog(true)}
+                  >
+                    Collect Fine
+                  </Button>
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={handle_waive_fine}
+                  >
+                    Waive Fine
+                  </Button>
+                </Box>
+              }
+            >
+              <AlertTitle>💰 Outstanding Fines</AlertTitle>
+              Patron owes ${patron?.balance.toFixed(2)}. Fine must be collected
+              or waived before proceeding.
+            </Alert>
+          )}
+
+          {/* Fine Resolved */}
+          {fine_resolved && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              <AlertTitle>✓ Fine Resolved</AlertTitle>
+              Fine has been resolved. You may proceed with checkout.
+            </Alert>
+          )}
+
+          {/* Expired Card - Can be overridden */}
+          {isCardExpired && !card_override && !hasTooManyBooks && (
+            <Alert
+              severity="error"
+              sx={{ mb: 2 }}
+              action={
+                <Button
+                  color="inherit"
+                  size="small"
+                  onClick={() => set_show_override_dialog(true)}
+                >
+                  Override
+                </Button>
+              }
+            >
+              <AlertTitle>📅 Expired Library Card</AlertTitle>
               This patron's library card expired on{' '}
-              {format_date(patron.card_expiration_date)}.
+              {format_date(patron?.card_expiration_date)}. Card must be renewed
+              or overridden.
+            </Alert>
+          )}
+
+          {/* Card Overridden */}
+          {card_override && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              <AlertTitle>✓ Card Expiration Overridden</AlertTitle>
+              Card expiration has been overridden. You may proceed with
+              checkout.
             </Alert>
           )}
         </Box>
       )}
+
+      {/* Fine Collection Dialog */}
+      <Dialog
+        open={show_fine_dialog}
+        onClose={() => set_show_fine_dialog(false)}
+      >
+        <DialogTitle>Collect Fine</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Patron owes: ${patron?.balance.toFixed(2)}
+          </Typography>
+          <TextField
+            autoFocus
+            label="Amount Collected"
+            type="number"
+            fullWidth
+            value={fine_amount_input}
+            onChange={(e) => set_fine_amount_input(e.target.value)}
+            inputProps={{ min: 0, step: 0.01 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => set_show_fine_dialog(false)}>Cancel</Button>
+          <Button onClick={handle_collect_fine} variant="contained">
+            Collect
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Override Card Dialog */}
+      <Dialog
+        open={show_override_dialog}
+        onClose={() => set_show_override_dialog(false)}
+      >
+        <DialogTitle>Override Expired Card</DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            <AlertTitle>
+              <Warning sx={{ mr: 1 }} />
+              Override Warning
+            </AlertTitle>
+            You are about to override the card expiration check. This action
+            will be logged for audit purposes.
+          </Alert>
+          <Typography variant="body2">
+            Patron: {patron?.first_name} {patron?.last_name}
+          </Typography>
+          <Typography variant="body2">
+            Card Expired: {format_date(patron?.card_expiration_date)}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => set_show_override_dialog(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handle_override_card}
+            variant="contained"
+            color="warning"
+          >
+            Override
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Grid container spacing={3}>
         {/* Patron Information */}
@@ -261,6 +465,21 @@ export const ConfirmCheckoutDetails: FC<ConfirmCheckoutDetailsProps> = ({
                     />
                   </Box>
                 )}
+                <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mr: 1 }}
+                  >
+                    Active Checkouts:
+                  </Typography>
+                  <Chip
+                    label={`${patron.active_checkouts || 0} / 20`}
+                    size="small"
+                    color={hasTooManyBooks ? 'error' : 'default'}
+                    variant="outlined"
+                  />
+                </Box>
               </Box>
             </CardContent>
           </Card>
@@ -281,13 +500,13 @@ export const ConfirmCheckoutDetails: FC<ConfirmCheckoutDetailsProps> = ({
               </Box>
               <Box sx={{ ml: 7 }}>
                 <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  {item_copy.id}
+                  {(item_copy as any).title || 'Unknown Title'}
                 </Typography>
                 <Box
                   sx={{ display: 'flex', alignItems: 'center', mt: 1, gap: 1 }}
                 >
                   <Chip
-                    label={item_copy.id}
+                    label={(item_copy as any).item_type || 'BOOK'}
                     size="small"
                     color="primary"
                     variant="outlined"
@@ -306,18 +525,18 @@ export const ConfirmCheckoutDetails: FC<ConfirmCheckoutDetailsProps> = ({
                 >
                   Copy ID: {item_copy.id}
                 </Typography>
-                {item_copy.id && (
+                {(item_copy as any).branch_name && (
                   <Typography variant="body2" color="text.secondary">
-                    Published: {item_copy.id}
+                    Branch: {(item_copy as any).branch_name}
                   </Typography>
                 )}
-                {item_copy.id && (
+                {item_copy.status && (
                   <Typography
                     variant="body2"
                     color="text.secondary"
                     sx={{ mt: 1 }}
                   >
-                    {item_copy.id}
+                    Status: {item_copy.status}
                   </Typography>
                 )}
               </Box>

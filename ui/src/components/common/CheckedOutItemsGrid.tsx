@@ -7,12 +7,6 @@ import ItemTypeChip from '../library_items/ItemTypeChip';
 
 const columns: GridColDef[] = [
   {
-    field: 'id',
-    headerName: 'ID',
-    width: 90,
-    valueGetter: (value) => Number(value),
-  },
-  {
     field: 'copy_id',
     headerName: 'Copy ID',
     width: 120,

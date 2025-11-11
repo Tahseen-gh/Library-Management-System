@@ -31,3 +31,36 @@ export const calculate_fine = (
   const days_overdue = calculate_days_overdue(due_date);
   return days_overdue * finePerDay;
 };
+
+/**
+ * Calculate due date based on item type
+ * Books: 4 weeks (28 days)
+ * Movies/Videos: 1 week (7 days)
+ * New items (marked as new): 3 days
+ * Default: 2 weeks (14 days)
+ */
+export const calculate_due_date = (
+  item_type: string,
+  is_new: boolean = false
+): Date => {
+  const now = new Date();
+  let days_to_add = 14; // Default
+
+  if (is_new) {
+    days_to_add = 3; // New items: 3 days
+  } else if (item_type === 'BOOK' || item_type === 'Book') {
+    days_to_add = 28; // Books: 4 weeks
+  } else if (
+    item_type === 'VIDEO' ||
+    item_type === 'Video' ||
+    item_type === 'AUDIOBOOK' ||
+    item_type === 'Audiobook'
+  ) {
+    days_to_add = 7; // Movies/Videos: 1 week
+  }
+
+  const due_date = new Date(now);
+  due_date.setDate(due_date.getDate() + days_to_add);
+
+  return due_date;
+};

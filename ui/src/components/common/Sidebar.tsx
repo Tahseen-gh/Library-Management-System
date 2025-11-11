@@ -20,8 +20,8 @@ import {
   CheckCircle,
   Output,
   Input,
-  Shelves,
   Event,
+  Search,
 } from '@mui/icons-material';
 
 const drawerWidth = 256;
@@ -49,20 +49,20 @@ export const Sidebar = ({
     { text: 'Home', path: '/', icon: <Home /> },
     { text: 'Dashboard', path: '/dashboard', icon: <Dashboard /> },
     { text: 'Library Items', path: '/library-items', icon: <Book /> },
+    { text: 'Search', path: '/search', icon: <Search /> },
     { text: 'Patrons', path: '/patrons', icon: <Groups2 /> },
     { text: 'Transactions', path: '/transactions', icon: <SsidChart /> },
     { text: 'Reservations', path: '/reservations', icon: <Event /> },
   ];
 
   const circulation_items = [
-    { text: 'Check In', path: '/reshelve', icon: <Input /> },
+    { text: 'Check In', path: '/checkin', icon: <Input /> },
     {
       text: 'Check Out',
-      path: '/checkout',
+      path: '/?mode=checkout',
       icon: <Output sx={{ transform: 'rotate(180deg)' }} />,
     },
     { text: 'Mark Available', path: '/available', icon: <CheckCircle /> },
-    { text: 'Reshelve', path: '/reshelve', icon: <Shelves /> },
   ];
 
   return (

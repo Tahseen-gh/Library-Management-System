@@ -192,7 +192,7 @@ router.delete('/:id', async (req, res) => {
 
     // Check if branch has any item copies
     const item_copies = await db.execute_query(
-      'SELECT COUNT(*) as count FROM LIBRARY_ITEM_COPIES WHERE branch_id = ?',
+      'SELECT COUNT(*) as count FROM LIBRARY_ITEM_COPIES WHERE owning_branch_id = ?',
       [req.params.id]
     );
 

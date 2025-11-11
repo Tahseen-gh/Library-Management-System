@@ -7,9 +7,9 @@ const router = express.Router();
 // Validation middleware
 const validate_item_copy = [
   body('library_item_id')
-    .isUUID()
+    .isInt({ min: 1 })
     .withMessage('Valid library item ID is required'),
-  body('branch_id').isInt().withMessage('Valid branch ID is required'),
+  body('owning_branch_id').isInt({ min: 1 }).withMessage('Valid branch ID is required'),
   body('condition')
     .optional()
     .isIn(['New', 'Excellent', 'Good', 'Fair', 'Poor'])
@@ -23,6 +23,7 @@ const validate_item_copy = [
       'Processing',
       'Damaged',
       'Lost',
+      'returned',
     ])
     .withMessage('Invalid status'),
   body('cost')
@@ -197,7 +198,8 @@ router.post(
       const item_copy_data = {
         condition: 'Good',
         status: 'Available',
-        location: req.body.owning_branch_id, // Default location to branch
+        current_branch_id: req.body.owning_branch_id, // Default location to branch
+        return_to_branch_id: req.body.owning_branch_id, // Default return branch
         ...req.body,
         created_at: new Date(),
         updated_at: new Date(),
