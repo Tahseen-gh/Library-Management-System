@@ -80,7 +80,7 @@ async function create_tables() {
         congress_code TEXT DEFAULT '0000-0000',
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-      )
+      );
     `);
 
     // Create patrons table
@@ -97,7 +97,7 @@ async function create_tables() {
         birthday DATE,
         card_expiration_date DATE NOT NULL DEFAULT CURRENT_DATE,
         is_active BOOLEAN NOT NULL DEFAULT 1
-      )
+      );
     `);
 
     // Create BOOKS table (extends LIBRARY_ITEMS)
@@ -112,7 +112,7 @@ async function create_tables() {
         number_of_pages INTEGER,
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE
-      )
+      );
     `);
 
     // Create VIDEOS table (subclass of LIBRARY_ITEMS)
@@ -130,7 +130,7 @@ async function create_tables() {
         library_item_id INTEGER NOT NULL,
         is_new_release BOOLEAN NOT NULL DEFAULT 0,
         FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE
-      )
+      );
     `);
 
     // Create VINYL_ALBUMS table (subclass of LIBRARY_ITEMS)
@@ -149,7 +149,7 @@ async function create_tables() {
       );
     `);
 
-    // Create Audiobooks table (subclass of LIBRARY_ITEMS)
+    // Create AUDIOBOOKS table (subclass of LIBRARY_ITEMS)
     await db.exec(`
       CREATE TABLE IF NOT EXISTS AUDIOBOOKS (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -166,7 +166,7 @@ async function create_tables() {
       );
     `);
 
-    // Create Magazines table (subclass of LIBRARY_ITEMS)
+    // Create MAGAZINES table (subclass of LIBRARY_ITEMS)
     await db.exec(`
       CREATE TABLE IF NOT EXISTS MAGAZINES (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -180,7 +180,7 @@ async function create_tables() {
       );
     `);
 
-    // Create CDs table (subclass of LIBRARY_ITEMS)
+    // Create CDS table (subclass of LIBRARY_ITEMS)
     await db.exec(`
       CREATE TABLE IF NOT EXISTS CDS (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -192,9 +192,10 @@ async function create_tables() {
         duration_seconds INTEGER,
         library_item_id INTEGER NOT NULL,
         FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE
-      );`);
+      );
+    `);
 
-    // Create Periodicals table (subclass of LIBRARY_ITEMS)
+    // Create PERIODICALS table (subclass of LIBRARY_ITEMS)
     await db.exec(`
       CREATE TABLE IF NOT EXISTS PERIODICALS (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -203,9 +204,10 @@ async function create_tables() {
         publication_date DATE,
         library_item_id INTEGER NOT NULL,
         FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE
-      );`);
+      );
+    `);
 
-    // Create library_item_copies table
+    // Create LIBRARY_ITEM_COPIES table
     await db.exec(`
       CREATE TABLE IF NOT EXISTS LIBRARY_ITEM_COPIES (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -222,15 +224,15 @@ async function create_tables() {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         date_acquired DATE,
         due_date DATE,
-        FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE,
-        FOREIGN KEY (owning_branch_id) REFERENCES BRANCHES(id) ON DELETE SET NULL,
-        FOREIGN KEY (return_to_branch_id) REFERENCES BRANCHES(id) ON DELETE SET NULL,
-        FOREIGN KEY (current_branch_id) REFERENCES BRANCHES(id) ON DELETE SET NULL,
-        FOREIGN KEY (checked_out_by) REFERENCES PATRONS(id) ON DELETE SET NULL
+        FOREIGN KEY (library_item_id)     REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE,
+        FOREIGN KEY (owning_branch_id)    REFERENCES BRANCHES(id)      ON DELETE SET NULL,
+        FOREIGN KEY (return_to_branch_id) REFERENCES BRANCHES(id)      ON DELETE SET NULL,
+        FOREIGN KEY (current_branch_id)   REFERENCES BRANCHES(id)      ON DELETE SET NULL,
+        FOREIGN KEY (checked_out_by)      REFERENCES PATRONS(id)       ON DELETE SET NULL
       );
     `);
 
-    // Create reservations table
+    // Create RESERVATIONS table
     await db.exec(`
       CREATE TABLE IF NOT EXISTS RESERVATIONS (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -245,10 +247,10 @@ async function create_tables() {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE,
         FOREIGN KEY (patron_id) REFERENCES PATRONS(id) ON DELETE CASCADE
-      )
+      );
     `);
 
-    // Create transactions table
+    // Create TRANSACTIONS table
     await db.exec(`
       CREATE TABLE IF NOT EXISTS TRANSACTIONS (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -267,7 +269,7 @@ async function create_tables() {
         FOREIGN KEY (copy_id) REFERENCES LIBRARY_ITEM_COPIES(id) ON DELETE CASCADE,
         FOREIGN KEY (patron_id) REFERENCES PATRONS(id) ON DELETE CASCADE,
         FOREIGN KEY (location_id) REFERENCES BRANCHES(id) ON DELETE SET NULL
-      )
+      );
     `);
 
     // Create FINES table
@@ -285,69 +287,69 @@ async function create_tables() {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (transaction_id) REFERENCES TRANSACTIONS(id) ON DELETE CASCADE,
         FOREIGN KEY (patron_id) REFERENCES PATRONS(id) ON DELETE CASCADE
-      )
+      );
     `);
 
-    // Create optimized indexes for better performance
+    // Indexes
     await db.exec(`
       -- Core entity indexes
       CREATE INDEX IF NOT EXISTS idx_library_items_type ON LIBRARY_ITEMS(item_type);
       CREATE INDEX IF NOT EXISTS idx_library_items_year ON LIBRARY_ITEMS(publication_year);
       CREATE INDEX IF NOT EXISTS idx_library_items_title ON LIBRARY_ITEMS(title COLLATE NOCASE);
-      
+
       -- Library item copies - critical for inventory management
-      CREATE INDEX IF NOT EXISTS idx_library_item_copies_status ON LIBRARY_ITEM_COPIES(status);
-      CREATE INDEX IF NOT EXISTS idx_library_item_copies_branch ON LIBRARY_ITEM_COPIES(owning_branch_id);
+      CREATE INDEX IF NOT EXISTS idx_library_item_copies_status         ON LIBRARY_ITEM_COPIES(status);
+      CREATE INDEX IF NOT EXISTS idx_library_item_copies_branch         ON LIBRARY_ITEM_COPIES(owning_branch_id);
       CREATE INDEX IF NOT EXISTS idx_library_item_copies_current_branch ON LIBRARY_ITEM_COPIES(current_branch_id);
       CREATE INDEX IF NOT EXISTS idx_library_item_copies_checked_out_by ON LIBRARY_ITEM_COPIES(checked_out_by);
-      CREATE INDEX IF NOT EXISTS idx_library_item_copies_item_id ON LIBRARY_ITEM_COPIES(library_item_id);
-      CREATE INDEX IF NOT EXISTS idx_library_item_copies_composite ON LIBRARY_ITEM_COPIES(library_item_id, status, owning_branch_id);
-      CREATE INDEX IF NOT EXISTS idx_library_item_copies_dates ON LIBRARY_ITEM_COPIES(date_acquired, due_date);
-      
+      CREATE INDEX IF NOT EXISTS idx_library_item_copies_item_id        ON LIBRARY_ITEM_COPIES(library_item_id);
+      CREATE INDEX IF NOT EXISTS idx_library_item_copies_composite      ON LIBRARY_ITEM_COPIES(library_item_id, status, owning_branch_id);
+      CREATE INDEX IF NOT EXISTS idx_library_item_copies_dates          ON LIBRARY_ITEM_COPIES(date_acquired, due_date);
+
       -- Patron indexes for search and active status
-      CREATE INDEX IF NOT EXISTS idx_patrons_name ON PATRONS(last_name, first_name);
-      CREATE INDEX IF NOT EXISTS idx_patrons_email ON PATRONS(email);
+      CREATE INDEX IF NOT EXISTS idx_patrons_name           ON PATRONS(last_name, first_name);
+      CREATE INDEX IF NOT EXISTS idx_patrons_email          ON PATRONS(email);
       CREATE INDEX IF NOT EXISTS idx_patrons_active_balance ON PATRONS(is_active, balance);
-      CREATE INDEX IF NOT EXISTS idx_patrons_card_expiry ON PATRONS(card_expiration_date) WHERE is_active = 1;
-      
+      CREATE INDEX IF NOT EXISTS idx_patrons_card_expiry    ON PATRONS(card_expiration_date) WHERE is_active = 1;
+
       -- Transaction indexes - critical for reports and active checkouts
-      CREATE INDEX IF NOT EXISTS idx_transactions_status ON TRANSACTIONS(status);
-      CREATE INDEX IF NOT EXISTS idx_transactions_patron ON TRANSACTIONS(patron_id);
-      CREATE INDEX IF NOT EXISTS idx_transactions_copy ON TRANSACTIONS(copy_id);
-      CREATE INDEX IF NOT EXISTS idx_transactions_dates ON TRANSACTIONS(checkout_date, due_date, return_date);
-      CREATE INDEX IF NOT EXISTS idx_transactions_overdue ON TRANSACTIONS(status, due_date) WHERE status = 'Active';
+      CREATE INDEX IF NOT EXISTS idx_transactions_status      ON TRANSACTIONS(status);
+      CREATE INDEX IF NOT EXISTS idx_transactions_patron      ON TRANSACTIONS(patron_id);
+      CREATE INDEX IF NOT EXISTS idx_transactions_copy        ON TRANSACTIONS(copy_id);
+      CREATE INDEX IF NOT EXISTS idx_transactions_dates       ON TRANSACTIONS(checkout_date, due_date, return_date);
+      CREATE INDEX IF NOT EXISTS idx_transactions_overdue     ON TRANSACTIONS(status, due_date) WHERE status = 'Active';
       CREATE INDEX IF NOT EXISTS idx_transactions_type_status ON TRANSACTIONS(transaction_type, status);
-      
+
       -- Reservation indexes for queue management
-      CREATE INDEX IF NOT EXISTS idx_reservations_status ON RESERVATIONS(status);
+      CREATE INDEX IF NOT EXISTS idx_reservations_status     ON RESERVATIONS(status);
       CREATE INDEX IF NOT EXISTS idx_reservations_item_queue ON RESERVATIONS(library_item_id, queue_position, status);
-      CREATE INDEX IF NOT EXISTS idx_reservations_patron ON RESERVATIONS(patron_id);
-      CREATE INDEX IF NOT EXISTS idx_reservations_dates ON RESERVATIONS(reservation_date, expiry_date);
-      CREATE INDEX IF NOT EXISTS idx_reservations_active ON RESERVATIONS(status, expiry_date) WHERE status IN ('pending', 'ready');
-      
+      CREATE INDEX IF NOT EXISTS idx_reservations_patron     ON RESERVATIONS(patron_id);
+      CREATE INDEX IF NOT EXISTS idx_reservations_dates      ON RESERVATIONS(reservation_date, expiry_date);
+      CREATE INDEX IF NOT EXISTS idx_reservations_active     ON RESERVATIONS(status, expiry_date) WHERE status IN ('pending', 'ready');
+
       -- Fine indexes for patron balance management
-      CREATE INDEX IF NOT EXISTS idx_fines_patron ON FINES(patron_id);
-      CREATE INDEX IF NOT EXISTS idx_fines_paid ON FINES(is_paid);
+      CREATE INDEX IF NOT EXISTS idx_fines_patron      ON FINES(patron_id);
+      CREATE INDEX IF NOT EXISTS idx_fines_paid        ON FINES(is_paid);
       CREATE INDEX IF NOT EXISTS idx_fines_transaction ON FINES(transaction_id);
       CREATE INDEX IF NOT EXISTS idx_fines_unpaid_patron ON FINES(patron_id, is_paid, amount) WHERE is_paid = 0;
-      
+
       -- Foreign key relationship indexes for better JOIN performance
-      CREATE INDEX IF NOT EXISTS idx_books_library_item ON BOOKS(library_item_id);
-      CREATE INDEX IF NOT EXISTS idx_videos_library_item ON VIDEOS(library_item_id);
-      CREATE INDEX IF NOT EXISTS idx_audiobooks_library_item ON AUDIOBOOKS(library_item_id);
-      CREATE INDEX IF NOT EXISTS idx_magazines_library_item ON MAGAZINES(library_item_id);
-      CREATE INDEX IF NOT EXISTS idx_cds_library_item ON CDS(library_item_id);
+      CREATE INDEX IF NOT EXISTS idx_books_library_item       ON BOOKS(library_item_id);
+      CREATE INDEX IF NOT EXISTS idx_videos_library_item      ON VIDEOS(library_item_id);
+      CREATE INDEX IF NOT EXISTS idx_audiobooks_library_item  ON AUDIOBOOKS(library_item_id);
+      CREATE INDEX IF NOT EXISTS idx_magazines_library_item   ON MAGAZINES(library_item_id);
+      CREATE INDEX IF NOT EXISTS idx_cds_library_item         ON CDS(library_item_id);
       CREATE INDEX IF NOT EXISTS idx_periodicals_library_item ON PERIODICALS(library_item_id);
       CREATE INDEX IF NOT EXISTS idx_vinyl_albums_library_item ON VINYL_ALBUMS(library_item_id);
     `);
 
     // Insert default branch if none exists
     await db.exec(`
-      INSERT OR IGNORE INTO BRANCHES (id, branch_name, is_main) 
-      VALUES (1, 'Main Library', 1)
+      INSERT OR IGNORE INTO BRANCHES (id, branch_name, is_main)
+      VALUES (1, 'Main Library', 1);
     `);
 
-    // Create update triggers
+    // Update triggers
     await db.exec(`
       CREATE TRIGGER IF NOT EXISTS update_library_items_timestamp 
       AFTER UPDATE ON LIBRARY_ITEMS 
@@ -607,12 +609,7 @@ async function execute_batch(operations) {
 }
 
 /**
- * Optimized search function with full-text search capabilities
- * @param {string} table_name - Name of the database table
- * @param {string} search_term - Term to search for
- * @param {Array} search_fields - Fields to search in
- * @param {Object} options - Search options (limit, offset, etc.)
- * @returns {Promise<Array>} Search results
+ * Optimized search function with full-text search-like behavior via LIKEs
  */
 async function search_records(
   table_name,
@@ -639,7 +636,9 @@ async function search_records(
     WHERE ${conditions}
     ORDER BY 
       CASE 
-        ${search_fields.map((field) => `WHEN ${field} LIKE '${search_term}%' THEN 1`).join(' ')}
+        ${search_fields
+          .map((field) => `WHEN ${field} LIKE '${search_term}%' THEN 1`)
+          .join(' ')}
         ELSE 2 
       END,
       id
