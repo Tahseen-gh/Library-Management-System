@@ -1,12 +1,4 @@
 {
-  "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
-    "build": "chmod +x build.sh && ./build.sh"
-  }
-}
-
-{
   "name": "wpl-api",
   "version": "1.0.0",
   "description": "Node.js API with Express.js",
@@ -42,3 +34,14 @@
     "prettier": "^3.6.2"
   }
 }
+```
+
+### Step 2: Update Render Build Command
+Since your main file is at `src/index.js`, we need to update the build command:
+
+1. **Go to** Render dashboard
+2. **Click** your backend service
+3. **Click** "Settings"
+4. **Change Build Command** to:
+```
+cd server && npm install && rm -f library.db && node src/seed_database.js
