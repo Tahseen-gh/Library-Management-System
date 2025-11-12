@@ -92,11 +92,6 @@ export const HomePage = () => {
     set_checkout_step('patron_entry');
   };
 
-  const start_checkin = () => {
-    set_process_mode('checkin');
-    set_checkin_step('item_entry');
-  };
-
   const return_to_home = () => {
     set_process_mode('none');
     reset_checkout();

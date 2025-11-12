@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Container,
   Typography,
@@ -323,7 +323,7 @@ export default function Search() {
 
           <Grid container spacing={2} sx={{ mb: 3 }}>
             {searchResults.map((item, index) => (
-              <Grid item xs={12} key={index}>
+              <Grid size={{ xs: 12 }} key={index}>
                 <Card elevation={2}>
                   <CardActionArea onClick={() => displayFullItemRecord(item)}>
                     <CardContent>
