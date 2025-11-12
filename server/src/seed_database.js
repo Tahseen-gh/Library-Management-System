@@ -1,4 +1,4 @@
-import { db, create_record, execute_query } from './src/config/database.js';
+import { db, create_record, execute_query } from './config/database.js';
 
 async function seed_database() {
   try {
