@@ -9,16 +9,15 @@
     "dev": "nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [
-    "api",
-    "express",
-    "nodejs"
-  ],
+  "keywords": ["api", "express", "nodejs"],
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": "20.x"
+  },
   "dependencies": {
     "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
+    "dotenv": "^16.4.5",
     "express": "^5.1.0",
     "express-rate-limit": "^8.2.1",
     "express-validator": "^7.3.0",
@@ -34,14 +33,3 @@
     "prettier": "^3.6.2"
   }
 }
-```
-
-### Step 2: Update Render Build Command
-Since your main file is at `src/index.js`, we need to update the build command:
-
-1. **Go to** Render dashboard
-2. **Click** your backend service
-3. **Click** "Settings"
-4. **Change Build Command** to:
-```
-cd server && npm install && rm -f library.db && node src/seed_database.js
