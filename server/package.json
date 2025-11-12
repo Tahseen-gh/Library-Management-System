@@ -1,4 +1,12 @@
 {
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "build": "chmod +x build.sh && ./build.sh"
+  }
+}
+
+{
   "name": "wpl-api",
   "version": "1.0.0",
   "description": "Node.js API with Express.js",
