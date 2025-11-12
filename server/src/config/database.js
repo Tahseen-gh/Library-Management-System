@@ -212,8 +212,10 @@ async function create_tables() {
         library_item_id INTEGER NOT NULL,
         owning_branch_id INTEGER NOT NULL DEFAULT 1,
         return_to_branch_id INTEGER NOT NULL DEFAULT 1,
+        current_branch_id INTEGER NOT NULL DEFAULT 1,
         condition TEXT DEFAULT 'Good',
         status TEXT DEFAULT 'Available',
+        checked_out_by INTEGER,
         cost REAL,
         notes TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -222,7 +224,9 @@ async function create_tables() {
         due_date DATE,
         FOREIGN KEY (library_item_id) REFERENCES LIBRARY_ITEMS(id) ON DELETE CASCADE,
         FOREIGN KEY (owning_branch_id) REFERENCES BRANCHES(id) ON DELETE SET NULL,
-        FOREIGN KEY (return_to_branch_id) REFERENCES BRANCHES(id) ON DELETE SET NULL
+        FOREIGN KEY (return_to_branch_id) REFERENCES BRANCHES(id) ON DELETE SET NULL,
+        FOREIGN KEY (current_branch_id) REFERENCES BRANCHES(id) ON DELETE SET NULL,
+        FOREIGN KEY (checked_out_by) REFERENCES PATRONS(id) ON DELETE SET NULL
       );
     `);
 
@@ -294,6 +298,8 @@ async function create_tables() {
       -- Library item copies - critical for inventory management
       CREATE INDEX IF NOT EXISTS idx_library_item_copies_status ON LIBRARY_ITEM_COPIES(status);
       CREATE INDEX IF NOT EXISTS idx_library_item_copies_branch ON LIBRARY_ITEM_COPIES(owning_branch_id);
+      CREATE INDEX IF NOT EXISTS idx_library_item_copies_current_branch ON LIBRARY_ITEM_COPIES(current_branch_id);
+      CREATE INDEX IF NOT EXISTS idx_library_item_copies_checked_out_by ON LIBRARY_ITEM_COPIES(checked_out_by);
       CREATE INDEX IF NOT EXISTS idx_library_item_copies_item_id ON LIBRARY_ITEM_COPIES(library_item_id);
       CREATE INDEX IF NOT EXISTS idx_library_item_copies_composite ON LIBRARY_ITEM_COPIES(library_item_id, status, owning_branch_id);
       CREATE INDEX IF NOT EXISTS idx_library_item_copies_dates ON LIBRARY_ITEM_COPIES(date_acquired, due_date);
