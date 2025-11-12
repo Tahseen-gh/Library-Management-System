@@ -1,130 +1,89 @@
-# Library Management System API Server
+# 🚀 Quick Start
 
-Node.js server with Express JS package
-
-## Getting Started
-
-```bash
-# Install dependencies
-npm install
-
-# Start development server with auto-restart
-npm run dev
-
-# Run tests
-npm test
-```
-
-### Prerequisites
+### 📋 Prerequisites
 
 - Node.js (v16 or higher)
-- npm or yarn
+- npm or yarn package manager
 
-### Installation
+### 🔨 Setup & Run
 
-1. Navigate to the server directory:
+1. **Install Dependencies**
+
+   ```powershell
+   cd ui
+   npm i
+
+   cd ../
+   cd server
+   npm i
+   ```
+   In the same server directory, delete library.db and input node seed_database.js to populate the data
+   
+2. **Create Environment File**
+
+   Create a `.env` file in the `server` directory:
+
+   Paste this in:
+
+   ```env
+   # Server Configuration
+   PORT=3000
+   NODE_ENV=development
+
+   # Security Configuration
+   CORS_ORIGIN=http://localhost:5174
+
+   # Rate Limiting
+   RATE_LIMIT_WINDOW_MS=900000
+   RATE_LIMIT_MAX_REQUESTS=100
+
+   API_BASE_URL=/api/v1
+   ```
+   
+   Create a `.env` file in the `ui` directory:
+
+   Paste this in:
+
+   ```env
+   VITE_API_BASE_URL=https://wpl-api-fgv5.onrender.com/api/v1/
+   ```
+
+3. **Start the Backend Server**
+
+   In a new terminal window:
 
    ```bash
    cd server
-   ```
-
-2. Install dependencies:
-
-   ```bash
-   npm install
-   ```
-
-3. Create environment file:
-
-   ```bash
-   cp .env.example .env
-   ```
-
-4. Configure your environment variables in `.env`:
-
-   ```env
-   NODE_ENV=development
-   PORT=3001
-   DB_PATH=./library.db
-   ```
-
-5. The SQLite database will be created automatically when the server starts. You can optionally run the SQL schema from `../db_schema.sql` to create the tables if needed.
-
-6. Start the server:
-
-   ```bash
-   # Development mode with auto-restart
    npm run dev
-
-   # Production mode
-   npm start
    ```
 
-## API Endpoints
+   Server runs on: `http://localhost:3000`
 
-### Catalog Items
+4. **Start the Frontend (UI)**
 
-- `GET /api/v1/catalog-items` - Get all catalog items
-- `GET /api/v1/catalog-items/:id` - Get single catalog item
-- `POST /api/v1/catalog-items` - Create new catalog item
-- `PUT /api/v1/catalog-items/:id` - Update catalog item
-- `DELETE /api/v1/catalog-items/:id` - Delete catalog item
+   In the main project directory:
 
-### Patrons
+   ```bash
+   cd ui
+   npm run dev
+   ```
 
-- `GET /api/v1/patrons` - Get all patrons
-- `GET /api/v1/patrons/:id` - Get single patron
-- `GET /api/v1/patrons/:id/transactions` - Get patron's transactions
-- `POST /api/v1/patrons` - Create new patron
-- `PUT /api/v1/patrons/:id` - Update patron
-- `DELETE /api/v1/patrons/:id` - Deactivate patron
+   UI runs on: `http://localhost:5173`
 
-### Transactions
+   > sometimes it will do :5174, idk why
 
-- `GET /api/v1/transactions` - Get all transactions
-- `GET /api/v1/transactions/:id` - Get single transaction
-- `POST /api/v1/transactions/checkout` - Checkout item
-- `POST /api/v1/transactions/checkin` - Checkin item
-- `PUT /api/v1/transactions/:id/renew` - Renew transaction
+   <br />
 
-### Reservations
+5. **Open Your Browser**
 
-- `GET /api/v1/reservations` - Get all reservations
-- `GET /api/v1/reservations/:id` - Get single reservation
-- `POST /api/v1/reservations` - Create new reservation
-- `PUT /api/v1/reservations/:id/fulfill` - Fulfill reservation
-- `DELETE /api/v1/reservations/:id` - Cancel reservation
+   Navigate to: `http://localhost:5173`
 
-### Branches
+## 📖 Documentation
 
-- `GET /api/v1/branches` - Get all branches
-- `GET /api/v1/branches/:id` - Get single branch
-- `GET /api/v1/branches/:id/inventory` - Get branch inventory
-- `POST /api/v1/branches` - Create new branch
-- `PUT /api/v1/branches/:id` - Update branch
-- `DELETE /api/v1/branches/:id` - Delete branch
+- **[Architecture Guide](./docs/ARCHITECTURE.md)** - Detailed system architecture and diagrams
 
-### Item Copies
+## 🛠️ Built With
 
-- `GET /api/v1/item-copies` - Get all item copies
-- `GET /api/v1/item-copies/:id` - Get single item copy
-- `GET /api/v1/item-copies/catalog/:catalog_item_id` - Get copies of catalog item
-- `POST /api/v1/item-copies` - Create new item copy
-- `PUT /api/v1/item-copies/:id` - Update item copy
-- `DELETE /api/v1/item-copies/:id` - Delete item copy
-
-### Utility
-
-- `GET /health` - Health check endpoint
-- `GET /` - API information
-
-## Database Schema
-
-The server expects a SQLite database with the following main tables:
-
-- `catalog_items` - Library catalog items
-- `item_copies` - Physical copies of items
-- `patrons` - Library patrons
-- `branches` - Library branches
-- `transactions` - Checkout/checkin transactions
-- `reservations` - Item reservations
+- **Frontend**: React + TypeScript + Vite + Material-UI
+- **Backend**: Node.js + Express + SQLite
+- **State Management**: React Query
