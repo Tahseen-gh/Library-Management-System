@@ -6,7 +6,6 @@ import {
   Box,
   Grid,
   Card,
-  CardContent,
   Chip,
   Avatar,
   Button,

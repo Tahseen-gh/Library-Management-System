@@ -252,10 +252,6 @@ export const CheckInItem: FC = () => {
     return false;
   };
 
-  const handle_copy_selected = (copy_id: number) => {
-    set_form_data((prev) => ({ ...prev, copy_id: copy_id }));
-  };
-
   const handle_condition_change = (event: SelectChangeEvent) => {
     set_condition(event.target.value as Condition);
   };
