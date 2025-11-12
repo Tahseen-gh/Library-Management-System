@@ -6,7 +6,6 @@ import {
   MenuItem,
   Select,
   TextField,
-  Grid,
   Button,
   Chip,
   Box,
@@ -20,6 +19,7 @@ import {
 } from '@mui/material';
 import { useState, useEffect, type FC } from 'react';
 import { type SelectChangeEvent } from '@mui/material/Select';
+import Grid from '@mui/material/PigmentGrid';
 import { useBranchesContext } from '../hooks/useBranchHooks';
 import { get_condition_color } from '../utils/colors';
 import { CheckedOutItemsGrid } from '../components/common/CheckedOutItemsGrid';
@@ -144,10 +144,6 @@ export const CheckInItem: FC = () => {
     return false;
   };
 
-  const handle_copy_selected = (copy_id: number) => {
-    set_form_data((prev) => ({ ...prev, copy_id: copy_id }));
-  };
-
   const handle_condition_change = (event: SelectChangeEvent) => {
     set_condition(event.target.value as Condition);
   };
@@ -216,7 +212,11 @@ export const CheckInItem: FC = () => {
               }}
             >
               {active_step === 0 && (
-                <CheckedOutItemsGrid select_item_copy={handle_copy_selected} />
+                <CheckedOutItemsGrid
+                  select_item_copy={(copy_id: number) =>
+                    set_form_data((prev) => ({ ...prev, copy_id }))
+                  }
+                />
               )}
               {active_step === 1 && (
                 <Grid container spacing={3} sx={{ mb: 3, pt: 1 }}>

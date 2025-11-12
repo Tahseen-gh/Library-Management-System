@@ -2,7 +2,6 @@ import { PieChart } from '@mui/x-charts/PieChart';
 import {
   Container,
   Typography,
-  Grid,
   Card,
   CardContent,
   Box,
@@ -11,6 +10,7 @@ import {
 import { LibraryBooks, EventNote, AttachMoney } from '@mui/icons-material';
 import type { FC } from 'react';
 import { useStats } from '../hooks/useStats';
+import Grid from '@mui/material/PigmentGrid';
 
 export const DashboardPage: FC = () => {
   const { data, isLoading, error } = useStats();

@@ -10,13 +10,13 @@ import {
   AlertTitle,
   Button,
   Skeleton,
-  Grid,
   Container,
 } from '@mui/material';
 import { Person, LibraryBooks, CalendarToday } from '@mui/icons-material';
 import { format_date, is_overdue } from '../../utils/dateUtils';
 import { usePatronById } from '../../hooks/usePatrons';
 import { useCopyById } from '../../hooks/useCopies';
+import Grid from '@mui/material/PigmentGrid';
 
 interface ConfirmCheckoutDetailsProps {
   patron_id: number;

@@ -1,7 +1,6 @@
 import {
   Container,
   Typography,
-  Grid,
   Button,
   Box,
   Card,
@@ -32,6 +31,7 @@ import React, { useState, type PropsWithChildren } from 'react';
 import { useCreatePatron } from '../hooks/usePatrons';
 import { useStats } from '../hooks/useStats';
 import { useCreateLibraryItem } from '../hooks/useLibraryItems';
+import Grid from '@mui/material/PigmentGrid';
 
 export const HomePage = () => {
   const [create_book_drawer_open, set_create_book_drawer_open] =

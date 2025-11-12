@@ -4,7 +4,6 @@ import {
   Container,
   Typography,
   Box,
-  Grid,
   Card,
   CardContent,
   Chip,
@@ -38,6 +37,7 @@ import {
   Delete,
 } from '@mui/icons-material';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
+import Grid from '@mui/material/PigmentGrid';
 import {
   useDeletePatronById,
   usePatronById,
