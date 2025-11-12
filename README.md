@@ -17,7 +17,8 @@
    cd server
    npm i
    ```
-
+   In the same server directory, delete library.db and input node seed_database.js to populate the data
+   
 2. **Create Environment File**
 
    Create a `.env` file in the `server` directory:
@@ -38,7 +39,7 @@
 
    API_BASE_URL=/api/v1
    ```
-
+   
    Create a `.env` file in the `ui` directory:
 
    Paste this in:
