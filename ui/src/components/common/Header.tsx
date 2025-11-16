@@ -10,16 +10,10 @@ import {
   Stack,
   useColorScheme,
 } from '@mui/material';
-import { DarkMode, LightMode, Menu } from '@mui/icons-material';
+import { DarkMode, LightMode } from '@mui/icons-material';
 import { BranchSelector } from './BranchSelector';
 
-export const Header = ({
-  sidebarOpen,
-  setSidebarOpen,
-}: {
-  sidebarOpen: boolean;
-  setSidebarOpen: (open: boolean) => void;
-}) => {
+export const Header = () => {
   const theme = useTheme();
   const xsUp = useMediaQuery(theme.breakpoints.up('md'));
 
@@ -38,9 +32,6 @@ export const Header = ({
           direction="row"
           spacing={1}
         >
-          <IconButton onClick={() => setSidebarOpen(!sidebarOpen)}>
-            <Menu />
-          </IconButton>
           <Typography
             variant="h6"
             component={Link}

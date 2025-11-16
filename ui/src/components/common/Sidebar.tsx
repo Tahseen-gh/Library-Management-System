@@ -67,10 +67,16 @@ export const Sidebar = ({
 
   return (
     <Drawer
+      variant="permanent"
       open={sidebarOpen}
-      onClose={() => setSidebarOpen(false)}
       sx={{
-        width: drawerWidth * 0.6,
+        width: drawerWidth,
+        flexShrink: 0,
+        '& .MuiDrawer-paper': {
+          width: drawerWidth,
+          boxSizing: 'border-box',
+          position: 'relative',
+        },
       }}
     >
       <Box sx={{ overflow: 'auto', pt: 2 }}>
@@ -81,7 +87,6 @@ export const Sidebar = ({
                 component={Link}
                 to={item.path}
                 selected={isActive(item.path)}
-                onClick={() => setSidebarOpen(false)}
                 sx={{
                   mx: 1,
                   borderRadius: 1,
@@ -118,7 +123,6 @@ export const Sidebar = ({
                 component={Link}
                 to={item.path}
                 selected={isActive(item.path)}
-                onClick={() => !xsUp && setSidebarOpen(false)}
                 sx={{
                   mx: 1,
                   borderRadius: 1,
