@@ -211,15 +211,16 @@ router.post(
 
       const queue_position = queue_position_result[0].next_position;
 
-      // Expiry date will be set when item becomes available (5 days after return)
-      // For now, set a far future date as placeholder
-      const expiry_date = null;
+      // Set expiry date to 5 days from reservation date
+      const reservation_date = new Date();
+      const expiry_date = new Date(reservation_date);
+      expiry_date.setDate(expiry_date.getDate() + 5);
 
       const reservation_data = {
         library_item_id: library_item.id,
         patron_id,
-        reservation_date: new Date().toISOString(),
-        expiry_date,
+        reservation_date: reservation_date.toISOString(),
+        expiry_date: expiry_date.toISOString(),
         status: reservation_allowed ? 'pending' : 'waitlist',
         queue_position,
         created_at: new Date().toISOString(),
