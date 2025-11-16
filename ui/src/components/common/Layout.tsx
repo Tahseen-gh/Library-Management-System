@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Branch_Provider } from '../../contexts/Branch_Context';
 
 export const Layout = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
     <Box
@@ -18,7 +18,7 @@ export const Layout = () => {
       }}
     >
       <Branch_Provider>
-        <Header sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+        <Header />
         <Stack direction="row" sx={{ flexGrow: 1, overflow: 'hidden' }}>
           <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
           <Box
