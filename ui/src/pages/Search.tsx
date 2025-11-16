@@ -262,7 +262,7 @@ export default function Search() {
     setReservationDialogOpen(true);
   };
 
-  const handleReservationSuccess = (message: string, _onWaitlist: boolean) => {
+  const handleReservationSuccess = (message: string) => {
     setSuccessMessage(message);
     setShowSuccessSnackbar(true);
     setReservationDialogOpen(false);

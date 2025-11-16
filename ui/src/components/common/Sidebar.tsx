@@ -11,7 +11,6 @@ import {
 } from '@mui/material';
 import {
   Home,
-  Dashboard,
   SsidChart,
   Groups2,
   Book,
@@ -36,7 +35,6 @@ export const Sidebar = ({ sidebarOpen }: { sidebarOpen: boolean }) => {
 
   const menu_items = [
     { text: 'Home', path: '/', icon: <Home /> },
-    { text: 'Dashboard', path: '/dashboard', icon: <Dashboard /> },
     { text: 'Library Items', path: '/library-items', icon: <Book /> },
     { text: 'Search', path: '/search', icon: <Search /> },
     { text: 'Patrons', path: '/patrons', icon: <Groups2 /> },

@@ -143,7 +143,7 @@ export const MarkAvailablePage: React.FC = () => {
           item_title = library_item.title;
           item_type = library_item.item_type;
         }
-      } catch (e) {
+      } catch {
         // Continue with default values
       }
 
