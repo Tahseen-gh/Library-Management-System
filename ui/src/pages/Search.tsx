@@ -19,8 +19,10 @@ import {
   CardContent,
   CardActionArea,
   Chip,
+  Snackbar,
 } from '@mui/material';
-import { Search as SearchIcon } from '@mui/icons-material';
+import { Search as SearchIcon, BookmarkAdd as ReserveIcon } from '@mui/icons-material';
+import { ReservationDialog } from '../components/reservations/ReservationDialog';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
 
@@ -77,6 +79,12 @@ export default function Search() {
   const [searchResults, setSearchResults] = useState<ItemRecord[]>([]);
   const [selectedItem, setSelectedItem] = useState<FullItemDetails | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Reservation dialog state
+  const [reservationDialogOpen, setReservationDialogOpen] = useState(false);
+  const [reservationItem, setReservationItem] = useState<{ id: number; name: string } | null>(null);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [showSuccessSnackbar, setShowSuccessSnackbar] = useState(false);
 
   const validateSearchCriteria = (): boolean => {
     if (!searchInput.trim()) {
@@ -248,6 +256,18 @@ export default function Search() {
     setValidationError('');
   };
 
+  // Step 1: Click reserve button
+  const handleReserveClick = (itemId: number, itemName: string) => {
+    setReservationItem({ id: itemId, name: itemName });
+    setReservationDialogOpen(true);
+  };
+
+  const handleReservationSuccess = (message: string, _onWaitlist: boolean) => {
+    setSuccessMessage(message);
+    setShowSuccessSnackbar(true);
+    setReservationDialogOpen(false);
+  };
+
   if (step === 'Display search options') {
     return (
       <Container maxWidth="lg" sx={{ pt: 4, pb: 4 }}>
@@ -325,9 +345,12 @@ export default function Search() {
             {searchResults.map((item, index) => (
               <Grid size={{ xs: 12 }} key={index}>
                 <Card elevation={2}>
-                  <CardActionArea onClick={() => displayFullItemRecord(item)}>
-                    <CardContent>
-                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <CardContent>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <CardActionArea
+                        onClick={() => displayFullItemRecord(item)}
+                        sx={{ flexGrow: 1, mr: 2 }}
+                      >
                         <Box>
                           <Typography variant="h6" fontWeight="bold" gutterBottom>
                             {item.itemName}
@@ -336,6 +359,8 @@ export default function Search() {
                             Item ID: {item.itemId} | Copy ID: {item.copyId} | Type: {item.itemType}
                           </Typography>
                         </Box>
+                      </CardActionArea>
+                      <Stack direction="row" spacing={1} alignItems="center">
                         <Chip
                           label={item.status}
                           color={
@@ -347,9 +372,17 @@ export default function Search() {
                           }
                           sx={{ fontWeight: 'bold' }}
                         />
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<ReserveIcon />}
+                          onClick={() => handleReserveClick(item.itemId, item.itemName)}
+                        >
+                          Reserve
+                        </Button>
                       </Stack>
-                    </CardContent>
-                  </CardActionArea>
+                    </Stack>
+                  </CardContent>
                 </Card>
               </Grid>
             ))}
@@ -472,9 +505,16 @@ export default function Search() {
             </Box>
           </Stack>
 
-          <Box sx={{ mt: 4 }}>
+          <Box sx={{ mt: 4, display: 'flex', gap: 2 }}>
             <Button variant="outlined" onClick={handleReset}>
               New Search
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<ReserveIcon />}
+              onClick={() => handleReserveClick(selectedItem.itemId, selectedItem.itemName)}
+            >
+              Reserve Item
             </Button>
           </Box>
         </Paper>
@@ -482,5 +522,34 @@ export default function Search() {
     );
   }
 
-  return null;
+  return (
+    <>
+      {/* Reservation Dialog */}
+      {reservationItem && (
+        <ReservationDialog
+          open={reservationDialogOpen}
+          onClose={() => setReservationDialogOpen(false)}
+          itemId={reservationItem.id}
+          itemName={reservationItem.name}
+          onSuccess={handleReservationSuccess}
+        />
+      )}
+
+      {/* Success Snackbar */}
+      <Snackbar
+        open={showSuccessSnackbar}
+        autoHideDuration={6000}
+        onClose={() => setShowSuccessSnackbar(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setShowSuccessSnackbar(false)}
+          severity="success"
+          sx={{ width: '100%' }}
+        >
+          {successMessage}
+        </Alert>
+      </Snackbar>
+    </>
+  );
 }
