@@ -18,6 +18,8 @@ export function ReservationStatusChip({
       return <Chip variant="outlined" label="Ready" color="success" />;
     case 'expired':
       return <Chip variant="outlined" label="Expired" color="warning" />;
+    case 'waitlist':
+      return <Chip variant="outlined" label="Waitlist" color="secondary" />;
     default:
       return <Chip variant="outlined" label="Unknown" />;
   }
