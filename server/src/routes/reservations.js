@@ -7,9 +7,9 @@ const router = express.Router();
 // Validation middleware
 const validate_reservation = [
   body('library_item_id')
-    .isUUID()
+    .isInt({ min: 1 })
     .withMessage('Valid library item ID is required'),
-  body('patron_id').isString().withMessage('Valid patron ID is required'),
+  body('patron_id').isInt({ min: 1 }).withMessage('Valid patron ID is required'),
 ];
 
 // Helper function to handle validation errors
