@@ -238,6 +238,7 @@ async function create_tables() {
         patron_id INTEGER,
         reservation_date DATETIME DEFAULT CURRENT_TIMESTAMP,
         expiry_date DATE,
+        fulfillment_date DATETIME,
         status TEXT DEFAULT 'pending',
         queue_position INTEGER,
         notification_sent DATETIME,

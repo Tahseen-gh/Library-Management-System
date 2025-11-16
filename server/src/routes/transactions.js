@@ -140,11 +140,30 @@ router.post(
         });
       }
 
-      if (item_copy.status !== 'Available') {
+      // Check if item is available or reserved
+      if (item_copy.status !== 'Available' && item_copy.status !== 'Reserved') {
         return res.status(400).json({
           error: 'Item is not available for checkout',
           current_status: item_copy.status,
         });
+      }
+
+      // If item is reserved, verify the patron has a reservation for it
+      let reservation_to_fulfill = null;
+      if (item_copy.status === 'Reserved') {
+        const reservations = await db.execute_query(
+          'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND patron_id = ? AND status IN ("pending", "ready") ORDER BY queue_position LIMIT 1',
+          [item_copy.library_item_id, patron_id]
+        );
+
+        if (reservations.length === 0) {
+          return res.status(400).json({
+            error: 'Item is reserved for another patron',
+            message: 'This item is reserved and you do not have an active reservation for it',
+          });
+        }
+
+        reservation_to_fulfill = reservations[0];
       }
 
       // Verify patron exists and is active
@@ -183,6 +202,27 @@ router.post(
         due_date: calculated_due_date,
         updated_at: new Date(),
       });
+
+      // If this checkout fulfills a reservation, update the reservation status
+      if (reservation_to_fulfill) {
+        await db.update_record('RESERVATIONS', reservation_to_fulfill.id, {
+          status: 'fulfilled',
+          fulfillment_date: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+
+        // Log fulfillment transaction
+        await db.create_record('TRANSACTIONS', {
+          copy_id,
+          patron_id,
+          location_id: 1,
+          transaction_type: 'Reservation Fulfilled',
+          status: 'Completed',
+          notes: `Reservation #${reservation_to_fulfill.id} fulfilled via checkout`,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      }
 
       // Fetch enriched data for receipt
       const query = `
