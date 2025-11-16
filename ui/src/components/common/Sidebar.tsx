@@ -8,8 +8,6 @@ import {
   ListItemText,
   Box,
   Divider,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material';
 import {
   Home,
@@ -26,17 +24,8 @@ import {
 
 const drawerWidth = 256;
 
-export const Sidebar = ({
-  sidebarOpen,
-  setSidebarOpen,
-}: {
-  sidebarOpen: boolean;
-  setSidebarOpen: (open: boolean) => void;
-}) => {
+export const Sidebar = ({ sidebarOpen }: { sidebarOpen: boolean }) => {
   const location = useLocation();
-
-  const theme = useTheme();
-  const xsUp = useMediaQuery(theme.breakpoints.up('md'));
 
   const isActive = (path: string) => {
     return (
