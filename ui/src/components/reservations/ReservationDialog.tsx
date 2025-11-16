@@ -129,8 +129,8 @@ export const ReservationDialog = ({
 
       // Success - either reservation created or added to waitlist
       const message = data.on_waitlist
-        ? `${patron.first_name} ${patron.last_name} has been added to the waitlist for "${itemName}"`
-        : `Reservation created successfully for ${patron.first_name} ${patron.last_name}`;
+        ? `${patron.first_name} ${patron.last_name} has been added to the waitlist for "${itemName}". The patron will be notified by email when the item becomes available.`
+        : `Reservation created successfully for ${patron.first_name} ${patron.last_name}. The patron will be notified by email when the reserved item is returned and ready for pickup.`;
 
       if (onSuccess) {
         onSuccess(message, data.on_waitlist);
@@ -277,9 +277,14 @@ export const ReservationDialog = ({
             </Stack>
 
             {!error && (
-              <Alert severity="info" sx={{ mt: 3 }}>
-                Please confirm to create reservation for this patron
-              </Alert>
+              <>
+                <Alert severity="info" sx={{ mt: 3 }}>
+                  Please confirm to create reservation for this patron
+                </Alert>
+                <Alert severity="success" sx={{ mt: 2 }}>
+                  The patron will be notified by email when the item becomes available for pickup
+                </Alert>
+              </>
             )}
           </Box>
         )}
