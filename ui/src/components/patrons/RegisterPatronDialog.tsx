@@ -98,7 +98,7 @@ export const RegisterPatronDialog = ({
       setLoading(false);
       onSuccess();
       onClose();
-    } catch (err) {
+    } catch {
       setError('An error occurred while registering the patron');
       setLoading(false);
     }

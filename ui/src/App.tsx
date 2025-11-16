@@ -3,8 +3,6 @@ import { Routes, Route } from 'react-router-dom';
 import { Layout } from './components/common/Layout';
 import { HomePage } from './pages/HomePage';
 import { LibraryItemsPage } from './pages/LibraryItemsPage';
-import { MyBooks } from './pages/MyBooks';
-import { DashboardPage } from './pages/DashboardPage';
 import { Patrons } from './pages/Patrons';
 import { BookPage } from './pages/Book';
 import { PatronPage } from './pages/PatronPage';
@@ -22,9 +20,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<HomePage />} />
-          <Route path="dashboard" element={<DashboardPage />} />
           <Route path="library-items" element={<LibraryItemsPage />} />
-          <Route path="my-books" element={<MyBooks />} />
           <Route path="patrons" element={<Patrons />} />
           <Route path="patron">
             <Route path=":patron_id" element={<PatronPage />} />
