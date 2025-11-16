@@ -12,6 +12,10 @@ async function seed_database() {
     const existing_patrons = await database.all('SELECT * FROM PATRONS');
     if (existing_patrons.length > 0) {
       console.log('⚠️  Database already contains data. Clearing and reseeding...');
+      
+      // IMPORTANT: Temporarily disable foreign key constraints for deletion
+      await database.exec('PRAGMA foreign_keys = OFF;');
+      
       // Clear existing data
       await database.exec('DELETE FROM FINES');
       await database.exec('DELETE FROM TRANSACTIONS');
@@ -27,6 +31,10 @@ async function seed_database() {
       await database.exec('DELETE FROM LIBRARY_ITEMS');
       await database.exec('DELETE FROM PATRONS');
       await database.exec("DELETE FROM BRANCHES WHERE id != 1");
+      
+      // Re-enable foreign key constraints
+      await database.exec('PRAGMA foreign_keys = ON;');
+      
       console.log('✓ Cleared existing data');
     }
 
