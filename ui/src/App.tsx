@@ -9,6 +9,7 @@ import { Patrons } from './pages/Patrons';
 import { BookPage } from './pages/Book';
 import { PatronPage } from './pages/PatronPage';
 import { TransactionsPage } from './pages/TransactionsPage';
+import { ReservationsPage } from './pages/ReservationsPage';
 import { MarkAvailablePage } from './pages/MarkAvailablePage';
 import { CheckInItem } from './pages/CheckInItem';
 import Search from './pages/Search';
@@ -29,6 +30,7 @@ function App() {
             <Route path=":patron_id" element={<PatronPage />} />
           </Route>
           <Route path="transactions" element={<TransactionsPage />} />
+          <Route path="reservations" element={<ReservationsPage />} />
           <Route path="search" element={<Search />} />
           <Route path="checkin" element={<CheckInItem />} />
           <Route path="available" element={<MarkAvailablePage />} />

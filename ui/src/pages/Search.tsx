@@ -268,262 +268,268 @@ export default function Search() {
     setReservationDialogOpen(false);
   };
 
-  if (step === 'Display search options') {
-    return (
-      <Container maxWidth="lg" sx={{ pt: 4, pb: 4 }}>
-        <Paper elevation={3} sx={{ p: 4 }}>
-          <Typography variant="h4" component="h1" gutterBottom fontWeight="bold" sx={{ mb: 3 }}>
-            Search Items
-          </Typography>
+  const renderContent = () => {
+    if (step === 'Display search options') {
+      return (
+        <Container maxWidth="lg" sx={{ pt: 4, pb: 4 }}>
+          <Paper elevation={3} sx={{ p: 4 }}>
+            <Typography variant="h4" component="h1" gutterBottom fontWeight="bold" sx={{ mb: 3 }}>
+              Search Items
+            </Typography>
 
-          <FormControl component="fieldset" sx={{ mb: 3 }}>
-            <FormLabel component="legend" sx={{ fontWeight: 'bold', mb: 1 }}>
-              Search By
-            </FormLabel>
-            <RadioGroup
-              value={searchBy}
-              onChange={(e) => setSearchBy(e.target.value as SearchBy)}
-            >
-              <FormControlLabel
-                value="Item Name"
-                control={<Radio />}
-                label="Item Name (partial search supported)"
+            <FormControl component="fieldset" sx={{ mb: 3 }}>
+              <FormLabel component="legend" sx={{ fontWeight: 'bold', mb: 1 }}>
+                Search By
+              </FormLabel>
+              <RadioGroup
+                value={searchBy}
+                onChange={(e) => setSearchBy(e.target.value as SearchBy)}
+              >
+                <FormControlLabel
+                  value="Item Name"
+                  control={<Radio />}
+                  label="Item Name (partial search supported)"
+                />
+                <FormControlLabel
+                  value="Item ID"
+                  control={<Radio />}
+                  label="Item ID"
+                />
+              </RadioGroup>
+            </FormControl>
+
+            {validationError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {validationError}
+              </Alert>
+            )}
+
+            <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+              <TextField
+                fullWidth
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder={searchBy === 'Item Name' ? 'Enter item name or part of it......' : 'Enter item ID'}
+                type={searchBy === 'Item ID' ? 'number' : 'text'}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') handleSearchItems();
+                }}
               />
-              <FormControlLabel
-                value="Item ID"
-                control={<Radio />}
-                label="Item ID"
-              />
-            </RadioGroup>
-          </FormControl>
+              <Button
+                variant="contained"
+                onClick={handleSearchItems}
+                disabled={loading}
+                startIcon={<SearchIcon />}
+                sx={{ minWidth: 150 }}
+              >
+                {loading ? 'Searching...' : 'Search Items'}
+              </Button>
+            </Stack>
+          </Paper>
+        </Container>
+      );
+    }
 
-          {validationError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {validationError}
-            </Alert>
-          )}
+    if (step === 'Search Results') {
+      return (
+        <Container maxWidth="lg" sx={{ pt: 4, pb: 4 }}>
+          <Paper elevation={3} sx={{ p: 4 }}>
+            <Typography variant="h4" component="h1" gutterBottom fontWeight="bold" sx={{ mb: 3 }}>
+              Search Results
+            </Typography>
 
-          <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-            <TextField
-              fullWidth
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder={searchBy === 'Item Name' ? 'Enter item name or part of it......' : 'Enter item ID'}
-              type={searchBy === 'Item ID' ? 'number' : 'text'}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') handleSearchItems();
-              }}
-            />
-            <Button
-              variant="contained"
-              onClick={handleSearchItems}
-              disabled={loading}
-              startIcon={<SearchIcon />}
-              sx={{ minWidth: 150 }}
-            >
-              {loading ? 'Searching...' : 'Search Items'}
-            </Button>
-          </Stack>
-        </Paper>
-      </Container>
-    );
-  }
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Found {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}. Click on an item to view full details.
+            </Typography>
 
-  if (step === 'Search Results') {
-    return (
-      <Container maxWidth="lg" sx={{ pt: 4, pb: 4 }}>
-        <Paper elevation={3} sx={{ p: 4 }}>
-          <Typography variant="h4" component="h1" gutterBottom fontWeight="bold" sx={{ mb: 3 }}>
-            Search Results
-          </Typography>
-
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Found {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}. Click on an item to view full details.
-          </Typography>
-
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            {searchResults.map((item, index) => (
-              <Grid size={{ xs: 12 }} key={index}>
-                <Card elevation={2}>
-                  <CardContent>
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                      <CardActionArea
-                        onClick={() => displayFullItemRecord(item)}
-                        sx={{ flexGrow: 1, mr: 2 }}
-                      >
-                        <Box>
-                          <Typography variant="h6" fontWeight="bold" gutterBottom>
-                            {item.itemName}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Item ID: {item.itemId} | Copy ID: {item.copyId} | Type: {item.itemType}
-                          </Typography>
-                        </Box>
-                      </CardActionArea>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Chip
-                          label={item.status}
-                          color={
-                            item.status === 'Available'
-                              ? 'success'
-                              : item.status === 'Checked Out'
-                              ? 'warning'
-                              : 'default'
-                          }
-                          sx={{ fontWeight: 'bold' }}
-                        />
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          startIcon={<ReserveIcon />}
-                          onClick={() => handleReserveClick(item.itemId, item.itemName)}
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              {searchResults.map((item, index) => (
+                <Grid size={{ xs: 12 }} key={index}>
+                  <Card elevation={2}>
+                    <CardContent>
+                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <CardActionArea
+                          onClick={() => displayFullItemRecord(item)}
+                          sx={{ flexGrow: 1, mr: 2 }}
                         >
-                          Reserve
-                        </Button>
+                          <Box>
+                            <Typography variant="h6" fontWeight="bold" gutterBottom>
+                              {item.itemName}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              Item ID: {item.itemId} | Copy ID: {item.copyId} | Type: {item.itemType}
+                            </Typography>
+                          </Box>
+                        </CardActionArea>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Chip
+                            label={item.status}
+                            color={
+                              item.status === 'Available'
+                                ? 'success'
+                                : item.status === 'Checked Out'
+                                ? 'warning'
+                                : 'default'
+                            }
+                            sx={{ fontWeight: 'bold' }}
+                          />
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<ReserveIcon />}
+                            onClick={() => handleReserveClick(item.itemId, item.itemName)}
+                          >
+                            Reserve
+                          </Button>
+                        </Stack>
                       </Stack>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
 
-          <Button variant="outlined" onClick={handleReset}>
-            New Search
-          </Button>
-        </Paper>
-      </Container>
-    );
-  }
-
-  if (step === 'Full Item Record' && selectedItem) {
-    return (
-      <Container maxWidth="md" sx={{ pt: 4, pb: 4 }}>
-        <Paper elevation={3} sx={{ p: 4 }}>
-          <Typography variant="h4" component="h1" gutterBottom fontWeight="bold" sx={{ mb: 3 }}>
-            Full Item Record
-          </Typography>
-
-          <Stack spacing={3}>
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                ITEM NAME
-              </Typography>
-              <Typography variant="h6" fontWeight="600">
-                {selectedItem.itemName}
-              </Typography>
-            </Box>
-
-            <Divider />
-
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                ITEM ID
-              </Typography>
-              <Typography variant="body1">
-                {selectedItem.itemId}
-              </Typography>
-            </Box>
-
-            <Divider />
-
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                COPY ID
-              </Typography>
-              <Typography variant="body1">
-                {selectedItem.copyId}
-              </Typography>
-            </Box>
-
-            <Divider />
-
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                TYPE
-              </Typography>
-              <Typography variant="body1">
-                {selectedItem.itemType}
-              </Typography>
-            </Box>
-
-            <Divider />
-
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                STATUS INFORMATION
-              </Typography>
-              <Stack spacing={1}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Current Status:
-                  </Typography>
-                  <Chip
-                    label={selectedItem.status}
-                    size="small"
-                    color={
-                      selectedItem.status === 'Available'
-                        ? 'success'
-                        : selectedItem.status === 'Checked Out'
-                        ? 'warning'
-                        : 'default'
-                    }
-                  />
-                </Box>
-                {selectedItem.dueDate && (
-                  <Typography variant="body2">
-                    Due Date: {new Date(selectedItem.dueDate).toLocaleDateString()}
-                  </Typography>
-                )}
-                {selectedItem.patronName && selectedItem.patronId && (
-                  <>
-                    <Typography variant="body2">
-                      Current Patron: {selectedItem.patronName}
-                    </Typography>
-                    <Typography variant="body2" sx={{ ml: 15 }}>
-                      Patron ID: {selectedItem.patronId}
-                    </Typography>
-                  </>
-                )}
-                {selectedItem.condition && (
-                  <Typography variant="body2">
-                    Condition: {selectedItem.condition}
-                  </Typography>
-                )}
-              </Stack>
-            </Box>
-
-            <Divider />
-
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                COPY AVAILABILITY
-              </Typography>
-              <Typography variant="body1">
-                Available copies: {selectedItem.availableCopies}
-              </Typography>
-            </Box>
-          </Stack>
-
-          <Box sx={{ mt: 4, display: 'flex', gap: 2 }}>
             <Button variant="outlined" onClick={handleReset}>
               New Search
             </Button>
-            <Button
-              variant="contained"
-              startIcon={<ReserveIcon />}
-              onClick={() => handleReserveClick(selectedItem.itemId, selectedItem.itemName)}
-            >
-              Reserve Item
-            </Button>
-          </Box>
-        </Paper>
-      </Container>
-    );
-  }
+          </Paper>
+        </Container>
+      );
+    }
+
+    if (step === 'Full Item Record' && selectedItem) {
+      return (
+        <Container maxWidth="md" sx={{ pt: 4, pb: 4 }}>
+          <Paper elevation={3} sx={{ p: 4 }}>
+            <Typography variant="h4" component="h1" gutterBottom fontWeight="bold" sx={{ mb: 3 }}>
+              Full Item Record
+            </Typography>
+
+            <Stack spacing={3}>
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  ITEM NAME
+                </Typography>
+                <Typography variant="h6" fontWeight="600">
+                  {selectedItem.itemName}
+                </Typography>
+              </Box>
+
+              <Divider />
+
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  ITEM ID
+                </Typography>
+                <Typography variant="body1">
+                  {selectedItem.itemId}
+                </Typography>
+              </Box>
+
+              <Divider />
+
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  COPY ID
+                </Typography>
+                <Typography variant="body1">
+                  {selectedItem.copyId}
+                </Typography>
+              </Box>
+
+              <Divider />
+
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  TYPE
+                </Typography>
+                <Typography variant="body1">
+                  {selectedItem.itemType}
+                </Typography>
+              </Box>
+
+              <Divider />
+
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  STATUS INFORMATION
+                </Typography>
+                <Stack spacing={1}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Current Status:
+                    </Typography>
+                    <Chip
+                      label={selectedItem.status}
+                      size="small"
+                      color={
+                        selectedItem.status === 'Available'
+                          ? 'success'
+                          : selectedItem.status === 'Checked Out'
+                          ? 'warning'
+                          : 'default'
+                      }
+                    />
+                  </Box>
+                  {selectedItem.dueDate && (
+                    <Typography variant="body2">
+                      Due Date: {new Date(selectedItem.dueDate).toLocaleDateString()}
+                    </Typography>
+                  )}
+                  {selectedItem.patronName && selectedItem.patronId && (
+                    <>
+                      <Typography variant="body2">
+                        Current Patron: {selectedItem.patronName}
+                      </Typography>
+                      <Typography variant="body2" sx={{ ml: 15 }}>
+                        Patron ID: {selectedItem.patronId}
+                      </Typography>
+                    </>
+                  )}
+                  {selectedItem.condition && (
+                    <Typography variant="body2">
+                      Condition: {selectedItem.condition}
+                    </Typography>
+                  )}
+                </Stack>
+              </Box>
+
+              <Divider />
+
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  COPY AVAILABILITY
+                </Typography>
+                <Typography variant="body1">
+                  Available copies: {selectedItem.availableCopies}
+                </Typography>
+              </Box>
+            </Stack>
+
+            <Box sx={{ mt: 4, display: 'flex', gap: 2 }}>
+              <Button variant="outlined" onClick={handleReset}>
+                New Search
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<ReserveIcon />}
+                onClick={() => handleReserveClick(selectedItem.itemId, selectedItem.itemName)}
+              >
+                Reserve Item
+              </Button>
+            </Box>
+          </Paper>
+        </Container>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <>
+      {renderContent()}
+
       {/* Reservation Dialog */}
       {reservationItem && (
         <ReservationDialog
