@@ -213,6 +213,15 @@ async function seed_database() {
 
     console.log('\n👥 Creating 5 test patrons...');
 
+    // Calculate dynamic expiration dates
+    const future_expiration = new Date();
+    future_expiration.setFullYear(future_expiration.getFullYear() + 2); // 2 years from now
+    const future_expiration_str = future_expiration.toISOString().split('T')[0];
+
+    const past_expiration = new Date();
+    past_expiration.setMonth(past_expiration.getMonth() - 6); // 6 months ago
+    const past_expiration_str = past_expiration.toISOString().split('T')[0];
+
     // Patron 1: Perfect patron - no issues
     const patron1_id = await create_record('PATRONS', {
       first_name: 'John',
@@ -222,10 +231,10 @@ async function seed_database() {
       address: '123 Main St, Springfield',
       balance: 0.00,
       birthday: '1990-01-15',
-      card_expiration_date: '2026-12-31',
+      card_expiration_date: future_expiration_str,
       is_active: 1,
     });
-    console.log(`✓ Created Patron 1: John Doe (ID: ${patron1_id}) - No issues, ready to checkout`);
+    console.log(`✓ Created Patron 1: John Doe (ID: ${patron1_id}) - Card expires ${future_expiration_str}`);
 
     // Patron 2: Has fines
     const patron2_id = await create_record('PATRONS', {
@@ -236,7 +245,7 @@ async function seed_database() {
       address: '456 Oak Ave, Springfield',
       balance: 15.50,  // Has outstanding fines
       birthday: '1985-05-20',
-      card_expiration_date: '2026-12-31',
+      card_expiration_date: future_expiration_str,
       is_active: 1,
     });
     console.log(`✓ Created Patron 2: Jane Smith (ID: ${patron2_id}) - Has $15.50 in fines`);
@@ -250,10 +259,10 @@ async function seed_database() {
       address: '789 Pine Rd, Springfield',
       balance: 0.00,
       birthday: '1975-08-10',
-      card_expiration_date: '2024-06-30',  // Expired card
+      card_expiration_date: past_expiration_str,  // Expired card
       is_active: 1,
     });
-    console.log(`✓ Created Patron 3: Robert Johnson (ID: ${patron3_id}) - Card expired on 2024-06-30`);
+    console.log(`✓ Created Patron 3: Robert Johnson (ID: ${patron3_id}) - Card expired on ${past_expiration_str}`);
 
     // Patron 4: Has 20 items checked out
     const patron4_id = await create_record('PATRONS', {
@@ -264,7 +273,7 @@ async function seed_database() {
       address: '321 Elm St, Springfield',
       balance: 0.00,
       birthday: '1992-03-25',
-      card_expiration_date: '2026-12-31',
+      card_expiration_date: future_expiration_str,
       is_active: 1,
     });
     console.log(`✓ Created Patron 4: Emily Davis (ID: ${patron4_id}) - Will have 20 items checked out`);
@@ -278,7 +287,7 @@ async function seed_database() {
       address: '654 Maple Dr, Springfield',
       balance: 0.00,
       birthday: '1988-11-30',
-      card_expiration_date: '2026-12-31',
+      card_expiration_date: future_expiration_str,
       is_active: 1,
     });
     console.log(`✓ Created Patron 5: Michael Brown (ID: ${patron5_id}) - Normal patron`);
