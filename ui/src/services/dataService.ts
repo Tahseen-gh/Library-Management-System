@@ -369,6 +369,33 @@ export const data_service = {
     }
   },
 
+  async create_item_copy(copy_data: {
+    library_item_id: number;
+    owning_branch_id: number;
+    cost?: number;
+    condition?: string;
+    notes?: string;
+  }): Promise<Item_Copy> {
+    return await api_request<Item_Copy>('/item-copies', {
+      method: 'POST',
+      body: JSON.stringify(copy_data),
+    });
+  },
+
+  async create_bulk_copies(data: {
+    library_item_id: number;
+    owning_branch_id: number;
+    quantity: number;
+    cost?: number;
+    condition?: string;
+    notes?: string;
+  }): Promise<Item_Copy[]> {
+    return await api_request<Item_Copy[]>('/item-copies/bulk', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
   async get_all_branches(): Promise<Branch[]> {
     return await api_request<Branch[]>('/branches');
   },

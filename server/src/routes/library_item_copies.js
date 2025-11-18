@@ -169,6 +169,73 @@ router.get('/item/:library_item_id', async (req, res) => {
   }
 });
 
+// POST /api/v1/item-copies/bulk - Create multiple copies at once
+router.post('/bulk', async (req, res) => {
+  try {
+    const { library_item_id, owning_branch_id, quantity, cost, condition, notes } = req.body;
+
+    // Validate inputs
+    if (!library_item_id || !owning_branch_id || !quantity) {
+      return res.status(400).json({
+        error: 'library_item_id, owning_branch_id, and quantity are required',
+      });
+    }
+
+    if (quantity < 1 || quantity > 100) {
+      return res.status(400).json({
+        error: 'Quantity must be between 1 and 100',
+      });
+    }
+
+    // Verify library item exists
+    const library_item = await db.get_by_id('LIBRARY_ITEMS', library_item_id);
+    if (!library_item) {
+      return res.status(400).json({
+        error: 'Library item not found',
+      });
+    }
+
+    // Verify branch exists
+    const branch = await db.get_by_id('BRANCHES', owning_branch_id);
+    if (!branch) {
+      return res.status(400).json({
+        error: 'Branch not found',
+      });
+    }
+
+    // Create multiple copies
+    const created_copies = [];
+    for (let i = 0; i < quantity; i++) {
+      const item_copy_data = {
+        library_item_id,
+        owning_branch_id,
+        return_to_branch_id: owning_branch_id,
+        current_branch_id: owning_branch_id,
+        condition: condition || 'Good',
+        status: 'Available',
+        cost: cost || 0,
+        notes: notes || null,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      const copy_id = await db.create_record('LIBRARY_ITEM_COPIES', item_copy_data);
+      created_copies.push({ ...item_copy_data, id: copy_id });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `${quantity} item ${quantity === 1 ? 'copy' : 'copies'} created successfully`,
+      data: created_copies,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to create item copies',
+      message: error.message,
+    });
+  }
+});
+
 // POST /api/v1/item-copies - Create new item copy
 router.post(
   '/',
