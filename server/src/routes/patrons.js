@@ -4,13 +4,23 @@ import * as db from '../config/database.js';
 
 const router = express.Router();
 
-// Validation middleware
+// Validation middleware for creating new patrons
 const validate_patron = [
   body('first_name').notEmpty().withMessage('First name is required'),
   body('last_name').notEmpty().withMessage('Last name is required'),
   body('email').optional().isEmail().withMessage('Invalid email format'),
   body('phone').optional().isString().withMessage('Phone must be a string'),
   body('balance').optional().isFloat().withMessage('Balance must be a number'),
+];
+
+// Validation middleware for updating patrons (all fields optional for partial updates)
+const validate_patron_update = [
+  body('first_name').optional().notEmpty().withMessage('First name cannot be empty'),
+  body('last_name').optional().notEmpty().withMessage('Last name cannot be empty'),
+  body('email').optional().isEmail().withMessage('Invalid email format'),
+  body('phone').optional().isString().withMessage('Phone must be a string'),
+  body('balance').optional().isFloat().withMessage('Balance must be a number'),
+  body('card_expiration_date').optional().isISO8601().withMessage('Invalid date format'),
 ];
 
 // Helper function to handle validation errors
@@ -365,7 +375,7 @@ router.post(
 // PUT /api/v1/patrons/:id - Update patron
 router.put(
   '/:id',
-  validate_patron,
+  validate_patron_update,
   handle_validation_errors,
   async (req, res) => {
     try {
