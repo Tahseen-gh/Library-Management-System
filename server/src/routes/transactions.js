@@ -197,10 +197,33 @@ router.post(
       }
 
       // Check if there are any waiting/ready reservations for this library item by other patrons
-      const other_patron_reservations = await db.execute_query(
-        'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND patron_id != ? AND status IN ("waiting", "ready") ORDER BY queue_position LIMIT 1',
+      // Only block if another patron has a BETTER queue position (lower number)
+      // This allows multiple patrons to check out different copies of the same item
+
+      // First, check if THIS patron has a reservation
+      const patron_reservation = await db.execute_query(
+        'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND patron_id = ? AND status IN ("waiting", "ready") ORDER BY queue_position LIMIT 1',
         [item_copy.library_item_id, patron_id]
       );
+
+      // If patron has no reservation, check if there are ANY other active reservations
+      // If patron HAS a reservation, only block if someone else has a BETTER queue position
+      let other_patron_reservations = [];
+
+      if (patron_reservation.length === 0) {
+        // Patron has no reservation - block if there are ANY other reservations
+        other_patron_reservations = await db.execute_query(
+          'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND status IN ("waiting", "ready") ORDER BY queue_position LIMIT 1',
+          [item_copy.library_item_id]
+        );
+      } else {
+        // Patron has a reservation - only block if someone else has a better queue position
+        const patron_queue_pos = patron_reservation[0].queue_position;
+        other_patron_reservations = await db.execute_query(
+          'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND patron_id != ? AND status IN ("waiting", "ready") AND queue_position < ? ORDER BY queue_position LIMIT 1',
+          [item_copy.library_item_id, patron_id, patron_queue_pos]
+        );
+      }
 
       if (other_patron_reservations.length > 0) {
         return res.status(400).json({
@@ -388,19 +411,6 @@ router.post(
         updated_at: new Date(),
       });
 
-      // Update item copy - use owning_branch_id as default if no new location specified
-      // Status set to 'returned' so it can be reshelved later
-      const update_data = {
-        status: 'returned',
-        checked_out_by: null,
-        due_date: null,
-        current_branch_id: new_location_id || item_copy.owning_branch_id,
-        condition: new_condition || item_copy.condition,
-        updated_at: new Date(),
-      };
-
-      await db.update_record('LIBRARY_ITEM_COPIES', copy_id, update_data);
-
       // Update patron balance if there's a fine
       if (fine_amount > 0) {
         await db.execute_query(
@@ -409,14 +419,27 @@ router.post(
         );
       }
 
-      // Check if there are reservations waiting for this item
+      // CRITICAL: Check for existing "ready" reservations FIRST
+      // If there are "ready" reservations, the copy should stay "Reserved"
+      // If there are only "waiting" reservations, promote the first one to "ready"
+
+      const ready_reservations = await db.execute_query(
+        'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND status = "ready" ORDER BY queue_position LIMIT 1',
+        [item_copy.library_item_id]
+      );
+
       const waiting_reservations = await db.execute_query(
         'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND status = "waiting" ORDER BY queue_position LIMIT 1',
         [item_copy.library_item_id]
       );
 
-      if (waiting_reservations.length > 0) {
-        // Move first person in queue to "ready" status
+      let final_copy_status = 'returned'; // Default status
+
+      if (ready_reservations.length > 0) {
+        // There's already a "ready" reservation - copy should stay "Reserved"
+        final_copy_status = 'Reserved';
+      } else if (waiting_reservations.length > 0) {
+        // No ready reservations, but there are waiting ones - promote first to "ready"
         const next_reservation = waiting_reservations[0];
         const new_expiry = new Date();
         new_expiry.setDate(new_expiry.getDate() + 5);
@@ -427,12 +450,21 @@ router.post(
           updated_at: new Date().toISOString(),
         });
 
-        // Set item status to Reserved (ready for pickup)
-        await db.update_record('LIBRARY_ITEM_COPIES', copy_id, {
-          status: 'Reserved',
-          updated_at: new Date().toISOString(),
-        });
+        // Set copy status to Reserved for the newly promoted reservation
+        final_copy_status = 'Reserved';
       }
+
+      // Now update the item copy with the determined status
+      const update_data = {
+        status: final_copy_status,
+        checked_out_by: null,
+        due_date: null,
+        current_branch_id: new_location_id || item_copy.owning_branch_id,
+        condition: new_condition || item_copy.condition,
+        updated_at: new Date(),
+      };
+
+      await db.update_record('LIBRARY_ITEM_COPIES', copy_id, update_data);
 
       res.json({
         success: true,
