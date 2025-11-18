@@ -266,6 +266,23 @@ router.post(
       // Otherwise, mark as "waiting" (in queue)
       const reservation_status = (reservation_allowed && available_copies.length > 0) ? 'ready' : 'waiting';
 
+      // CRITICAL BUSINESS RULE: Queue position #1 must ALWAYS be "ready" status, never "waiting"
+      // If this is the first reservation (queue_position === 1) and we're about to set it as "waiting",
+      // this indicates a logic error that must be prevented
+      if (queue_position === 1 && reservation_status === 'waiting') {
+        return res.status(500).json({
+          error: 'System error: First reservation in queue cannot have waiting status',
+          message: 'Queue position #1 must always be "Ready for Pickup", never "Waitlist". Please contact system administrator.',
+          debug_info: {
+            queue_position,
+            reservation_status,
+            available_copies: available_copies.length,
+            existing_reservations: existing_reservations[0].count,
+            total_copies: total_copies[0].count,
+          },
+        });
+      }
+
       // Set expiry date to 5 days from now (only applies when status is "ready")
       const reservation_date = new Date();
       const expiry_date = new Date(reservation_date);
@@ -552,14 +569,36 @@ router.delete('/:id', async (req, res) => {
       updated_at: new Date().toISOString(),
     });
 
-    // If there was a reserved copy, make it available
+    // If there was a reserved copy, we need to handle it carefully
     if (reservation.status === 'ready') {
       const reserved_copies = await db.execute_query(
         'SELECT * FROM LIBRARY_ITEM_COPIES WHERE library_item_id = ? AND status = "Reserved"',
         [reservation.library_item_id]
       );
 
-      if (reserved_copies.length > 0) {
+      // Check if there are waiting reservations that should be promoted
+      const next_waiting_reservations = await db.execute_query(
+        'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND status = "waiting" ORDER BY queue_position LIMIT 1',
+        [reservation.library_item_id]
+      );
+
+      if (next_waiting_reservations.length > 0 && reserved_copies.length > 0) {
+        // CRITICAL: Promote the next waiting reservation to "ready" status
+        // This ensures queue position #1 is always "ready", never "waiting"
+        const next_reservation = next_waiting_reservations[0];
+        const new_expiry = new Date();
+        new_expiry.setDate(new_expiry.getDate() + 5);
+
+        await db.update_record('RESERVATIONS', next_reservation.id, {
+          status: 'ready',
+          expiry_date: new_expiry.toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+
+        // Keep the copy as "Reserved" for the promoted reservation
+        // (no need to change copy status since it was already Reserved)
+      } else if (reserved_copies.length > 0) {
+        // No waiting reservations, so make the copy available
         await db.update_record('LIBRARY_ITEM_COPIES', reserved_copies[0].id, {
           status: 'Available',
           updated_at: new Date().toISOString(),
@@ -569,7 +608,7 @@ router.delete('/:id', async (req, res) => {
 
     // Update queue positions for remaining reservations
     await db.execute_query(
-      'UPDATE RESERVATIONS SET queue_position = queue_position - 1 WHERE library_item_id = ? AND queue_position > ? AND status = "waiting"',
+      'UPDATE RESERVATIONS SET queue_position = queue_position - 1 WHERE library_item_id = ? AND queue_position > ? AND status IN ("waiting", "ready")',
       [reservation.library_item_id, reservation.queue_position]
     );
 
