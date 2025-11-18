@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { DataGrid, type GridColDef, type GridDensity } from '@mui/x-data-grid';
-import { type Item_Copy } from '../../types';
+import { type Item_Copy, Library_Item_Type } from '../../types';
 import { Snackbar, Alert, AlertTitle, Box, Chip } from '@mui/material';
 import { LibraryItemDetails } from './LibraryItemDetails';
 import { useAllCopies } from '../../hooks/useCopies';
@@ -113,7 +113,7 @@ export const LibraryItemDataGrid = () => {
           item={{
             id: selected_copy.library_item_id,
             title: selected_copy.title || '',
-            item_type: selected_copy.item_type || 'BOOK',
+            item_type: selected_copy.item_type || Library_Item_Type.Book,
             description: selected_copy.description,
             publication_year: selected_copy.publication_year,
             congress_code: '',
