@@ -25,6 +25,14 @@ export const CopiesTable = ({ copies, branches }: CopiesTableProps) => {
     );
   };
 
+  const get_copy_label = (copy_id: number): string => {
+    const sorted_copies = [...copies].sort((a, b) => a.id - b.id);
+    const copy_index = sorted_copies.findIndex((c) => c.id === copy_id);
+    const copy_number = copy_index + 1;
+    const total_copies = copies.length;
+    return `Copy ${copy_number} of ${total_copies}`;
+  };
+
   if (copies.length === 0) {
     return (
       <Box sx={{ p: 2, textAlign: 'center' }}>
@@ -52,7 +60,7 @@ export const CopiesTable = ({ copies, branches }: CopiesTableProps) => {
         <TableHead>
           <TableRow>
             <TableCell sx={{ minWidth: { xs: 80, sm: 120 } }}>
-              Copy ID
+              Copy
             </TableCell>
             <TableCell sx={{ minWidth: { xs: 60, sm: 100 } }}>Branch</TableCell>
             <TableCell sx={{ minWidth: { xs: 80, sm: 100 } }}>Status</TableCell>
@@ -76,17 +84,16 @@ export const CopiesTable = ({ copies, branches }: CopiesTableProps) => {
             >
               <TableCell component="th" scope="row">
                 <Typography
-                  title={copy.id.toString()}
+                  title={get_copy_label(copy.id)}
                   variant="body2"
                   sx={{
-                    fontFamily: 'monospace',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
                     maxWidth: { xs: 60, sm: 100 },
                   }}
                 >
-                  {copy.id.toString()}
+                  {get_copy_label(copy.id)}
                 </Typography>
               </TableCell>
               <TableCell>
