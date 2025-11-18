@@ -19,6 +19,7 @@ import {
   Input,
   Event,
   Search,
+  Autorenew,
 } from '@mui/icons-material';
 
 const drawerWidth = 256;
@@ -49,6 +50,7 @@ export const Sidebar = ({ sidebarOpen }: { sidebarOpen: boolean }) => {
       path: '/?mode=checkout',
       icon: <Output sx={{ transform: 'rotate(180deg)' }} />,
     },
+    { text: 'Renew', path: '/renew', icon: <Autorenew /> },
     { text: 'Reshelve', path: '/available', icon: <CheckCircle /> },
   ];
 

@@ -67,6 +67,105 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/v1/patrons/search-for-renewal - Search patron by ID or name and get checked-out items
+router.get('/search-for-renewal', async (req, res) => {
+  try {
+    const { query } = req.query;
+
+    if (!query) {
+      return res.status(400).json({
+        error: 'Search query is required',
+      });
+    }
+
+    // Search for patron by ID or name
+    let patron = null;
+
+    // Try to parse as ID first
+    const patron_id = parseInt(query);
+    if (!isNaN(patron_id)) {
+      patron = await db.get_by_id('PATRONS', patron_id);
+    }
+
+    // If not found by ID, search by name
+    if (!patron) {
+      const patrons = await db.execute_query(
+        `SELECT * FROM PATRONS
+         WHERE LOWER(first_name || ' ' || last_name) = LOWER(?)
+         OR LOWER(first_name) = LOWER(?)
+         OR LOWER(last_name) = LOWER(?)
+         LIMIT 1`,
+        [query, query, query]
+      );
+
+      if (patrons.length > 0) {
+        patron = patrons[0];
+      }
+    }
+
+    if (!patron) {
+      return res.status(404).json({
+        error: 'Patron not found',
+      });
+    }
+
+    // Get all active checked-out items for this patron
+    const checked_out_items = await db.execute_query(
+      `SELECT
+        t.id as transaction_id,
+        t.copy_id,
+        t.due_date,
+        t.renewal_status,
+        li.id as library_item_id,
+        li.title,
+        li.item_type,
+        b.author,
+        v.director,
+        (SELECT COUNT(*) FROM RESERVATIONS r
+         WHERE r.library_item_id = li.id
+         AND r.status IN ('waiting', 'ready')) as has_reservations
+       FROM TRANSACTIONS t
+       JOIN LIBRARY_ITEM_COPIES ic ON t.copy_id = ic.id
+       JOIN LIBRARY_ITEMS li ON ic.library_item_id = li.id
+       LEFT JOIN BOOKS b ON li.id = b.library_item_id
+       LEFT JOIN VIDEOS v ON li.id = v.library_item_id
+       WHERE t.patron_id = ? AND t.status = 'Active'
+       ORDER BY t.due_date ASC`,
+      [patron.id]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        patron: {
+          id: patron.id,
+          first_name: patron.first_name,
+          last_name: patron.last_name,
+          card_expiration_date: patron.card_expiration_date,
+          balance: patron.balance,
+        },
+        checked_out_items: checked_out_items.map(item => ({
+          transaction_id: item.transaction_id,
+          copy_id: item.copy_id,
+          library_item_id: item.library_item_id,
+          title: item.title,
+          item_type: item.item_type,
+          author: item.author,
+          director: item.director,
+          due_date: item.due_date,
+          renewal_status: item.renewal_status,
+          has_reservations: item.has_reservations > 0,
+        })),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to search patron',
+      message: error.message,
+    });
+  }
+});
+
 // GET /api/v1/patrons/:id - Get single patron
 router.get('/:id', async (req, res) => {
   try {
@@ -187,7 +286,7 @@ router.get('/:id/transactions', async (req, res) => {
     }
 
     const transactions = await db.execute_query(
-      `SELECT t.*, ci.title, ci.item_type
+      `SELECT t.*, ci.title, ci.item_type, ic.library_item_id
        FROM TRANSACTIONS t
        JOIN LIBRARY_ITEM_COPIES ic ON t.copy_id = ic.id
        JOIN LIBRARY_ITEMS ci ON ic.library_item_id = ci.id
@@ -196,10 +295,34 @@ router.get('/:id/transactions', async (req, res) => {
       [req.params.id]
     );
 
+    // Add copy labels to transactions
+    const transactions_with_labels = await Promise.all(
+      transactions.map(async (transaction) => {
+        // Get all copies for this library item
+        const all_copies = await db.execute_query(
+          'SELECT id FROM LIBRARY_ITEM_COPIES WHERE library_item_id = ? ORDER BY id',
+          [transaction.library_item_id]
+        );
+
+        // Calculate copy number
+        const copy_index = all_copies.findIndex(c => c.id === transaction.copy_id);
+        const copy_number = copy_index + 1;
+        const total_copies = all_copies.length;
+        const copy_label = `Copy ${copy_number} of ${total_copies}`;
+
+        return {
+          ...transaction,
+          copy_label,
+          copy_number,
+          total_copies,
+        };
+      })
+    );
+
     res.json({
       success: true,
-      count: transactions.length,
-      data: transactions,
+      count: transactions_with_labels.length,
+      data: transactions_with_labels,
     });
   } catch (error) {
     res.status(500).json({

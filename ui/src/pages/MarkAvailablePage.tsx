@@ -32,6 +32,7 @@ const API_BASE_URL =
 
 interface ReturnedItem {
   id: number;
+  copy_label?: string;
   library_item_id: number;
   title: string;
   item_type: string;
@@ -45,6 +46,7 @@ interface ReturnedItem {
 
 interface ItemDetails {
   id: number;
+  copy_label?: string;
   title: string;
   item_type: string;
   status: string;
@@ -150,6 +152,7 @@ export const MarkAvailablePage: React.FC = () => {
       // Store item details for display in dialogs
       set_current_item_details({
         id: item.id,
+        copy_label: item.copy_label || `Copy ${item.copy_number || 1} of ${item.total_copies || 1}`,
         title: item_title,
         item_type: item_type,
         status: item.status,
@@ -492,7 +495,7 @@ export const MarkAvailablePage: React.FC = () => {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell><strong>Copy ID</strong></TableCell>
+                  <TableCell><strong>Copy</strong></TableCell>
                   <TableCell><strong>Title</strong></TableCell>
                   <TableCell><strong>Type</strong></TableCell>
                   <TableCell><strong>Condition</strong></TableCell>
@@ -503,7 +506,7 @@ export const MarkAvailablePage: React.FC = () => {
               <TableBody>
                 {returned_items.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell>{item.id}</TableCell>
+                    <TableCell>{item.copy_label || `Copy ${item.id}`}</TableCell>
                     <TableCell>{item.title || `Item ${item.id}`}</TableCell>
                     <TableCell>
                       <Chip label={item.item_type} size="small" />
@@ -574,7 +577,7 @@ export const MarkAvailablePage: React.FC = () => {
               </Typography>
               <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
                 <Typography variant="body2" color="text.secondary">
-                  Copy ID: <strong>{current_item_details.id}</strong>
+                  {current_item_details.copy_label || `Copy ${current_item_details.id}`}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Type: <strong>{current_item_details.item_type}</strong>
@@ -621,7 +624,7 @@ export const MarkAvailablePage: React.FC = () => {
               </Typography>
               <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
                 <Typography variant="body2" color="text.secondary">
-                  Copy ID: <strong>{current_item_details.id}</strong>
+                  {current_item_details.copy_label || `Copy ${current_item_details.id}`}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Type: <strong>{current_item_details.item_type}</strong>
