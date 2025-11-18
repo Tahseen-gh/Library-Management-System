@@ -45,6 +45,7 @@ import {
 import { useGetTransactionsByPatronId } from '../hooks/useTransactions';
 import { format_date } from '../utils/dateUtils';
 import type { Patron_Form_Data } from '../types';
+import { validate_required } from '../utils/validators';
 
 // Helper Components
 interface InfoItemProps {
@@ -147,6 +148,7 @@ export const PatronPage = () => {
     message: '',
     severity: 'success',
   });
+  const [validation_error, set_validation_error] = useState<string | null>(null);
   const [form_data, set_form_data] = useState({
     first_name: '',
     last_name: '',
@@ -161,9 +163,10 @@ export const PatronPage = () => {
   const update_patron_mutation = useUpdatePatron({
     onSuccess: () => {
       set_edit_modal_open(false);
+      set_validation_error(null);
       set_snackbar({
         open: true,
-        message: 'Patron updated successfully',
+        message: 'Patron updates Successfully',
         severity: 'success',
       });
     },
@@ -219,12 +222,14 @@ export const PatronPage = () => {
         card_expiration_date: dayjs(patron.card_expiration_date),
       });
     }
+    set_validation_error(null);
     set_edit_modal_open(true);
     handle_menu_close();
   };
 
   const handle_modal_close = () => {
     set_edit_modal_open(false);
+    set_validation_error(null);
   };
 
   const handle_delete_click = () => {
@@ -257,6 +262,26 @@ export const PatronPage = () => {
   const handle_save = () => {
     if (!patron_id) return;
 
+    // Step 10: Validate updated fields
+    set_validation_error(null);
+
+    // Required field validation
+    if (!validate_required(form_data.first_name)) {
+      set_validation_error('Validation Failed');
+      return; // Return to form (step 12)
+    }
+
+    if (!validate_required(form_data.last_name)) {
+      set_validation_error('Validation Failed');
+      return; // Return to form (step 12)
+    }
+
+    if (!form_data.card_expiration_date) {
+      set_validation_error('Validation Failed');
+      return; // Return to form (step 12)
+    }
+
+    // Step 11: Validation successful - proceed to update
     const updated_data: Partial<Patron_Form_Data> = {
       first_name: form_data.first_name,
       last_name: form_data.last_name,
@@ -268,6 +293,7 @@ export const PatronPage = () => {
         : new Date(),
     };
 
+    // Step 13: Update patron record
     update_patron_mutation.mutate({
       patron_id: parseInt(patron_id),
       patron_data: updated_data,
@@ -494,6 +520,11 @@ export const PatronPage = () => {
           <Edit /> Edit Patron Information
         </DialogTitle>
         <DialogContent sx={{ p: 5 }}>
+          {validation_error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {validation_error}
+            </Alert>
+          )}
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Grid container spacing={{ xs: 2, sm: 4 }} sx={{ mt: 2 }}>
               <Grid size={{ xs: 12, sm: 6 }}>
