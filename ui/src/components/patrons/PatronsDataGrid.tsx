@@ -4,7 +4,6 @@ import {
   type GridDensity,
   type GridRenderCellParams,
   type GridRowSelectionModel,
-  type GridSlots,
 } from '@mui/x-data-grid';
 
 import { useState } from 'react';
