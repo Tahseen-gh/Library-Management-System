@@ -411,52 +411,10 @@ router.post(
         updated_at: new Date(),
       });
 
-      // Update patron balance if there's a fine
-      if (fine_amount > 0) {
-        await db.execute_query(
-          'UPDATE PATRONS SET balance = balance + ? WHERE id = ?',
-          [fine_amount, transaction.patron_id]
-        );
-      }
-
-      // CRITICAL: Check for existing "ready" reservations FIRST
-      // If there are "ready" reservations, the copy should stay "Reserved"
-      // If there are only "waiting" reservations, promote the first one to "ready"
-
-      const ready_reservations = await db.execute_query(
-        'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND status = "ready" ORDER BY queue_position LIMIT 1',
-        [item_copy.library_item_id]
-      );
-
-      const waiting_reservations = await db.execute_query(
-        'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND status = "waiting" ORDER BY queue_position LIMIT 1',
-        [item_copy.library_item_id]
-      );
-
-      let final_copy_status = 'returned'; // Default status
-
-      if (ready_reservations.length > 0) {
-        // There's already a "ready" reservation - copy should stay "Reserved"
-        final_copy_status = 'Reserved';
-      } else if (waiting_reservations.length > 0) {
-        // No ready reservations, but there are waiting ones - promote first to "ready"
-        const next_reservation = waiting_reservations[0];
-        const new_expiry = new Date();
-        new_expiry.setDate(new_expiry.getDate() + 5);
-
-        await db.update_record('RESERVATIONS', next_reservation.id, {
-          status: 'ready',
-          expiry_date: new_expiry.toISOString(),
-          updated_at: new Date().toISOString(),
-        });
-
-        // Set copy status to Reserved for the newly promoted reservation
-        final_copy_status = 'Reserved';
-      }
-
-      // Now update the item copy with the determined status
+      // Update item copy - use owning_branch_id as default if no new location specified
+      // Status set to 'returned' so it can be reshelved later
       const update_data = {
-        status: final_copy_status,
+        status: 'returned',
         checked_out_by: null,
         due_date: null,
         current_branch_id: new_location_id || item_copy.owning_branch_id,
@@ -465,6 +423,14 @@ router.post(
       };
 
       await db.update_record('LIBRARY_ITEM_COPIES', copy_id, update_data);
+
+      // Update patron balance if there's a fine
+      if (fine_amount > 0) {
+        await db.execute_query(
+          'UPDATE PATRONS SET balance = balance + ? WHERE id = ?',
+          [fine_amount, transaction.patron_id]
+        );
+      }
 
       res.json({
         success: true,
@@ -568,9 +534,35 @@ router.post(
         });
       }
 
-      // Update item copy status to Available
+      // Check if there are "waiting" reservations for this item
+      const waiting_reservations = await db.execute_query(
+        'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND status = "waiting" ORDER BY queue_position LIMIT 1',
+        [item_copy.library_item_id]
+      );
+
+      let final_status = 'Available';
+      let promotion_message = '';
+
+      if (waiting_reservations.length > 0) {
+        // Promote first waiting reservation to "ready"
+        const next_reservation = waiting_reservations[0];
+        const new_expiry = new Date();
+        new_expiry.setDate(new_expiry.getDate() + 5);
+
+        await db.update_record('RESERVATIONS', next_reservation.id, {
+          status: 'ready',
+          expiry_date: new_expiry.toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+
+        // Set copy to Reserved for the patron
+        final_status = 'Reserved';
+        promotion_message = ' and reservation promoted to ready for pickup';
+      }
+
+      // Update item copy status
       await db.update_record('LIBRARY_ITEM_COPIES', copy_id, {
-        status: 'Available',
+        status: final_status,
         current_branch_id: branch_id || item_copy.owning_branch_id,
         checked_out_by: null,
         due_date: null,
@@ -579,11 +571,12 @@ router.post(
 
       res.json({
         success: true,
-        message: 'Item marked as available successfully',
+        message: `Item marked as ${final_status.toLowerCase()} successfully${promotion_message}`,
         data: {
           copy_id,
-          status: 'Available',
+          status: final_status,
           branch_id: branch_id || item_copy.owning_branch_id,
+          reservation_promoted: waiting_reservations.length > 0,
         },
       });
     } catch (error) {
