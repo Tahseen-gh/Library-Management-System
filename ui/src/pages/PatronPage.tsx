@@ -74,9 +74,9 @@ const cols: GridColDef[] = [
     width: 250,
   },
   {
-    field: 'copy_id',
-    headerName: 'Copy ID',
-    width: 100,
+    field: 'copy_label',
+    headerName: 'Copy',
+    width: 120,
   },
   {
     field: 'transaction_type',

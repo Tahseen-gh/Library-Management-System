@@ -74,7 +74,7 @@ router.get('/', async (req, res) => {
     }
 
     const query = `
-      SELECT 
+      SELECT
         lic.*,
         ci.title,
         ci.item_type,
@@ -85,15 +85,37 @@ router.get('/', async (req, res) => {
       JOIN LIBRARY_ITEMS ci ON lic.library_item_id = ci.id
       JOIN BRANCHES b ON lic.owning_branch_id = b.id
       ${conditions}
-      ORDER BY ci.title, lic.created_at
+      ORDER BY ci.title, lic.id
     `;
 
     const item_copies = await db.execute_query(query, params);
 
+    // Add copy labels to each copy
+    const copies_with_labels = await Promise.all(
+      item_copies.map(async (copy) => {
+        const all_copies = await db.execute_query(
+          'SELECT id FROM LIBRARY_ITEM_COPIES WHERE library_item_id = ? ORDER BY id',
+          [copy.library_item_id]
+        );
+
+        const copy_index = all_copies.findIndex((c) => c.id === copy.id);
+        const copy_number = copy_index + 1;
+        const total_copies = all_copies.length;
+        const copy_label = `Copy ${copy_number} of ${total_copies}`;
+
+        return {
+          ...copy,
+          copy_label,
+          copy_number,
+          total_copies,
+        };
+      })
+    );
+
     res.json({
       success: true,
-      count: item_copies.length,
-      data: item_copies,
+      count: copies_with_labels.length,
+      data: copies_with_labels,
     });
   } catch (error) {
     res.status(500).json({
@@ -107,7 +129,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const query = `
-      SELECT 
+      SELECT
         lic.*,
         li.title,
         li.item_type,
@@ -127,9 +149,25 @@ router.get('/:id', async (req, res) => {
       });
     }
 
+    // Get all copies to calculate copy label
+    const all_copies = await db.execute_query(
+      'SELECT id FROM LIBRARY_ITEM_COPIES WHERE library_item_id = ? ORDER BY id',
+      [item_copy.library_item_id]
+    );
+
+    const copy_index = all_copies.findIndex((c) => c.id === item_copy.id);
+    const copy_number = copy_index + 1;
+    const total_copies = all_copies.length;
+    const copy_label = `Copy ${copy_number} of ${total_copies}`;
+
     res.json({
       success: true,
-      data: item_copy,
+      data: {
+        ...item_copy,
+        copy_label,
+        copy_number,
+        total_copies,
+      },
     });
   } catch (error) {
     res.status(500).json({
@@ -143,23 +181,32 @@ router.get('/:id', async (req, res) => {
 router.get('/item/:library_item_id', async (req, res) => {
   try {
     const query = `
-      SELECT 
+      SELECT
         ic.*,
         b.branch_name
       FROM LIBRARY_ITEM_COPIES ic
       JOIN BRANCHES b ON ic.owning_branch_id = b.id
       WHERE ic.library_item_id = ?
-      ORDER BY b.branch_name, ic.status
+      ORDER BY ic.id
     `;
 
     const item_copies = await db.execute_query(query, [
       req.params.library_item_id,
     ]);
 
+    // Add copy labels to each copy
+    const total_copies = item_copies.length;
+    const copies_with_labels = item_copies.map((copy, index) => ({
+      ...copy,
+      copy_label: `Copy ${index + 1} of ${total_copies}`,
+      copy_number: index + 1,
+      total_copies,
+    }));
+
     res.json({
       success: true,
-      count: item_copies.length,
-      data: item_copies,
+      count: copies_with_labels.length,
+      data: copies_with_labels,
     });
   } catch (error) {
     res.status(500).json({

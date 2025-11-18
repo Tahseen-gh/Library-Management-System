@@ -573,7 +573,7 @@ export const ConfirmCheckoutDetails: FC<ConfirmCheckoutDetailsProps> = ({
                   color="text.secondary"
                   sx={{ mt: 1 }}
                 >
-                  Copy ID: {item_copy.id}
+                  {(item_copy as any).copy_label || `Copy ${(item_copy as any).copy_number || 1} of ${(item_copy as any).total_copies || 1}`}
                 </Typography>
                 {(item_copy as any).branch_name && (
                   <Typography variant="body2" color="text.secondary">

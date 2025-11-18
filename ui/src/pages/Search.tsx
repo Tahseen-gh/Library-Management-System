@@ -46,6 +46,7 @@ interface ItemRecord {
   itemId: number;
   itemType: string;
   copyId: number;
+  copyLabel: string;
   status: string;
   dueDate?: string;
   patronName?: string;
@@ -59,6 +60,7 @@ interface FullItemDetails {
   itemId: number;
   itemType: string;
   copyId: number;
+  copyLabel: string;
   status: string;
   dueDate?: string;
   patronName?: string;
@@ -190,6 +192,7 @@ export default function Search() {
         itemId: copy.library_item_id,
         itemType: copy.item_type || 'Unknown',
         copyId: copy.id,
+        copyLabel: copy.copy_label || `Copy ${copy.copy_number || 1} of ${copy.total_copies || 1}`,
         status: copy.status,
         dueDate: copy.due_date,
         patronName: copy.patron_name,
@@ -362,7 +365,7 @@ export default function Search() {
                               {item.itemName}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                              Item ID: {item.itemId} | Copy ID: {item.copyId} | Type: {item.itemType}
+                              Item ID: {item.itemId} | {item.copyLabel} | Type: {item.itemType}
                             </Typography>
                           </Box>
                         </CardActionArea>
@@ -439,10 +442,10 @@ export default function Search() {
 
               <Box>
                 <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  COPY ID
+                  COPY
                 </Typography>
                 <Typography variant="body1">
-                  {selectedItem.copyId}
+                  {selectedItem.copyLabel}
                 </Typography>
               </Box>
 

@@ -286,7 +286,7 @@ router.get('/:id/transactions', async (req, res) => {
     }
 
     const transactions = await db.execute_query(
-      `SELECT t.*, ci.title, ci.item_type
+      `SELECT t.*, ci.title, ci.item_type, ic.library_item_id
        FROM TRANSACTIONS t
        JOIN LIBRARY_ITEM_COPIES ic ON t.copy_id = ic.id
        JOIN LIBRARY_ITEMS ci ON ic.library_item_id = ci.id
@@ -295,10 +295,34 @@ router.get('/:id/transactions', async (req, res) => {
       [req.params.id]
     );
 
+    // Add copy labels to transactions
+    const transactions_with_labels = await Promise.all(
+      transactions.map(async (transaction) => {
+        // Get all copies for this library item
+        const all_copies = await db.execute_query(
+          'SELECT id FROM LIBRARY_ITEM_COPIES WHERE library_item_id = ? ORDER BY id',
+          [transaction.library_item_id]
+        );
+
+        // Calculate copy number
+        const copy_index = all_copies.findIndex(c => c.id === transaction.copy_id);
+        const copy_number = copy_index + 1;
+        const total_copies = all_copies.length;
+        const copy_label = `Copy ${copy_number} of ${total_copies}`;
+
+        return {
+          ...transaction,
+          copy_label,
+          copy_number,
+          total_copies,
+        };
+      })
+    );
+
     res.json({
       success: true,
-      count: transactions.length,
-      data: transactions,
+      count: transactions_with_labels.length,
+      data: transactions_with_labels,
     });
   } catch (error) {
     res.status(500).json({

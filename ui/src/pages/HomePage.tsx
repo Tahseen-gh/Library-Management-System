@@ -910,7 +910,7 @@ export const HomePage = () => {
             </Typography>
             <Typography variant="body2">Title: {book_data.title}</Typography>
             <Typography variant="body2">Type: {book_data.item_type}</Typography>
-            <Typography variant="body2">Copy ID: {book_data.id}</Typography>
+            <Typography variant="body2">Copy: {book_data.copy_label}</Typography>
           </Box>
 
           <Divider sx={{ my: 2 }} />

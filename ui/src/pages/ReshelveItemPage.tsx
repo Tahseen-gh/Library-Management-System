@@ -26,6 +26,7 @@ const API_BASE_URL =
 
 interface ReturnedItem {
   id: number;
+  copy_label?: string;
   title: string;
   item_type: string;
   branch_name: string;
@@ -289,7 +290,7 @@ export const ReshelveItemPage: React.FC = () => {
             <Table stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell>Copy ID</TableCell>
+                  <TableCell>Copy</TableCell>
                   <TableCell>Title</TableCell>
                   <TableCell>Type</TableCell>
                   <TableCell>Branch</TableCell>
@@ -305,7 +306,7 @@ export const ReshelveItemPage: React.FC = () => {
                       backgroundColor: item.reshelved ? 'success.50' : 'inherit',
                     }}
                   >
-                    <TableCell>{item.id}</TableCell>
+                    <TableCell>{item.copy_label || `Copy ${item.id}`}</TableCell>
                     <TableCell>{item.title}</TableCell>
                     <TableCell>
                       <Chip label={item.item_type} size="small" variant="outlined" />

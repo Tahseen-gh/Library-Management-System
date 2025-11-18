@@ -9,7 +9,7 @@ import { CustomToolbar } from '../common/CustomDataGridToolbar';
 
 const columns: GridColDef[] = [
   { field: 'library_item_id', headerName: 'ID', width: 60 },
-  { field: 'id', headerName: 'Copy ID', width: 80 },
+  { field: 'copy_label', headerName: 'Copy', width: 120 },
   { field: 'title', headerName: 'Title', width: 150, editable: false },
   {
     field: 'item_type',
