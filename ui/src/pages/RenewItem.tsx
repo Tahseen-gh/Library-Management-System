@@ -238,7 +238,7 @@ export const RenewItem: FC = () => {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
-          📚 Library Renewal System
+          Library Renewal System
         </Typography>
 
         <Paper elevation={3} sx={{ p: 4, mt: 3 }}>
@@ -249,7 +249,7 @@ export const RenewItem: FC = () => {
           <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
             <TextField
               fullWidth
-              placeholder="e.g., P12345 or John Smith"
+              placeholder="e.g., 1 or John Doe"
               value={patron_query}
               onChange={e => set_patron_query(e.target.value)}
               onKeyPress={e => {
@@ -289,7 +289,7 @@ export const RenewItem: FC = () => {
       <Container maxWidth="md" sx={{ py: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
-            📚 Library Renewal System
+            Library Renewal System
           </Typography>
           <Button variant="outlined" color="inherit" onClick={new_search}>
             New Search
@@ -385,7 +385,7 @@ export const RenewItem: FC = () => {
       <Container maxWidth="md" sx={{ py: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
-            📚 Library Renewal System
+            Library Renewal System
           </Typography>
           <Button variant="outlined" color="inherit" onClick={new_search}>
             New Search
