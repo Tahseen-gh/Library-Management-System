@@ -89,6 +89,7 @@ async function seed_database() {
 
     let copy_counter = 1;
     const all_copy_ids = []; // Track all copy IDs for later checkout
+    const item_to_copy_map = new Map(); // Track one copy per library item for Emily's checkouts
 
     // Create books
     for (let i = 0; i < books.length; i++) {
@@ -132,6 +133,12 @@ async function seed_database() {
         });
 
         all_copy_ids.push(copy_id);
+
+        // Store first copy of each item for Emily's unique checkouts
+        if (!item_to_copy_map.has(library_item_id)) {
+          item_to_copy_map.set(library_item_id, copy_id);
+        }
+
         copy_counter++;
       }
 
@@ -183,6 +190,12 @@ async function seed_database() {
         });
 
         all_copy_ids.push(copy_id);
+
+        // Store first copy of each item for Emily's unique checkouts
+        if (!item_to_copy_map.has(library_item_id)) {
+          item_to_copy_map.set(library_item_id, copy_id);
+        }
+
         copy_counter++;
       }
 
@@ -228,6 +241,12 @@ async function seed_database() {
         });
 
         all_copy_ids.push(copy_id);
+
+        // Store first copy of each item for Emily's unique checkouts
+        if (!item_to_copy_map.has(library_item_id)) {
+          item_to_copy_map.set(library_item_id, copy_id);
+        }
+
         copy_counter++;
       }
 
@@ -317,12 +336,14 @@ async function seed_database() {
 
     console.log('\n📖 Checking out 20 items to Patron 4 (Emily Davis)...');
 
-    // Checkout 20 items to patron 4 (mix of books and movies)
-    // Use first 20 copy IDs from our tracking array
+    // Checkout 20 items to patron 4 - one copy from each of 20 unique items
+    // Use the item_to_copy_map which ensures each item is different
     const checkout_date = new Date();
     const due_date = new Date(checkout_date.getTime() + 28 * 24 * 60 * 60 * 1000); // 4 weeks
 
-    const copies_to_checkout = all_copy_ids.slice(0, 20); // Take first 20 copies
+    // Get first 20 unique copy IDs (one per library item)
+    const copies_to_checkout = Array.from(item_to_copy_map.values()).slice(0, 20);
+
     for (const copy_id of copies_to_checkout) {
       // Create transaction
       await create_record('TRANSACTIONS', {
@@ -341,7 +362,7 @@ async function seed_database() {
         ['Checked Out', patron4_id, due_date, copy_id]
       );
     }
-    console.log(`✓ Checked out 20 items to Emily Davis`);
+    console.log(`✓ Checked out 20 unique items to Emily Davis (one of each)`);
 
     const total_items = books.length + movies.length + new_movies.length;
     const total_copies = all_copy_ids.length;
@@ -358,7 +379,7 @@ async function seed_database() {
     console.log(`  • ${movies.length} movie titles (2-3 copies each)`);
     console.log(`  • ${new_movies.length} new release movies (2 copies each)`);
     console.log(`  • Total: ${total_items} unique titles with ${total_copies} total copies`);
-    console.log('  • First 20 copies: Checked out to Patron 4');
+    console.log('  • 20 unique items (1 copy each): Checked out to Patron 4');
     console.log(`  • Remaining ${total_copies - 20} copies: Available for checkout`);
     console.log('\n👥 Test Patrons:');
     console.log('\n  1. John Doe (ID: 1) ✅');
@@ -383,7 +404,7 @@ async function seed_database() {
     console.log('     • Status: Active');
     console.log('     • Card: Valid until 2026-12-31');
     console.log('     • Balance: $0.00');
-    console.log('     • Items: 20 (MAXIMUM LIMIT REACHED)');
+    console.log('     • Items: 20 unique items (MAXIMUM LIMIT REACHED)');
     console.log('     • Can checkout: NO - Has 20 items already');
     console.log('\n  5. Michael Brown (ID: 5) ✅');
     console.log('     • Status: Active');
