@@ -18,7 +18,7 @@ import {
   DialogActions,
   TextField,
 } from '@mui/material';
-import { Person, LibraryBooks, CalendarToday, Warning } from '@mui/icons-material';
+import { Person, LibraryBooks, CalendarToday } from '@mui/icons-material';
 import { format_date, is_overdue } from '../../utils/dateUtils';
 import { usePatronById, useUpdatePatron } from '../../hooks/usePatrons';
 import { useCopyById } from '../../hooks/useCopies';
@@ -119,7 +119,7 @@ export const ConfirmCheckoutDetails: FC<ConfirmCheckoutDetailsProps> = ({
       updatePatron(
         {
           patron_id: patron.id,
-          patron_data: { card_expiration_date: new_expiration_date },
+          patron_data: { card_expiration_date: new Date(new_expiration_date) },
         },
         {
           onSuccess: () => {
