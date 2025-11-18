@@ -3,12 +3,13 @@ import { DataGrid, type GridColDef, type GridDensity } from '@mui/x-data-grid';
 import { type Library_Item } from '../../types';
 import { Snackbar, Alert, AlertTitle, Box } from '@mui/material';
 import { LibraryItemDetails } from './LibraryItemDetails';
-import { useLibraryItems } from '../../hooks/useLibraryItems';
+import { useItemCopies } from '../../hooks/useLibraryItems';
 import ItemTypeChip from './ItemTypeChip';
 import { CustomToolbar } from '../common/CustomDataGridToolbar';
 
 const columns: GridColDef[] = [
-  { field: 'id', headerName: 'ID', width: 60 },
+  { field: 'library_item_id', headerName: 'ID', width: 60 },
+  { field: 'id', headerName: 'Copy ID', width: 80 },
   { field: 'title', headerName: 'Title', width: 150, editable: false },
   {
     field: 'item_type',
@@ -41,7 +42,7 @@ export const LibraryItemDataGrid = () => {
   );
   const [density, set_density] = useState<GridDensity>('standard');
 
-  const { data: rows, isLoading: loading, error } = useLibraryItems();
+  const { data: rows, isLoading: loading, error } = useItemCopies();
 
   const handle_item_selected = (item: Library_Item) => {
     set_selected_item(item);

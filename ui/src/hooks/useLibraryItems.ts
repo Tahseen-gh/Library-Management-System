@@ -9,6 +9,13 @@ export const useLibraryItems = () => {
   });
 };
 
+export const useItemCopies = () => {
+  return useQuery({
+    queryKey: ['item_copies'],
+    queryFn: () => data_service.get_all_copies(),
+  });
+};
+
 export const useCreateLibraryItem = (options?: {
   onSuccess?: () => void;
   onError?: (error: Error) => void;
