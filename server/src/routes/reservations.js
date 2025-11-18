@@ -266,23 +266,6 @@ router.post(
       // Otherwise, mark as "waiting" (in queue)
       const reservation_status = (reservation_allowed && available_copies.length > 0) ? 'ready' : 'waiting';
 
-      // CRITICAL BUSINESS RULE: Queue position #1 must ALWAYS be "ready" status, never "waiting"
-      // If this is the first reservation (queue_position === 1) and we're about to set it as "waiting",
-      // this indicates a logic error that must be prevented
-      if (queue_position === 1 && reservation_status === 'waiting') {
-        return res.status(500).json({
-          error: 'System error: First reservation in queue cannot have waiting status',
-          message: 'Queue position #1 must always be "Ready for Pickup", never "Waitlist". Please contact system administrator.',
-          debug_info: {
-            queue_position,
-            reservation_status,
-            available_copies: available_copies.length,
-            existing_reservations: existing_reservations[0].count,
-            total_copies: total_copies[0].count,
-          },
-        });
-      }
-
       // Set expiry date to 5 days from now (only applies when status is "ready")
       const reservation_date = new Date();
       const expiry_date = new Date(reservation_date);
