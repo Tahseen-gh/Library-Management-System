@@ -23,9 +23,6 @@ import {
   Card,
   CardContent,
   CardActionArea,
-  Radio,
-  RadioGroup,
-  FormControlLabel,
 } from '@mui/material';
 import { useState, useEffect, type FC } from 'react';
 import { type SelectChangeEvent } from '@mui/material/Select';

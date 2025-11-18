@@ -39,6 +39,9 @@ interface ItemCopyWithDetails {
   due_date?: string;
   patron_name?: string;
   patron_id?: number;
+  copy_label?: string;
+  copy_number?: number;
+  total_copies?: number;
 }
 
 interface ItemRecord {
