@@ -12,8 +12,8 @@ import {
   Card,
   CardContent,
   CardActionArea,
-  Grid,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import { useState, type FC } from 'react';
 import { ArrowBack, Refresh, CalendarToday } from '@mui/icons-material';
 import { format_date } from '../utils/dateUtils';
@@ -313,7 +313,7 @@ export const RenewItem: FC = () => {
             Patron Information
           </Typography>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={6}>
+            <Grid size={6}>
               <Typography variant="body2" color="text.secondary">
                 Patron ID
               </Typography>
@@ -321,7 +321,7 @@ export const RenewItem: FC = () => {
                 {patron_info?.id}
               </Typography>
             </Grid>
-            <Grid item xs={6}>
+            <Grid size={6}>
               <Typography variant="body2" color="text.secondary">
                 Name
               </Typography>
@@ -437,13 +437,13 @@ export const RenewItem: FC = () => {
             </Box>
 
             <Grid container spacing={2}>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <Typography variant="body2" color="text.secondary">
                   Current Due Date
                 </Typography>
                 <Typography variant="body1">{format_date(selected_item.due_date)}</Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <Typography variant="body2" color="text.secondary">
                   Status
                 </Typography>
@@ -452,7 +452,7 @@ export const RenewItem: FC = () => {
             </Grid>
 
             <Grid container spacing={2}>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <Typography variant="body2" color="text.secondary">
                   Times Renewed
                 </Typography>
@@ -460,7 +460,7 @@ export const RenewItem: FC = () => {
                   {get_times_renewed(selected_item.renewal_status)} / 2
                 </Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <Typography variant="body2" color="text.secondary">
                   Reserved Status
                 </Typography>

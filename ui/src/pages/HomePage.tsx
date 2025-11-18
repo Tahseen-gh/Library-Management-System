@@ -274,17 +274,16 @@ export const HomePage = () => {
       // Calculate new expiration date
       const new_expiration = new Date();
       new_expiration.setFullYear(new_expiration.getFullYear() + years);
-      const new_expiration_str = new_expiration.toISOString().split('T')[0]; // YYYY-MM-DD format
 
       // Update patron card expiration date
       await data_service.update_patron(patron_data.id, {
-        card_expiration_date: new_expiration_str,
+        card_expiration_date: new_expiration,
       });
 
       // Update local patron data
       set_patron_data({
         ...patron_data,
-        card_expiration_date: new_expiration_str,
+        card_expiration_date: new_expiration,
       });
 
       // Close dialog
