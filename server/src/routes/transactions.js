@@ -324,7 +324,11 @@ router.post(
         const days_overdue = Math.ceil(
           (return_date - due_date) / (1000 * 60 * 60 * 24)
         );
-        fine_amount = days_overdue * 0.5; // $0.50 per day
+        fine_amount = days_overdue * 1.00; // $1.00 per day
+        // Cap fine at book cost
+        if (item_copy.cost && fine_amount > item_copy.cost) {
+          fine_amount = item_copy.cost;
+        }
       }
 
       // Update transaction
