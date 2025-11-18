@@ -49,7 +49,7 @@ export const Sidebar = ({ sidebarOpen }: { sidebarOpen: boolean }) => {
       path: '/?mode=checkout',
       icon: <Output sx={{ transform: 'rotate(180deg)' }} />,
     },
-    { text: 'Mark Available', path: '/available', icon: <CheckCircle /> },
+    { text: 'Reshelve', path: '/available', icon: <CheckCircle /> },
   ];
 
   return (

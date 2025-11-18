@@ -28,9 +28,9 @@ export const RegisterPatronDialog = ({
     last_name: '',
     email: '',
     phone: '',
-    address: '',
     birthday: '',
     card_expiration_date: '',
+    balance: '',
   });
 
   const [error, setError] = useState('');
@@ -48,8 +48,13 @@ export const RegisterPatronDialog = ({
       return;
     }
 
+    if (!formData.birthday) {
+      setError('Birthday is required');
+      return;
+    }
+
     if (!formData.card_expiration_date) {
-      setError('Card expiration date is required');
+      setError('Expiry date is required');
       return;
     }
 
@@ -58,16 +63,16 @@ export const RegisterPatronDialog = ({
 
     try {
       // Prepare data - only include non-empty fields
-      const patronData: Record<string, string> = {
+      const patronData: Record<string, string | number> = {
         first_name: formData.first_name,
         last_name: formData.last_name,
+        birthday: formData.birthday,
         card_expiration_date: formData.card_expiration_date,
+        balance: formData.balance ? parseFloat(formData.balance) : 0,
       };
 
       if (formData.email) patronData.email = formData.email;
       if (formData.phone) patronData.phone = formData.phone;
-      if (formData.address) patronData.address = formData.address;
-      if (formData.birthday) patronData.birthday = formData.birthday;
 
       const response = await fetch(`${API_BASE_URL}/patrons`, {
         method: 'POST',
@@ -91,9 +96,9 @@ export const RegisterPatronDialog = ({
         last_name: '',
         email: '',
         phone: '',
-        address: '',
         birthday: '',
         card_expiration_date: '',
+        balance: '',
       });
       setLoading(false);
       onSuccess();
@@ -111,9 +116,9 @@ export const RegisterPatronDialog = ({
         last_name: '',
         email: '',
         phone: '',
-        address: '',
         birthday: '',
         card_expiration_date: '',
+        balance: '',
       });
       setError('');
       onClose();
@@ -129,7 +134,7 @@ export const RegisterPatronDialog = ({
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Register New Patron</DialogTitle>
+      <DialogTitle>Create Patron</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           {error && <Alert severity="error">{error}</Alert>}
@@ -153,6 +158,40 @@ export const RegisterPatronDialog = ({
           />
 
           <TextField
+            label="Birthday"
+            type="date"
+            value={formData.birthday}
+            onChange={handleChange('birthday')}
+            required
+            fullWidth
+            InputLabelProps={{ shrink: true }}
+            disabled={loading}
+          />
+
+          <TextField
+            label="Expiry Date"
+            type="date"
+            value={formData.card_expiration_date || getDefaultCardExpiration()}
+            onChange={handleChange('card_expiration_date')}
+            required
+            fullWidth
+            InputLabelProps={{ shrink: true }}
+            disabled={loading}
+            helperText="Library card will be valid until this date"
+          />
+
+          <TextField
+            label="Initial Balance"
+            type="number"
+            value={formData.balance}
+            onChange={handleChange('balance')}
+            fullWidth
+            disabled={loading}
+            inputProps={{ min: 0, step: 0.01 }}
+            helperText="Enter initial balance (default: $0.00)"
+          />
+
+          <TextField
             label="Email"
             type="email"
             value={formData.email}
@@ -162,43 +201,11 @@ export const RegisterPatronDialog = ({
           />
 
           <TextField
-            label="Phone"
+            label="Phone Number"
             value={formData.phone}
             onChange={handleChange('phone')}
             fullWidth
             disabled={loading}
-          />
-
-          <TextField
-            label="Address"
-            value={formData.address}
-            onChange={handleChange('address')}
-            fullWidth
-            multiline
-            rows={2}
-            disabled={loading}
-          />
-
-          <TextField
-            label="Birthday"
-            type="date"
-            value={formData.birthday}
-            onChange={handleChange('birthday')}
-            fullWidth
-            InputLabelProps={{ shrink: true }}
-            disabled={loading}
-          />
-
-          <TextField
-            label="Card Expiration Date"
-            type="date"
-            value={formData.card_expiration_date || getDefaultCardExpiration()}
-            onChange={handleChange('card_expiration_date')}
-            required
-            fullWidth
-            InputLabelProps={{ shrink: true }}
-            disabled={loading}
-            helperText="Library card will be valid until this date"
           />
         </Stack>
       </DialogContent>
@@ -209,9 +216,9 @@ export const RegisterPatronDialog = ({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={loading || !formData.first_name || !formData.last_name}
+          disabled={loading || !formData.first_name || !formData.last_name || !formData.birthday || !formData.card_expiration_date}
         >
-          {loading ? 'Registering...' : 'Register Patron'}
+          {loading ? 'Creating...' : 'Create Patron'}
         </Button>
       </DialogActions>
     </Dialog>

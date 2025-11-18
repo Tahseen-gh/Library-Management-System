@@ -4,6 +4,7 @@ import {
   type GridDensity,
   type GridRenderCellParams,
   type GridRowSelectionModel,
+  type GridSlots,
 } from '@mui/x-data-grid';
 
 import { useState } from 'react';
@@ -12,6 +13,24 @@ import { format_date, is_overdue } from '../../utils/dateUtils';
 import { Alert, Box, Chip, Snackbar, Typography } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { CustomToolbar } from '../common/CustomDataGridToolbar';
+
+const NoResultsOverlay = () => {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100%',
+      }}
+    >
+      <Typography variant="h6" color="text.secondary">
+        No results found
+      </Typography>
+    </Box>
+  );
+};
 
 const columns: GridColDef[] = [
   {
@@ -160,7 +179,11 @@ export const PatronsDataGrid: React.FC<PatronsDataGridProps> = ({
             },
           },
         }}
-        slots={{ toolbar: CustomToolbar }}
+        slots={{
+          toolbar: CustomToolbar,
+          noRowsOverlay: NoResultsOverlay,
+          noResultsOverlay: NoResultsOverlay,
+        }}
         slotProps={{
           toolbar: {
             density: density,

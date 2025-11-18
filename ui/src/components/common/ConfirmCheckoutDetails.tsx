@@ -49,6 +49,7 @@ export const ConfirmCheckoutDetails: FC<ConfirmCheckoutDetailsProps> = ({
   const [show_fine_dialog, set_show_fine_dialog] = useState(false);
   const [fine_amount_input, set_fine_amount_input] = useState('');
   const [show_override_dialog, set_show_override_dialog] = useState(false);
+  const [new_expiration_date, set_new_expiration_date] = useState('');
 
   const hasOutstandingBalance = patron ? patron.balance > 0 : false;
   const isCardExpired = patron
@@ -72,19 +73,23 @@ export const ConfirmCheckoutDetails: FC<ConfirmCheckoutDetailsProps> = ({
 
   const is_any_loading = loading_patron || loading_copy;
 
-  const handle_collect_fine = () => {
-    if (patron && fine_amount_input) {
-      const amount = parseFloat(fine_amount_input);
-      if (amount >= patron.balance) {
+  const handle_update_balance = () => {
+    if (patron && fine_amount_input !== '') {
+      const new_balance = parseFloat(fine_amount_input);
+      if (new_balance >= 0) {
         updatePatron(
           {
             patron_id: patron.id,
-            patron_data: { balance: 0 },
+            patron_data: { balance: new_balance },
           },
           {
             onSuccess: () => {
-              set_fine_resolved(true);
+              // Mark as resolved if balance is zero
+              if (new_balance === 0) {
+                set_fine_resolved(true);
+              }
               set_show_fine_dialog(false);
+              set_fine_amount_input('');
             },
           }
         );
@@ -110,8 +115,28 @@ export const ConfirmCheckoutDetails: FC<ConfirmCheckoutDetailsProps> = ({
   };
 
   const handle_override_card = () => {
-    set_card_override(true);
-    set_show_override_dialog(false);
+    if (patron && new_expiration_date) {
+      updatePatron(
+        {
+          patron_id: patron.id,
+          patron_data: { card_expiration_date: new_expiration_date },
+        },
+        {
+          onSuccess: () => {
+            set_card_override(true);
+            set_show_override_dialog(false);
+            set_new_expiration_date('');
+          },
+        }
+      );
+    }
+  };
+
+  // Set default new expiration date to 2 years from today
+  const getDefaultNewExpiration = () => {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() + 2);
+    return date.toISOString().split('T')[0];
   };
 
   // If still loading essential data, show loading skeleton
@@ -287,7 +312,7 @@ export const ConfirmCheckoutDetails: FC<ConfirmCheckoutDetailsProps> = ({
                     size="small"
                     onClick={() => set_show_fine_dialog(true)}
                   >
-                    Collect Fine
+                    Update Balance
                   </Button>
                   <Button
                     color="inherit"
@@ -300,7 +325,7 @@ export const ConfirmCheckoutDetails: FC<ConfirmCheckoutDetailsProps> = ({
               }
             >
               <AlertTitle>💰 Outstanding Fines</AlertTitle>
-              Patron owes ${patron?.balance.toFixed(2)}. Fine must be collected
+              Patron owes ${patron?.balance.toFixed(2)}. Balance must be updated
               or waived before proceeding.
             </Alert>
           )}
@@ -313,7 +338,7 @@ export const ConfirmCheckoutDetails: FC<ConfirmCheckoutDetailsProps> = ({
             </Alert>
           )}
 
-          {/* Expired Card - Can be overridden */}
+          {/* Expired Card - Can be extended */}
           {isCardExpired && !card_override && !hasTooManyBooks && (
             <Alert
               severity="error"
@@ -324,41 +349,46 @@ export const ConfirmCheckoutDetails: FC<ConfirmCheckoutDetailsProps> = ({
                   size="small"
                   onClick={() => set_show_override_dialog(true)}
                 >
-                  Override
+                  Extend Card
                 </Button>
               }
             >
               <AlertTitle>📅 Expired Library Card</AlertTitle>
               This patron's library card expired on{' '}
-              {format_date(patron?.card_expiration_date)}. Card must be renewed
-              or overridden.
+              {format_date(patron?.card_expiration_date)}. Card must be extended
+              to proceed.
             </Alert>
           )}
 
-          {/* Card Overridden */}
+          {/* Card Extended */}
           {card_override && (
-            <Alert severity="info" sx={{ mb: 2 }}>
-              <AlertTitle>✓ Card Expiration Overridden</AlertTitle>
-              Card expiration has been overridden. You may proceed with
-              checkout.
+            <Alert severity="success" sx={{ mb: 2 }}>
+              <AlertTitle>✓ Card Extended</AlertTitle>
+              Card expiration has been updated. You may proceed with checkout.
             </Alert>
           )}
         </Box>
       )}
 
-      {/* Fine Collection Dialog */}
+      {/* Update Balance Dialog */}
       <Dialog
         open={show_fine_dialog}
-        onClose={() => set_show_fine_dialog(false)}
+        onClose={() => {
+          set_show_fine_dialog(false);
+          set_fine_amount_input('');
+        }}
       >
-        <DialogTitle>Collect Fine</DialogTitle>
+        <DialogTitle>Update Patron Balance</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 2 }}>
-            Patron owes: ${patron?.balance.toFixed(2)}
+            Current balance: ${patron?.balance.toFixed(2)}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Enter the new balance amount for this patron
           </Typography>
           <TextField
             autoFocus
-            label="Amount Collected"
+            label="New Balance"
             type="number"
             fullWidth
             value={fine_amount_input}
@@ -367,9 +397,16 @@ export const ConfirmCheckoutDetails: FC<ConfirmCheckoutDetailsProps> = ({
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => set_show_fine_dialog(false)}>Cancel</Button>
-          <Button onClick={handle_collect_fine} variant="contained">
-            Collect
+          <Button onClick={() => {
+            set_show_fine_dialog(false);
+            set_fine_amount_input('');
+          }}>Cancel</Button>
+          <Button
+            onClick={handle_update_balance}
+            variant="contained"
+            disabled={fine_amount_input === '' || parseFloat(fine_amount_input) < 0}
+          >
+            Update Balance
           </Button>
         </DialogActions>
       </Dialog>
@@ -377,35 +414,48 @@ export const ConfirmCheckoutDetails: FC<ConfirmCheckoutDetailsProps> = ({
       {/* Override Card Dialog */}
       <Dialog
         open={show_override_dialog}
-        onClose={() => set_show_override_dialog(false)}
+        onClose={() => {
+          set_show_override_dialog(false);
+          set_new_expiration_date('');
+        }}
       >
-        <DialogTitle>Override Expired Card</DialogTitle>
+        <DialogTitle>Extend Library Card</DialogTitle>
         <DialogContent>
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            <AlertTitle>
-              <Warning sx={{ mr: 1 }} />
-              Override Warning
-            </AlertTitle>
-            You are about to override the card expiration check. This action
-            will be logged for audit purposes.
-          </Alert>
-          <Typography variant="body2">
+          <Typography variant="body2" sx={{ mb: 2 }}>
             Patron: {patron?.first_name} {patron?.last_name}
           </Typography>
-          <Typography variant="body2">
-            Card Expired: {format_date(patron?.card_expiration_date)}
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Current expiration: {format_date(patron?.card_expiration_date)}
           </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Set new expiration date for this patron's library card
+          </Typography>
+          <TextField
+            autoFocus
+            label="New Expiration Date"
+            type="date"
+            fullWidth
+            value={new_expiration_date || getDefaultNewExpiration()}
+            onChange={(e) => set_new_expiration_date(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            inputProps={{
+              min: new Date().toISOString().split('T')[0], // Can't set to past date
+            }}
+          />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => set_show_override_dialog(false)}>
+          <Button onClick={() => {
+            set_show_override_dialog(false);
+            set_new_expiration_date('');
+          }}>
             Cancel
           </Button>
           <Button
             onClick={handle_override_card}
             variant="contained"
-            color="warning"
+            disabled={!new_expiration_date}
           >
-            Override
+            Update Card
           </Button>
         </DialogActions>
       </Dialog>

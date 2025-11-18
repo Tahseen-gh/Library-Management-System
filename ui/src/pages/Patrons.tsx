@@ -36,7 +36,7 @@ export const Patrons = () => {
           startIcon={<Add />}
           onClick={() => setDialogOpen(true)}
         >
-          Register New Patron
+          Create Patron
         </Button>
       </Stack>
 
@@ -57,7 +57,7 @@ export const Patrons = () => {
         anchorOrigin={{ horizontal: 'center', vertical: 'top' }}
       >
         <Alert severity="success" onClose={() => setSuccessSnackbar(false)}>
-          Patron registered successfully!
+          Patron created successfully!
         </Alert>
       </Snackbar>
     </Container>

@@ -88,6 +88,7 @@ async function seed_database() {
     ];
 
     let copy_counter = 1;
+    const all_copy_ids = []; // Track all copy IDs for later checkout
 
     // Create books
     for (let i = 0; i < books.length; i++) {
@@ -111,21 +112,30 @@ async function seed_database() {
         number_of_pages: book.pages,
       });
 
-      // Create item copy - alternate between branches
-      const branch_id = (i % 2 === 0) ? 1 : branch2_id;
-      await create_record('LIBRARY_ITEM_COPIES', {
-        library_item_id,
-        owning_branch_id: branch_id,
-        return_to_branch_id: branch_id,
-        current_branch_id: branch_id,
-        condition: 'Good',
-        status: 'Available',
-        cost: 15.99 + (i * 0.5),
-        date_acquired: '2024-01-01',
-      });
+      // Create 2-3 copies per book (varying quantities)
+      const num_copies = (i % 3 === 0) ? 3 : 2;
+      for (let copy = 0; copy < num_copies; copy++) {
+        // Alternate between branches for distribution
+        const branch_id = (copy_counter % 2 === 0) ? 1 : branch2_id;
+        const conditions = ['Excellent', 'Good', 'Good', 'Fair'];
+        const condition = conditions[copy % conditions.length];
 
-      console.log(`✓ Created book ${i + 1}/${books.length}: ${book.title}`);
-      copy_counter++;
+        const copy_id = await create_record('LIBRARY_ITEM_COPIES', {
+          library_item_id,
+          owning_branch_id: branch_id,
+          return_to_branch_id: branch_id,
+          current_branch_id: branch_id,
+          condition: condition,
+          status: 'Available',
+          cost: 15.99 + (i * 0.5),
+          date_acquired: '2024-01-01',
+        });
+
+        all_copy_ids.push(copy_id);
+        copy_counter++;
+      }
+
+      console.log(`✓ Created book ${i + 1}/${books.length}: ${book.title} (${num_copies} copies)`);
     }
 
     // Create regular movies
@@ -153,21 +163,30 @@ async function seed_database() {
         is_new_release: 0,  // Regular movie
       });
 
-      // Create item copy - alternate between branches
-      const branch_id = (i % 2 === 0) ? 1 : branch2_id;
-      await create_record('LIBRARY_ITEM_COPIES', {
-        library_item_id,
-        owning_branch_id: branch_id,
-        return_to_branch_id: branch_id,
-        current_branch_id: branch_id,
-        condition: 'Good',
-        status: 'Available',
-        cost: 19.99 + (i * 0.5),
-        date_acquired: '2024-01-01',
-      });
+      // Create 2-3 copies per movie (varying quantities)
+      const num_copies = (i % 3 === 0) ? 3 : 2;
+      for (let copy = 0; copy < num_copies; copy++) {
+        // Alternate between branches for distribution
+        const branch_id = (copy_counter % 2 === 0) ? 1 : branch2_id;
+        const conditions = ['Excellent', 'Good', 'Good', 'Fair'];
+        const condition = conditions[copy % conditions.length];
 
-      console.log(`✓ Created movie ${i + 1}/${movies.length}: ${movie.title}`);
-      copy_counter++;
+        const copy_id = await create_record('LIBRARY_ITEM_COPIES', {
+          library_item_id,
+          owning_branch_id: branch_id,
+          return_to_branch_id: branch_id,
+          current_branch_id: branch_id,
+          condition: condition,
+          status: 'Available',
+          cost: 19.99 + (i * 0.5),
+          date_acquired: '2024-01-01',
+        });
+
+        all_copy_ids.push(copy_id);
+        copy_counter++;
+      }
+
+      console.log(`✓ Created movie ${i + 1}/${movies.length}: ${movie.title} (${num_copies} copies)`);
     }
 
     // Create new release movies
@@ -195,20 +214,24 @@ async function seed_database() {
         is_new_release: 1,  // New release flag
       });
 
-      // Create item copy - all at main branch
-      await create_record('LIBRARY_ITEM_COPIES', {
-        library_item_id,
-        owning_branch_id: 1,
-        return_to_branch_id: 1,
-        current_branch_id: 1,
-        condition: 'New',
-        status: 'Available',
-        cost: 29.99,
-        date_acquired: '2024-11-01',
-      });
+      // Create 2 copies of each new release - all at main branch
+      for (let copy = 0; copy < 2; copy++) {
+        const copy_id = await create_record('LIBRARY_ITEM_COPIES', {
+          library_item_id,
+          owning_branch_id: 1,
+          return_to_branch_id: 1,
+          current_branch_id: 1,
+          condition: 'New',
+          status: 'Available',
+          cost: 29.99,
+          date_acquired: '2024-11-01',
+        });
 
-      console.log(`✓ Created NEW RELEASE ${i + 1}/${new_movies.length}: ${movie.title}`);
-      copy_counter++;
+        all_copy_ids.push(copy_id);
+        copy_counter++;
+      }
+
+      console.log(`✓ Created NEW RELEASE ${i + 1}/${new_movies.length}: ${movie.title} (2 copies)`);
     }
 
     console.log('\n👥 Creating 5 test patrons...');
@@ -295,13 +318,15 @@ async function seed_database() {
     console.log('\n📖 Checking out 20 items to Patron 4 (Emily Davis)...');
 
     // Checkout 20 items to patron 4 (mix of books and movies)
+    // Use first 20 copy IDs from our tracking array
     const checkout_date = new Date();
     const due_date = new Date(checkout_date.getTime() + 28 * 24 * 60 * 60 * 1000); // 4 weeks
 
-    for (let i = 1; i <= 20; i++) {
+    const copies_to_checkout = all_copy_ids.slice(0, 20); // Take first 20 copies
+    for (const copy_id of copies_to_checkout) {
       // Create transaction
       await create_record('TRANSACTIONS', {
-        copy_id: i,
+        copy_id: copy_id,
         patron_id: patron4_id,
         transaction_type: 'checkout',
         checkout_date,
@@ -313,12 +338,13 @@ async function seed_database() {
       // Update item copy status
       await execute_query(
         'UPDATE LIBRARY_ITEM_COPIES SET status = ?, checked_out_by = ?, due_date = ? WHERE id = ?',
-        ['Checked Out', patron4_id, due_date, i]
+        ['Checked Out', patron4_id, due_date, copy_id]
       );
     }
     console.log(`✓ Checked out 20 items to Emily Davis`);
 
     const total_items = books.length + movies.length + new_movies.length;
+    const total_copies = all_copy_ids.length;
 
     console.log('\n🎉 Database seeding completed successfully!');
     console.log('\n═══════════════════════════════════════════════════');
@@ -328,12 +354,12 @@ async function seed_database() {
     console.log('  • Main Library (ID: 1)');
     console.log(`  • Downtown Branch (ID: ${branch2_id})`);
     console.log('\n📚 Library Inventory:');
-    console.log(`  • ${books.length} books (contemporary fiction and classics)`);
-    console.log(`  • ${movies.length} movies (classic films)`);
-    console.log(`  • ${new_movies.length} new release movies (2023-2024)`);
-    console.log(`  • Total: ${total_items} items with copies`);
-    console.log('  • Copy IDs 1-20: Checked out to Patron 4');
-    console.log(`  • Copy IDs 21-${total_items}: Available for checkout`);
+    console.log(`  • ${books.length} book titles (2-3 copies each)`);
+    console.log(`  • ${movies.length} movie titles (2-3 copies each)`);
+    console.log(`  • ${new_movies.length} new release movies (2 copies each)`);
+    console.log(`  • Total: ${total_items} unique titles with ${total_copies} total copies`);
+    console.log('  • First 20 copies: Checked out to Patron 4');
+    console.log(`  • Remaining ${total_copies - 20} copies: Available for checkout`);
     console.log('\n👥 Test Patrons:');
     console.log('\n  1. John Doe (ID: 1) ✅');
     console.log('     • Status: Active');
@@ -369,7 +395,7 @@ async function seed_database() {
     console.log('TESTING GUIDE');
     console.log('═══════════════════════════════════════════════════');
     console.log('\n✅ Valid Checkouts:');
-    console.log(`   • Patron 1 or 5 + Copy 21-${total_items} = Success`);
+    console.log(`   • Patron 1 or 5 + Any available copy = Success`);
     console.log('\n📚 Item Types:');
     console.log('   • Books: 4-week checkout period');
     console.log('   • Movies: 1-week checkout period');
