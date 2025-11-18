@@ -86,6 +86,9 @@ export default function Search() {
   const [successMessage, setSuccessMessage] = useState('');
   const [showSuccessSnackbar, setShowSuccessSnackbar] = useState(false);
 
+  // Track which items have active reservations
+  const [itemReservations, setItemReservations] = useState<Map<number, boolean>>(new Map());
+
   const validateSearchCriteria = (): boolean => {
     if (!searchInput.trim()) {
       setValidationError('Search criteria cannot be empty');
@@ -93,6 +96,29 @@ export default function Search() {
     }
     setValidationError('');
     return true;
+  };
+
+  // Check if an item has active reservations
+  const checkItemReservations = async (itemIds: number[]) => {
+    const newReservations = new Map<number, boolean>();
+
+    try {
+      for (const itemId of itemIds) {
+        const response = await fetch(`${API_BASE_URL}/reservations?library_item_id=${itemId}`);
+        if (response.ok) {
+          const data = await response.json();
+          const reservations = data.data || data;
+          // Check if there are any active reservations (ready or waiting)
+          const hasActiveReservations = reservations.some(
+            (r: any) => r.status === 'ready' || r.status === 'waiting'
+          );
+          newReservations.set(itemId, hasActiveReservations);
+        }
+      }
+      setItemReservations(newReservations);
+    } catch (error) {
+      console.error('Error checking reservations:', error);
+    }
   };
 
   const executeItemSearch = async () => {
@@ -203,6 +229,10 @@ export default function Search() {
       } else {
         setSearchResults(results);
         setStep('Search Results');
+
+        // Check reservation status for all unique item IDs
+        const uniqueItemIds = Array.from(new Set(results.map(r => r.itemId)));
+        await checkItemReservations(uniqueItemIds);
       }
     } catch (error: any) {
       setValidationError(error.message || 'Failed to search items');
@@ -241,6 +271,9 @@ export default function Search() {
         totalCopies,
       });
       setStep('Full Item Record');
+
+      // Check reservation status for this item
+      await checkItemReservations([item.itemId]);
     } catch (error: any) {
       setValidationError(error.message || 'Failed to load full item details');
     } finally {
@@ -262,10 +295,16 @@ export default function Search() {
     setReservationDialogOpen(true);
   };
 
-  const handleReservationSuccess = (message: string) => {
+  const handleReservationSuccess = async (message: string) => {
     setSuccessMessage(message);
     setShowSuccessSnackbar(true);
     setReservationDialogOpen(false);
+
+    // Refresh reservation status for all items in search results
+    if (searchResults.length > 0) {
+      const uniqueItemIds = Array.from(new Set(searchResults.map(r => r.itemId)));
+      await checkItemReservations(uniqueItemIds);
+    }
   };
 
   const renderContent = () => {
@@ -374,12 +413,13 @@ export default function Search() {
                             sx={{ fontWeight: 'bold' }}
                           />
                           <Button
-                            variant="outlined"
+                            variant={itemReservations.get(item.itemId) ? 'contained' : 'outlined'}
                             size="small"
                             startIcon={<ReserveIcon />}
                             onClick={() => handleReserveClick(item.itemId, item.itemName)}
+                            color={itemReservations.get(item.itemId) ? 'success' : 'primary'}
                           >
-                            Reserve
+                            {itemReservations.get(item.itemId) ? 'Reserved' : 'Reserve'}
                           </Button>
                         </Stack>
                       </Stack>
@@ -514,8 +554,9 @@ export default function Search() {
                 variant="contained"
                 startIcon={<ReserveIcon />}
                 onClick={() => handleReserveClick(selectedItem.itemId, selectedItem.itemName)}
+                color={itemReservations.get(selectedItem.itemId) ? 'success' : 'primary'}
               >
-                Reserve Item
+                {itemReservations.get(selectedItem.itemId) ? 'Item Reserved' : 'Reserve Item'}
               </Button>
             </Box>
           </Paper>
