@@ -148,17 +148,6 @@ router.post(
         });
       }
 
-      // Check for unpaid fines or expired card
-      const card_expiration = new Date(patron.card_expiration_date);
-      const today = new Date();
-      if (card_expiration < today) {
-        return res.status(400).json({
-          error: 'Return validation failure',
-          message: 'Patron card has expired',
-          validation_failed: true,
-        });
-      }
-
       // Verify library item exists
       const library_item = await db.get_by_id('LIBRARY_ITEMS', library_item_id);
       if (!library_item) {
@@ -385,23 +374,6 @@ router.get('/validate-patron/:patron_id', async (req, res) => {
           first_name: patron.first_name,
           last_name: patron.last_name,
           email: patron.email,
-          is_active: patron.is_active,
-        },
-      });
-    }
-
-    // Check card expiration
-    const card_expiration = new Date(patron.card_expiration_date);
-    const today = new Date();
-    if (card_expiration < today) {
-      return res.status(400).json({
-        error: 'Patron card has expired',
-        valid: false,
-        patron: {
-          first_name: patron.first_name,
-          last_name: patron.last_name,
-          email: patron.email,
-          card_expiration_date: patron.card_expiration_date,
           is_active: patron.is_active,
         },
       });

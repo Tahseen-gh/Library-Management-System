@@ -148,6 +148,19 @@ router.post(
         });
       }
 
+      // Check if there are any pending/ready reservations for this library item by other patrons
+      const other_patron_reservations = await db.execute_query(
+        'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND patron_id != ? AND status IN ("pending", "ready") ORDER BY queue_position LIMIT 1',
+        [item_copy.library_item_id, patron_id]
+      );
+
+      if (other_patron_reservations.length > 0) {
+        return res.status(400).json({
+          error: 'Item is reserved for another patron',
+          message: 'This item has pending reservations that must be fulfilled first',
+        });
+      }
+
       // If item is reserved, verify the patron has a reservation for it
       let reservation_to_fulfill = null;
       if (item_copy.status === 'Reserved') {
