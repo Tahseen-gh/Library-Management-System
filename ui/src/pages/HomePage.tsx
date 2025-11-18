@@ -19,6 +19,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import {
   CheckCircle,
@@ -78,6 +82,10 @@ export const HomePage = () => {
   // Fine payment dialog state
   const [payment_dialog_open, set_payment_dialog_open] = useState(false);
   const [payment_amount, set_payment_amount] = useState('');
+
+  // Card renewal dialog state
+  const [renewal_dialog_open, set_renewal_dialog_open] = useState(false);
+  const [renewal_years, set_renewal_years] = useState('2');
 
   // Receipt state
   const [receipt_data, set_receipt_data] = useState<any>(null);
@@ -246,8 +254,49 @@ export const HomePage = () => {
   };
 
   const handle_renew_card = () => {
-    set_patron_error(null);
-    set_checkout_step('book_entry');
+    if (!patron_data) return;
+
+    // Set default renewal period to 2 years and open dialog
+    set_renewal_years('2');
+    set_renewal_dialog_open(true);
+  };
+
+  const handle_process_renewal = async () => {
+    if (!patron_data) return;
+
+    const years = parseInt(renewal_years);
+    if (isNaN(years) || years <= 0) {
+      alert('Please select a valid renewal period');
+      return;
+    }
+
+    try {
+      // Calculate new expiration date
+      const new_expiration = new Date();
+      new_expiration.setFullYear(new_expiration.getFullYear() + years);
+      const new_expiration_str = new_expiration.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+      // Update patron card expiration date
+      await data_service.update_patron(patron_data.id, {
+        card_expiration_date: new_expiration_str,
+      });
+
+      // Update local patron data
+      set_patron_data({
+        ...patron_data,
+        card_expiration_date: new_expiration_str,
+      });
+
+      // Close dialog
+      set_renewal_dialog_open(false);
+
+      // Clear error and proceed to book entry
+      set_patron_error(null);
+      set_checkout_step('book_entry');
+    } catch (error) {
+      console.error('Failed to renew card:', error);
+      alert('Failed to renew patron card. Please try again.');
+    }
   };
 
   const handle_override = () => {
@@ -1126,6 +1175,44 @@ export const HomePage = () => {
           <Button onClick={() => set_payment_dialog_open(false)}>Cancel</Button>
           <Button onClick={handle_process_payment} variant="contained">
             Process Payment
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Card Renewal Dialog */}
+      <Dialog open={renewal_dialog_open} onClose={() => set_renewal_dialog_open(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Renew Library Card</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <Typography variant="body2" gutterBottom>
+              Patron: {patron_data?.first_name} {patron_data?.last_name}
+            </Typography>
+            <Typography variant="body2" gutterBottom sx={{ mb: 3 }}>
+              Current Expiration: <strong>{patron_data?.card_expiration_date ? format_date(patron_data.card_expiration_date) : 'N/A'}</strong>
+            </Typography>
+            <FormControl fullWidth>
+              <InputLabel id="renewal-period-label">Renewal Period</InputLabel>
+              <Select
+                labelId="renewal-period-label"
+                id="renewal-period"
+                value={renewal_years}
+                label="Renewal Period"
+                onChange={(e) => set_renewal_years(e.target.value)}
+              >
+                <MenuItem value="1">1 Year</MenuItem>
+                <MenuItem value="2">2 Years</MenuItem>
+                <MenuItem value="3">3 Years</MenuItem>
+              </Select>
+            </FormControl>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+              New expiration date will be {renewal_years} year{renewal_years !== '1' ? 's' : ''} from today
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => set_renewal_dialog_open(false)}>Cancel</Button>
+          <Button onClick={handle_process_renewal} variant="contained">
+            Renew Card
           </Button>
         </DialogActions>
       </Dialog>
