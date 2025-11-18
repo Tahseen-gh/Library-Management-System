@@ -13,7 +13,6 @@ import {
   CardContent,
   CardActionArea,
 } from '@mui/material';
-import Grid from '@mui/material/Grid2';
 import { useState, type FC } from 'react';
 import { ArrowBack, Refresh, CalendarToday } from '@mui/icons-material';
 import { format_date } from '../utils/dateUtils';
@@ -312,24 +311,24 @@ export const RenewItem: FC = () => {
           <Typography variant="h6" gutterBottom>
             Patron Information
           </Typography>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid size={6}>
+          <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
+            <Box sx={{ flex: 1 }}>
               <Typography variant="body2" color="text.secondary">
                 Patron ID
               </Typography>
               <Typography variant="body1" fontWeight={500}>
                 {patron_info?.id}
               </Typography>
-            </Grid>
-            <Grid size={6}>
+            </Box>
+            <Box sx={{ flex: 1 }}>
               <Typography variant="body2" color="text.secondary">
                 Name
               </Typography>
               <Typography variant="body1" fontWeight={500}>
                 {patron_info?.first_name} {patron_info?.last_name}
               </Typography>
-            </Grid>
-          </Grid>
+            </Box>
+          </Stack>
         </Paper>
 
         <Typography variant="h6" gutterBottom>
@@ -436,37 +435,37 @@ export const RenewItem: FC = () => {
               <Typography variant="body1">{selected_item.author || selected_item.director}</Typography>
             </Box>
 
-            <Grid container spacing={2}>
-              <Grid size={6}>
+            <Stack direction="row" spacing={2}>
+              <Box sx={{ flex: 1 }}>
                 <Typography variant="body2" color="text.secondary">
                   Current Due Date
                 </Typography>
                 <Typography variant="body1">{format_date(selected_item.due_date)}</Typography>
-              </Grid>
-              <Grid size={6}>
+              </Box>
+              <Box sx={{ flex: 1 }}>
                 <Typography variant="body2" color="text.secondary">
                   Status
                 </Typography>
                 <Typography variant="body1">{selected_item.renewal_status}</Typography>
-              </Grid>
-            </Grid>
+              </Box>
+            </Stack>
 
-            <Grid container spacing={2}>
-              <Grid size={6}>
+            <Stack direction="row" spacing={2}>
+              <Box sx={{ flex: 1 }}>
                 <Typography variant="body2" color="text.secondary">
                   Times Renewed
                 </Typography>
                 <Typography variant="body1">
                   {get_times_renewed(selected_item.renewal_status)} / 2
                 </Typography>
-              </Grid>
-              <Grid size={6}>
+              </Box>
+              <Box sx={{ flex: 1 }}>
                 <Typography variant="body2" color="text.secondary">
                   Reserved Status
                 </Typography>
                 <Typography variant="body1">{selected_item.has_reservations ? 'Yes' : 'No'}</Typography>
-              </Grid>
-            </Grid>
+              </Box>
+            </Stack>
           </Stack>
         </Paper>
 
