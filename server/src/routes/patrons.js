@@ -33,17 +33,25 @@ router.get('/', async (req, res) => {
     let params = [];
 
     if (active_only === 'true') {
-      conditions += ' WHERE is_active = 1';
+      conditions += ' WHERE p.is_active = 1';
     }
 
     if (search) {
       conditions += active_only === 'true' ? ' AND' : ' WHERE';
-      conditions += ' (first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)';
+      conditions += ' (p.first_name LIKE ? OR p.last_name LIKE ? OR p.email LIKE ?)';
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
+    // Include active checkout count for each patron
     const patrons = await db.execute_query(
-      `SELECT * FROM PATRONS ${conditions}`,
+      `SELECT
+        p.*,
+        COALESCE(COUNT(CASE WHEN t.status = 'Active' THEN 1 END), 0) as active_checkouts
+      FROM PATRONS p
+      LEFT JOIN TRANSACTIONS t ON p.id = t.patron_id
+      ${conditions}
+      GROUP BY p.id
+      ORDER BY p.id`,
       params
     );
     res.json({

@@ -40,12 +40,20 @@ export function ListViewCell({
             {patron.first_name} {patron.last_name}
           </Typography>
         </Link>
-        <Chip
-          label={expired_card ? 'Expired' : 'Active'}
-          color={expired_card ? 'warning' : 'success'}
-          size={'small'}
-          variant="outlined"
-        />
+        <Stack direction="row" spacing={0.5}>
+          <Chip
+            label={`${patron.active_checkouts || 0}/20`}
+            color={(patron.active_checkouts || 0) >= 20 ? 'error' : 'default'}
+            size={'small'}
+            variant={(patron.active_checkouts || 0) >= 20 ? 'filled' : 'outlined'}
+          />
+          <Chip
+            label={expired_card ? 'Expired' : 'Active'}
+            color={expired_card ? 'warning' : 'success'}
+            size={'small'}
+            variant="outlined"
+          />
+        </Stack>
       </Stack>
       {/* <Stack direction="row" sx={{ gap: 0.5 }}>
         <EditAction {...props} />
