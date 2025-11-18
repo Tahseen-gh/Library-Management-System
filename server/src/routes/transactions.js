@@ -107,6 +107,130 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/v1/transactions/checkin-lookup/:item_id - Get checked-out copies by Item ID
+router.get('/checkin-lookup/:item_id', async (req, res) => {
+  try {
+    const item_id = parseInt(req.params.item_id);
+
+    if (isNaN(item_id)) {
+      return res.status(400).json({
+        error: 'Invalid Item ID',
+      });
+    }
+
+    // Get library item details
+    const library_item = await db.get_by_id('LIBRARY_ITEMS', item_id);
+    if (!library_item) {
+      return res.status(404).json({
+        error: 'Item not found',
+      });
+    }
+
+    // Get all copies of this item
+    const all_copies = await db.execute_query(
+      'SELECT * FROM LIBRARY_ITEM_COPIES WHERE library_item_id = ? ORDER BY id',
+      [item_id]
+    );
+
+    if (all_copies.length === 0) {
+      return res.status(404).json({
+        error: 'No copies found for this item',
+      });
+    }
+
+    // Get all checked-out copies with transaction and patron info
+    const checked_out_copies = await db.execute_query(
+      `SELECT
+        ic.id as copy_id,
+        ic.status,
+        ic.condition,
+        t.id as transaction_id,
+        t.patron_id,
+        t.due_date,
+        p.first_name,
+        p.last_name
+      FROM LIBRARY_ITEM_COPIES ic
+      LEFT JOIN TRANSACTIONS t ON ic.id = t.copy_id AND t.status = 'Active'
+      LEFT JOIN PATRONS p ON t.patron_id = p.id
+      WHERE ic.library_item_id = ? AND ic.status = 'Checked Out'
+      ORDER BY ic.id`,
+      [item_id]
+    );
+
+    if (checked_out_copies.length === 0) {
+      return res.status(404).json({
+        error: 'No checked-out copies found for this item',
+      });
+    }
+
+    // Calculate copy numbers (Copy X of Y)
+    const total_copies = all_copies.length;
+    const copies_with_numbers = checked_out_copies.map(copy => {
+      // Find the index of this copy in all copies to determine its copy number
+      const copy_index = all_copies.findIndex(c => c.id === copy.copy_id);
+      const copy_number = copy_index + 1;
+
+      // Calculate if overdue
+      const due_date = new Date(copy.due_date);
+      const today = new Date();
+      const is_overdue = today > due_date;
+      const days_overdue = is_overdue
+        ? Math.ceil((today.getTime() - due_date.getTime()) / (1000 * 60 * 60 * 24))
+        : 0;
+      const fine_amount = days_overdue * 0.5; // $0.50 per day
+
+      return {
+        copy_id: copy.copy_id,
+        copy_label: `Copy ${copy_number} of ${total_copies}`,
+        copy_number,
+        total_copies,
+        status: copy.status,
+        condition: copy.condition,
+        patron_name: `${copy.first_name} ${copy.last_name}`,
+        patron_id: copy.patron_id,
+        due_date: copy.due_date,
+        is_overdue,
+        days_overdue,
+        fine_amount,
+      };
+    });
+
+    // Get item type-specific info
+    let item_type_info = {};
+    if (library_item.item_type === 'BOOK' || library_item.item_type === 'book') {
+      const books = await db.execute_query(
+        'SELECT * FROM BOOKS WHERE library_item_id = ?',
+        [item_id]
+      );
+      item_type_info = books[0] || {};
+    } else if (library_item.item_type === 'VIDEO' || library_item.item_type === 'video') {
+      const videos = await db.execute_query(
+        'SELECT * FROM VIDEOS WHERE library_item_id = ?',
+        [item_id]
+      );
+      item_type_info = videos[0] || {};
+    }
+
+    res.json({
+      success: true,
+      data: {
+        item: {
+          id: library_item.id,
+          title: library_item.title,
+          item_type: library_item.item_type,
+          ...item_type_info,
+        },
+        checked_out_copies: copies_with_numbers,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to lookup item',
+      message: error.message,
+    });
+  }
+});
+
 // GET /api/v1/transactions/:id - Get single transaction
 router.get('/:id', async (req, res) => {
   try {
@@ -374,130 +498,6 @@ router.post(
     }
   }
 );
-
-// GET /api/v1/transactions/checkin-lookup/:item_id - Get checked-out copies by Item ID
-router.get('/checkin-lookup/:item_id', async (req, res) => {
-  try {
-    const item_id = parseInt(req.params.item_id);
-
-    if (isNaN(item_id)) {
-      return res.status(400).json({
-        error: 'Invalid Item ID',
-      });
-    }
-
-    // Get library item details
-    const library_item = await db.get_by_id('LIBRARY_ITEMS', item_id);
-    if (!library_item) {
-      return res.status(404).json({
-        error: 'Item not found',
-      });
-    }
-
-    // Get all copies of this item
-    const all_copies = await db.execute_query(
-      'SELECT * FROM LIBRARY_ITEM_COPIES WHERE library_item_id = ? ORDER BY id',
-      [item_id]
-    );
-
-    if (all_copies.length === 0) {
-      return res.status(404).json({
-        error: 'No copies found for this item',
-      });
-    }
-
-    // Get all checked-out copies with transaction and patron info
-    const checked_out_copies = await db.execute_query(
-      `SELECT
-        ic.id as copy_id,
-        ic.status,
-        ic.condition,
-        t.id as transaction_id,
-        t.patron_id,
-        t.due_date,
-        p.first_name,
-        p.last_name
-      FROM LIBRARY_ITEM_COPIES ic
-      LEFT JOIN TRANSACTIONS t ON ic.id = t.copy_id AND t.status = 'Active'
-      LEFT JOIN PATRONS p ON t.patron_id = p.id
-      WHERE ic.library_item_id = ? AND ic.status = 'Checked Out'
-      ORDER BY ic.id`,
-      [item_id]
-    );
-
-    if (checked_out_copies.length === 0) {
-      return res.status(404).json({
-        error: 'No checked-out copies found for this item',
-      });
-    }
-
-    // Calculate copy numbers (Copy X of Y)
-    const total_copies = all_copies.length;
-    const copies_with_numbers = checked_out_copies.map(copy => {
-      // Find the index of this copy in all copies to determine its copy number
-      const copy_index = all_copies.findIndex(c => c.id === copy.copy_id);
-      const copy_number = copy_index + 1;
-
-      // Calculate if overdue
-      const due_date = new Date(copy.due_date);
-      const today = new Date();
-      const is_overdue = today > due_date;
-      const days_overdue = is_overdue
-        ? Math.ceil((today.getTime() - due_date.getTime()) / (1000 * 60 * 60 * 24))
-        : 0;
-      const fine_amount = days_overdue * 0.5; // $0.50 per day
-
-      return {
-        copy_id: copy.copy_id,
-        copy_label: `Copy ${copy_number} of ${total_copies}`,
-        copy_number,
-        total_copies,
-        status: copy.status,
-        condition: copy.condition,
-        patron_name: `${copy.first_name} ${copy.last_name}`,
-        patron_id: copy.patron_id,
-        due_date: copy.due_date,
-        is_overdue,
-        days_overdue,
-        fine_amount,
-      };
-    });
-
-    // Get item type-specific info
-    let item_type_info = {};
-    if (library_item.item_type === 'BOOK' || library_item.item_type === 'book') {
-      const books = await db.execute_query(
-        'SELECT * FROM BOOKS WHERE library_item_id = ?',
-        [item_id]
-      );
-      item_type_info = books[0] || {};
-    } else if (library_item.item_type === 'VIDEO' || library_item.item_type === 'video') {
-      const videos = await db.execute_query(
-        'SELECT * FROM VIDEOS WHERE library_item_id = ?',
-        [item_id]
-      );
-      item_type_info = videos[0] || {};
-    }
-
-    res.json({
-      success: true,
-      data: {
-        item: {
-          id: library_item.id,
-          title: library_item.title,
-          item_type: library_item.item_type,
-          ...item_type_info,
-        },
-        checked_out_copies: copies_with_numbers,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: 'Failed to lookup item',
-      message: error.message,
-    });
-  }
-});
 
 // POST /api/v1/transactions/checkin - Checkin item
 router.post(
