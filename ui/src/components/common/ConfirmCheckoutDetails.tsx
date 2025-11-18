@@ -75,16 +75,23 @@ export const ConfirmCheckoutDetails: FC<ConfirmCheckoutDetailsProps> = ({
   const handle_collect_fine = () => {
     if (patron && fine_amount_input) {
       const amount = parseFloat(fine_amount_input);
-      if (amount >= patron.balance) {
+      if (amount > 0) {
+        // Calculate new balance (can be partial payment)
+        const new_balance = Math.max(0, patron.balance - amount);
+
         updatePatron(
           {
             patron_id: patron.id,
-            patron_data: { balance: 0 },
+            patron_data: { balance: new_balance },
           },
           {
             onSuccess: () => {
-              set_fine_resolved(true);
+              // Mark as resolved if balance is fully paid
+              if (new_balance === 0) {
+                set_fine_resolved(true);
+              }
               set_show_fine_dialog(false);
+              set_fine_amount_input('');
             },
           }
         );
@@ -349,12 +356,18 @@ export const ConfirmCheckoutDetails: FC<ConfirmCheckoutDetailsProps> = ({
       {/* Fine Collection Dialog */}
       <Dialog
         open={show_fine_dialog}
-        onClose={() => set_show_fine_dialog(false)}
+        onClose={() => {
+          set_show_fine_dialog(false);
+          set_fine_amount_input('');
+        }}
       >
         <DialogTitle>Collect Fine</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 2 }}>
-            Patron owes: ${patron?.balance.toFixed(2)}
+            Outstanding balance: ${patron?.balance.toFixed(2)}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Enter the amount being collected (can be partial payment)
           </Typography>
           <TextField
             autoFocus
@@ -363,12 +376,24 @@ export const ConfirmCheckoutDetails: FC<ConfirmCheckoutDetailsProps> = ({
             fullWidth
             value={fine_amount_input}
             onChange={(e) => set_fine_amount_input(e.target.value)}
-            inputProps={{ min: 0, step: 0.01 }}
+            inputProps={{ min: 0, step: 0.01, max: patron?.balance }}
+            helperText={
+              fine_amount_input && parseFloat(fine_amount_input) > 0
+                ? `New balance: $${Math.max(0, (patron?.balance || 0) - parseFloat(fine_amount_input)).toFixed(2)}`
+                : ''
+            }
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => set_show_fine_dialog(false)}>Cancel</Button>
-          <Button onClick={handle_collect_fine} variant="contained">
+          <Button onClick={() => {
+            set_show_fine_dialog(false);
+            set_fine_amount_input('');
+          }}>Cancel</Button>
+          <Button
+            onClick={handle_collect_fine}
+            variant="contained"
+            disabled={!fine_amount_input || parseFloat(fine_amount_input) <= 0}
+          >
             Collect
           </Button>
         </DialogActions>
