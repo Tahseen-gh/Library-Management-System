@@ -132,6 +132,54 @@ router.post(
     try {
       const { copy_id, patron_id, due_date } = req.body;
 
+      // Process expired reservations before checkout
+      // Import process_expired_reservations function from reservations route
+      // For now, we'll inline the expiry check
+      const expired_reservations = await db.execute_query(
+        'SELECT * FROM RESERVATIONS WHERE status = "ready" AND expiry_date < ?',
+        [new Date().toISOString()]
+      );
+
+      for (const reservation of expired_reservations) {
+        await db.update_record('RESERVATIONS', reservation.id, {
+          status: 'expired',
+          updated_at: new Date().toISOString(),
+        });
+
+        const copies = await db.execute_query(
+          'SELECT * FROM LIBRARY_ITEM_COPIES WHERE library_item_id = ? AND status = "Reserved" LIMIT 1',
+          [reservation.library_item_id]
+        );
+
+        if (copies.length > 0) {
+          await db.update_record('LIBRARY_ITEM_COPIES', copies[0].id, {
+            status: 'returned',
+            updated_at: new Date().toISOString(),
+          });
+
+          const next_in_queue = await db.execute_query(
+            'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND status = "waiting" ORDER BY queue_position LIMIT 1',
+            [reservation.library_item_id]
+          );
+
+          if (next_in_queue.length > 0) {
+            const new_expiry = new Date();
+            new_expiry.setDate(new_expiry.getDate() + 5);
+
+            await db.update_record('RESERVATIONS', next_in_queue[0].id, {
+              status: 'ready',
+              expiry_date: new_expiry.toISOString(),
+              updated_at: new Date().toISOString(),
+            });
+
+            await db.update_record('LIBRARY_ITEM_COPIES', copies[0].id, {
+              status: 'Reserved',
+              updated_at: new Date().toISOString(),
+            });
+          }
+        }
+      }
+
       // Verify item copy exists and is available
       const item_copy = await db.get_by_id('LIBRARY_ITEM_COPIES', copy_id);
       if (!item_copy) {
@@ -148,16 +196,16 @@ router.post(
         });
       }
 
-      // Check if there are any pending/ready reservations for this library item by other patrons
+      // Check if there are any waiting/ready reservations for this library item by other patrons
       const other_patron_reservations = await db.execute_query(
-        'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND patron_id != ? AND status IN ("pending", "ready") ORDER BY queue_position LIMIT 1',
+        'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND patron_id != ? AND status IN ("waiting", "ready") ORDER BY queue_position LIMIT 1',
         [item_copy.library_item_id, patron_id]
       );
 
       if (other_patron_reservations.length > 0) {
         return res.status(400).json({
           error: 'Item is reserved for another patron',
-          message: 'This item has pending reservations that must be fulfilled first',
+          message: 'This item has reservations that must be fulfilled first',
         });
       }
 
@@ -165,7 +213,7 @@ router.post(
       let reservation_to_fulfill = null;
       if (item_copy.status === 'Reserved') {
         const reservations = await db.execute_query(
-          'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND patron_id = ? AND status IN ("pending", "ready") ORDER BY queue_position LIMIT 1',
+          'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND patron_id = ? AND status IN ("waiting", "ready") ORDER BY queue_position LIMIT 1',
           [item_copy.library_item_id, patron_id]
         );
 
@@ -324,7 +372,11 @@ router.post(
         const days_overdue = Math.ceil(
           (return_date - due_date) / (1000 * 60 * 60 * 24)
         );
-        fine_amount = days_overdue * 0.5; // $0.50 per day
+        fine_amount = days_overdue * 1.00; // $1.00 per day
+        // Cap fine at book cost
+        if (item_copy.cost && fine_amount > item_copy.cost) {
+          fine_amount = item_copy.cost;
+        }
       }
 
       // Update transaction
@@ -355,6 +407,31 @@ router.post(
           'UPDATE PATRONS SET balance = balance + ? WHERE id = ?',
           [fine_amount, transaction.patron_id]
         );
+      }
+
+      // Check if there are reservations waiting for this item
+      const waiting_reservations = await db.execute_query(
+        'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND status = "waiting" ORDER BY queue_position LIMIT 1',
+        [item_copy.library_item_id]
+      );
+
+      if (waiting_reservations.length > 0) {
+        // Move first person in queue to "ready" status
+        const next_reservation = waiting_reservations[0];
+        const new_expiry = new Date();
+        new_expiry.setDate(new_expiry.getDate() + 5);
+
+        await db.update_record('RESERVATIONS', next_reservation.id, {
+          status: 'ready',
+          expiry_date: new_expiry.toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+
+        // Set item status to Reserved (ready for pickup)
+        await db.update_record('LIBRARY_ITEM_COPIES', copy_id, {
+          status: 'Reserved',
+          updated_at: new Date().toISOString(),
+        });
       }
 
       res.json({
