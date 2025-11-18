@@ -217,20 +217,19 @@ export const HomePage = () => {
         return;
       }
 
-      if (copy.status !== 'Available') {
+      // Allow Available and Reserved items to proceed to checkout
+      // Backend will validate if patron has the reservation
+      if (copy.status === 'Available' || copy.status === 'Reserved') {
         set_book_data(copy);
-        if (copy.status === 'Reserved') {
-          set_book_error('reserved');
-        } else {
-          set_book_error('unavailable');
-        }
+        set_checkout_step('confirmation');
+        set_book_loading(false);
+      } else {
+        // Only block if item is Checked Out or other unavailable status
+        set_book_data(copy);
+        set_book_error('unavailable');
         set_book_loading(false);
         return;
       }
-
-      set_book_data(copy);
-      set_checkout_step('confirmation');
-      set_book_loading(false);
     } catch {
       set_book_error('not_found');
       set_book_loading(false);
