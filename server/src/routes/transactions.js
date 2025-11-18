@@ -418,6 +418,19 @@ router.post(
         });
       }
 
+      // Check if patron card is expired
+      const card_expiration = new Date(patron.card_expiration_date);
+      const today = new Date();
+      if (card_expiration < today) {
+        return res.status(400).json({
+          success: false,
+          error: 'Patron card has expired',
+          error_type: 'card_expired',
+          card_expiration_date: patron.card_expiration_date,
+          message: `Patron card expired on ${card_expiration.toISOString().split('T')[0]}. Card must be renewed before checkout.`,
+        });
+      }
+
       // Calculate due date if not provided (default 14 days)
       const checkout_date = new Date();
       const calculated_due_date = due_date
