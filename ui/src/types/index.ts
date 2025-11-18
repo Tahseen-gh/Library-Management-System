@@ -38,7 +38,7 @@ export type ReservationStatus =
   | 'cancelled'
   | 'ready'
   | 'expired'
-  | 'waitlist';
+  | 'waiting';
 
 export interface Reservation {
   id: number;
