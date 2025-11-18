@@ -471,27 +471,102 @@ router.put('/:id/renew', async (req, res) => {
       });
     }
 
-    // Check if item has reservations
+    // Check renewal status - prevent if already renewed twice
+    if (transaction.renewal_status === 'Renewed Twice') {
+      return res.status(400).json({
+        error: 'Item has already been renewed twice',
+      });
+    }
+
+    // Get item copy
+    const item_copy = await db.get_by_id('LIBRARY_ITEM_COPIES', transaction.copy_id);
+    if (!item_copy) {
+      return res.status(400).json({
+        error: 'Item copy not found',
+      });
+    }
+
+    // Check if item is reserved
     const reservations = await db.execute_query(
-      'SELECT COUNT(*) as count FROM RESERVATIONS WHERE library_item_id = (SELECT library_item_id FROM LIBRARY_ITEM_COPIES WHERE id = ?) AND status = "pending"',
-      [transaction.copy_id]
+      'SELECT COUNT(*) as count FROM RESERVATIONS WHERE library_item_id = ? AND status IN ("waiting", "ready")',
+      [item_copy.library_item_id]
     );
 
     if (reservations[0].count > 0) {
       return res.status(400).json({
-        error: 'Item cannot be renewed due to pending reservations',
+        error: 'Item is reserved',
       });
     }
 
-    // Extend due date by 14 days
-    const current_due_date = new Date(transaction.due_date);
-    const new_due_date = new Date(
-      current_due_date.getTime() + 14 * 24 * 60 * 60 * 1000
+    // Get patron information
+    const patron = await db.get_by_id('PATRONS', transaction.patron_id);
+    if (!patron) {
+      return res.status(400).json({
+        error: 'Patron not found',
+      });
+    }
+
+    // Check if patron's card is expired
+    const current_date = new Date().toISOString().split('T')[0];
+    if (patron.card_expiration_date < current_date) {
+      return res.status(400).json({
+        error: "Patron's card is expired",
+      });
+    }
+
+    // Check if patron has fines
+    if (patron.balance > 0) {
+      return res.status(400).json({
+        error: 'Patron has fines',
+      });
+    }
+
+    // Check if patron has too many books checked out
+    const active_checkout_count = await db.execute_query(
+      'SELECT COUNT(*) as count FROM TRANSACTIONS WHERE patron_id = ? AND status = "Active"',
+      [transaction.patron_id]
     );
+
+    if (active_checkout_count[0].count >= 20) {
+      return res.status(400).json({
+        error: 'Patron has too many books checked out',
+      });
+    }
+
+    // Get item details for calculating due date
+    const library_item = await db.execute_query(
+      'SELECT li.*, v.is_new_release FROM LIBRARY_ITEMS li LEFT JOIN VIDEOS v ON li.id = v.library_item_id WHERE li.id = ?',
+      [item_copy.library_item_id]
+    );
+
+    // Calculate new due date based on current date (not adding leftover time)
+    const current_date_obj = new Date();
+    let days_to_add = 14; // Default for books
+
+    if (library_item[0]) {
+      if (library_item[0].item_type === 'VIDEO' || library_item[0].item_type === 'video') {
+        if (library_item[0].is_new_release === 1) {
+          days_to_add = 3; // New release videos: 3 days
+        } else {
+          days_to_add = 7; // Regular videos: 7 days
+        }
+      } else if (library_item[0].item_type === 'BOOK' || library_item[0].item_type === 'book') {
+        days_to_add = 28; // Books: 4 weeks
+      }
+    }
+
+    const new_due_date = new Date(current_date_obj.getTime() + days_to_add * 24 * 60 * 60 * 1000);
+
+    // Update renewal status
+    let new_renewal_status = 'Renewed Once';
+    if (transaction.renewal_status === 'Renewed Once') {
+      new_renewal_status = 'Renewed Twice';
+    }
 
     // Update transaction
     await db.update_record('TRANSACTIONS', req.params.id, {
       due_date: new_due_date,
+      renewal_status: new_renewal_status,
       updated_at: new Date(),
     });
 
@@ -507,11 +582,109 @@ router.put('/:id/renew', async (req, res) => {
       data: {
         transaction_id: req.params.id,
         new_due_date,
+        renewal_status: new_renewal_status,
       },
     });
   } catch (error) {
     res.status(500).json({
       error: 'Failed to renew transaction',
+      message: error.message,
+    });
+  }
+});
+
+// GET /api/v1/transactions/by-copy/:copy_id - Get transaction info by copy ID
+router.get('/by-copy/:copy_id', async (req, res) => {
+  try {
+    const copy_id = req.params.copy_id;
+
+    // Get the active transaction for this copy
+    const transactions = await db.execute_query(
+      'SELECT * FROM TRANSACTIONS WHERE copy_id = ? AND status = "Active" ORDER BY created_at DESC LIMIT 1',
+      [copy_id]
+    );
+
+    if (transactions.length === 0) {
+      return res.status(404).json({
+        error: 'No active transaction found for this item',
+      });
+    }
+
+    const transaction = transactions[0];
+
+    // Get item copy information
+    const item_copy = await db.get_by_id('LIBRARY_ITEM_COPIES', copy_id);
+    if (!item_copy) {
+      return res.status(404).json({
+        error: 'Item copy not found',
+      });
+    }
+
+    // Get library item information
+    const library_item = await db.get_by_id('LIBRARY_ITEMS', item_copy.library_item_id);
+    if (!library_item) {
+      return res.status(404).json({
+        error: 'Library item not found',
+      });
+    }
+
+    // Get item type-specific information
+    let item_details = {};
+    if (library_item.item_type === 'BOOK' || library_item.item_type === 'book') {
+      const books = await db.execute_query(
+        'SELECT * FROM BOOKS WHERE library_item_id = ?',
+        [library_item.id]
+      );
+      item_details = books[0] || {};
+    } else if (library_item.item_type === 'VIDEO' || library_item.item_type === 'video') {
+      const videos = await db.execute_query(
+        'SELECT * FROM VIDEOS WHERE library_item_id = ?',
+        [library_item.id]
+      );
+      item_details = videos[0] || {};
+    }
+
+    // Get patron information
+    const patron = await db.get_by_id('PATRONS', transaction.patron_id);
+    if (!patron) {
+      return res.status(404).json({
+        error: 'Patron not found',
+      });
+    }
+
+    // Get active checkout count for patron
+    const active_checkout_count = await db.execute_query(
+      'SELECT COUNT(*) as count FROM TRANSACTIONS WHERE patron_id = ? AND status = "Active"',
+      [patron.id]
+    );
+
+    // Check for reservations
+    const reservations = await db.execute_query(
+      'SELECT COUNT(*) as count FROM RESERVATIONS WHERE library_item_id = ? AND status IN ("waiting", "ready")',
+      [library_item.id]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        transaction: {
+          ...transaction,
+          item_copy,
+          library_item: {
+            ...library_item,
+            ...item_details,
+          },
+          patron: {
+            ...patron,
+            active_checkouts: active_checkout_count[0].count,
+          },
+          has_reservations: reservations[0].count > 0,
+        },
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to fetch transaction information',
       message: error.message,
     });
   }

@@ -262,6 +262,7 @@ async function create_tables() {
         return_date DATE,
         fine_amount REAL DEFAULT 0.00,
         status TEXT DEFAULT 'Active',
+        renewal_status TEXT DEFAULT 'Checked Out',
         notes TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -303,6 +304,19 @@ async function create_tables() {
       if (!columnNames.includes('current_branch_id')) {
         await db.exec('ALTER TABLE LIBRARY_ITEM_COPIES ADD COLUMN current_branch_id INTEGER DEFAULT 1 REFERENCES BRANCHES(id) ON DELETE SET NULL');
         console.log(pico.bgYellow(pico.bold('✓ Added current_branch_id column to LIBRARY_ITEM_COPIES')));
+      }
+    } catch (migrationError) {
+      console.error(pico.bgYellow(pico.bold('Migration warning: ')), migrationError.message);
+    }
+
+    // Migration: Add renewal_status column to existing TRANSACTIONS table
+    try {
+      const transactionTableInfo = await db.all('PRAGMA table_info(TRANSACTIONS)');
+      const transactionColumnNames = transactionTableInfo.map(col => col.name);
+
+      if (!transactionColumnNames.includes('renewal_status')) {
+        await db.exec('ALTER TABLE TRANSACTIONS ADD COLUMN renewal_status TEXT DEFAULT "Checked Out"');
+        console.log(pico.bgYellow(pico.bold('✓ Added renewal_status column to TRANSACTIONS')));
       }
     } catch (migrationError) {
       console.error(pico.bgYellow(pico.bold('Migration warning: ')), migrationError.message);
