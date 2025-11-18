@@ -237,6 +237,22 @@ router.post(
         });
       }
 
+      // Check if patron already has a copy of this item checked out
+      const patron_active_checkouts = await db.execute_query(
+        `SELECT t.* FROM TRANSACTIONS t
+         JOIN LIBRARY_ITEM_COPIES c ON t.copy_id = c.id
+         WHERE c.library_item_id = ? AND t.patron_id = ? AND t.status = 'Active'`,
+        [library_item.id, patron_id]
+      );
+
+      if (patron_active_checkouts.length > 0) {
+        return res.status(400).json({
+          error: 'Item already checked out',
+          message: 'Patron already has a copy of this item checked out',
+          already_checked_out: true,
+        });
+      }
+
       // Step 11: Check existing reservations
       const existing_reservations = await db.execute_query(
         'SELECT COUNT(*) as count FROM RESERVATIONS WHERE library_item_id = ? AND status IN ("waiting", "ready")',
