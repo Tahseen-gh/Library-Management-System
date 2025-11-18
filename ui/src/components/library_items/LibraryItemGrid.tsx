@@ -1,15 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DataGrid, type GridColDef, type GridDensity } from '@mui/x-data-grid';
 import { type Library_Item } from '../../types';
-import { Snackbar, Alert, AlertTitle, Box } from '@mui/material';
+import { Snackbar, Alert, AlertTitle, Box, Chip, Stack, Tooltip } from '@mui/material';
 import { LibraryItemDetails } from './LibraryItemDetails';
 import { useLibraryItems } from '../../hooks/useLibraryItems';
 import ItemTypeChip from './ItemTypeChip';
 import { CustomToolbar } from '../common/CustomDataGridToolbar';
+import { data_service } from '../../services/dataService';
+
+interface EnrichedLibraryItem extends Library_Item {
+  copy_ids?: number[];
+  copy_count?: number;
+}
 
 const columns: GridColDef[] = [
   { field: 'id', headerName: 'ID', width: 60 },
-  { field: 'title', headerName: 'Title', width: 150, editable: false },
+  { field: 'title', headerName: 'Title', width: 200, editable: false },
   {
     field: 'item_type',
     headerName: 'Type',
@@ -17,6 +23,57 @@ const columns: GridColDef[] = [
     editable: false,
     renderCell: (params) => {
       return <ItemTypeChip item_type={params.value} />;
+    },
+  },
+  {
+    field: 'copy_ids',
+    headerName: 'Copies',
+    width: 250,
+    editable: false,
+    renderCell: (params) => {
+      const copyIds = params.value as number[] | undefined;
+      if (!copyIds || copyIds.length === 0) {
+        return (
+          <Chip label="No copies" size="small" color="default" variant="outlined" />
+        );
+      }
+
+      return (
+        <Tooltip
+          title={
+            <Box>
+              <div>Copy IDs: {copyIds.join(', ')}</div>
+              <div>Total: {copyIds.length}</div>
+            </Box>
+          }
+          arrow
+        >
+          <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap', gap: 0.5 }}>
+            <Chip
+              label={`${copyIds.length} ${copyIds.length === 1 ? 'copy' : 'copies'}`}
+              size="small"
+              color="primary"
+              variant="outlined"
+            />
+            {copyIds.slice(0, 3).map((id) => (
+              <Chip
+                key={id}
+                label={`#${id}`}
+                size="small"
+                color="default"
+              />
+            ))}
+            {copyIds.length > 3 && (
+              <Chip
+                label={`+${copyIds.length - 3} more`}
+                size="small"
+                color="default"
+                variant="outlined"
+              />
+            )}
+          </Stack>
+        </Tooltip>
+      );
     },
   },
   {
@@ -40,8 +97,41 @@ export const LibraryItemDataGrid = () => {
     null
   );
   const [density, set_density] = useState<GridDensity>('standard');
+  const [enriched_items, set_enriched_items] = useState<EnrichedLibraryItem[]>([]);
 
   const { data: rows, isLoading: loading, error } = useLibraryItems();
+
+  // Fetch copy IDs for each library item
+  useEffect(() => {
+    if (rows && rows.length > 0) {
+      const fetchCopies = async () => {
+        const items_with_copies = await Promise.all(
+          rows.map(async (item) => {
+            try {
+              const copies = await data_service.get_all_copies_by_item_id(item.id);
+              return {
+                ...item,
+                copy_ids: copies.map((copy) => copy.id),
+                copy_count: copies.length,
+              };
+            } catch (error) {
+              console.error(`Failed to fetch copies for item ${item.id}:`, error);
+              return {
+                ...item,
+                copy_ids: [],
+                copy_count: 0,
+              };
+            }
+          })
+        );
+        set_enriched_items(items_with_copies);
+      };
+
+      fetchCopies();
+    } else {
+      set_enriched_items([]);
+    }
+  }, [rows]);
 
   const handle_item_selected = (item: Library_Item) => {
     set_selected_item(item);
@@ -53,9 +143,9 @@ export const LibraryItemDataGrid = () => {
       <Box sx={{ overflow: 'hidden', maxHeight: 1 }}>
         <DataGrid
           sx={{ height: 1 }}
-          rows={rows}
+          rows={enriched_items}
           columns={columns}
-          loading={loading}
+          loading={loading || (rows && rows.length > 0 && enriched_items.length === 0)}
           pageSizeOptions={[10, 25, 50, 100]}
           onRowDoubleClick={(params) =>
             handle_item_selected(params.row as Library_Item)
