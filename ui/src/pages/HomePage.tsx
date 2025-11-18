@@ -456,6 +456,44 @@ export const HomePage = () => {
               </CardActionArea>
             </Card>
 
+            {/* Reshelve Card */}
+            <Card
+              elevation={4}
+              sx={{
+                transition: 'all 0.3s ease',
+                '&:hover': { transform: 'translateY(-8px)', boxShadow: 8 },
+              }}
+            >
+              <CardActionArea component={Link} to="/available">
+                <CardContent sx={{ p: 4 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                    <Box
+                      sx={{
+                        width: 80,
+                        height: 80,
+                        borderRadius: 2,
+                        background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <CheckCircle sx={{ fontSize: 40, color: 'white' }} />
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="h4" fontWeight="bold" gutterBottom>
+                        Reshelve
+                      </Typography>
+                      <Typography variant="body1" color="text.secondary">
+                        Mark returned items as available. Scan or select items from the reshelve bin
+                        to make them available for checkout.
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </CardActionArea>
+            </Card>
+
             {/* Search Card */}
             <Card
               elevation={4}
