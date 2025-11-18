@@ -407,6 +407,17 @@ router.post(
         });
       }
 
+      // Check for outstanding fines
+      if (patron.balance > 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Patron has outstanding fines',
+          error_type: 'has_fines',
+          balance: patron.balance,
+          message: `Patron owes $${patron.balance.toFixed(2)} in fines. Fines must be paid before checkout.`,
+        });
+      }
+
       // Calculate due date if not provided (default 14 days)
       const checkout_date = new Date();
       const calculated_due_date = due_date
