@@ -371,7 +371,7 @@ export const MarkAvailablePage: React.FC = () => {
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" gutterBottom fontWeight="bold">
-          Mark Items as Available (Reshelve Process)
+          Reshelve Items
         </Typography>
         <Typography variant="body1" color="text.secondary">
           Scan or select items from the reshelve bin to mark them as available
@@ -443,7 +443,7 @@ export const MarkAvailablePage: React.FC = () => {
             }
             sx={{ minWidth: 150 }}
           >
-            {processing ? 'Processing...' : 'Mark Available'}
+            {processing ? 'Processing...' : 'Reshelve'}
           </Button>
         </Box>
       </Paper>
@@ -541,7 +541,7 @@ export const MarkAvailablePage: React.FC = () => {
                         startIcon={<CheckCircle />}
                         size="small"
                       >
-                        Mark Available
+                        Reshelve
                       </Button>
                     </TableCell>
                   </TableRow>
