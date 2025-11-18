@@ -185,6 +185,12 @@ export interface Item_Copy {
   condition?: Condition;
   cost: number;
   notes?: string;
+  // Optional fields from JOIN queries
+  title?: string;
+  item_type?: Library_Item_Type;
+  publication_year?: number;
+  description?: string;
+  branch_name?: string;
 }
 
 export interface Book extends Library_Item {
