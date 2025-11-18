@@ -15,6 +15,10 @@ import {
   CardContent,
   CardActionArea,
   Fade,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   CheckCircle,
@@ -70,6 +74,10 @@ export const HomePage = () => {
   const [book_data, set_book_data] = useState<any>(null);
   const [book_error, set_book_error] = useState<BookErrorType>(null);
   const [book_loading, set_book_loading] = useState(false);
+
+  // Fine payment dialog state
+  const [payment_dialog_open, set_payment_dialog_open] = useState(false);
+  const [payment_amount, set_payment_amount] = useState('');
 
   // Receipt state
   const [receipt_data, set_receipt_data] = useState<any>(null);
@@ -173,13 +181,68 @@ export const HomePage = () => {
   };
 
   const handle_collect_fine = () => {
-    set_patron_error(null);
-    set_checkout_step('book_entry');
+    if (!patron_data) return;
+
+    // Set default payment to full balance and open dialog
+    set_payment_amount(patron_data.balance.toFixed(2));
+    set_payment_dialog_open(true);
   };
 
-  const handle_waive_fine = () => {
-    set_patron_error(null);
-    set_checkout_step('book_entry');
+  const handle_process_payment = async () => {
+    if (!patron_data) return;
+
+    const payment = parseFloat(payment_amount);
+    if (isNaN(payment) || payment <= 0) {
+      alert('Please enter a valid payment amount');
+      return;
+    }
+
+    if (payment > patron_data.balance) {
+      alert(`Payment amount cannot exceed balance of $${patron_data.balance.toFixed(2)}`);
+      return;
+    }
+
+    try {
+      const new_balance = patron_data.balance - payment;
+
+      // Update patron balance
+      await data_service.update_patron(patron_data.id, { balance: new_balance });
+
+      // Update local patron data
+      set_patron_data({ ...patron_data, balance: new_balance });
+
+      // Close dialog
+      set_payment_dialog_open(false);
+      set_payment_amount('');
+
+      // If balance is now 0 or below, clear error and proceed
+      if (new_balance <= 0) {
+        set_patron_error(null);
+        set_checkout_step('book_entry');
+      }
+    } catch (error) {
+      console.error('Failed to process payment:', error);
+      alert('Failed to process fine payment. Please try again.');
+    }
+  };
+
+  const handle_waive_fine = async () => {
+    if (!patron_data) return;
+
+    try {
+      // Update patron balance to 0 (fine waived)
+      await data_service.update_patron(patron_data.id, { balance: 0 });
+
+      // Update local patron data
+      set_patron_data({ ...patron_data, balance: 0 });
+
+      // Clear error and proceed to book entry
+      set_patron_error(null);
+      set_checkout_step('book_entry');
+    } catch (error) {
+      console.error('Failed to waive fine:', error);
+      alert('Failed to waive fine. Please try again.');
+    }
   };
 
   const handle_renew_card = () => {
@@ -1035,6 +1098,37 @@ export const HomePage = () => {
           </Box>
         </Fade>
       )}
+
+      {/* Fine Payment Dialog */}
+      <Dialog open={payment_dialog_open} onClose={() => set_payment_dialog_open(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Collect Fine Payment</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <Typography variant="body2" gutterBottom>
+              Patron: {patron_data?.first_name} {patron_data?.last_name}
+            </Typography>
+            <Typography variant="body2" gutterBottom sx={{ mb: 3 }}>
+              Current Balance: <strong>${patron_data?.balance.toFixed(2)}</strong>
+            </Typography>
+            <TextField
+              autoFocus
+              label="Payment Amount"
+              type="number"
+              fullWidth
+              value={payment_amount}
+              onChange={(e) => set_payment_amount(e.target.value)}
+              inputProps={{ min: 0, step: 0.01 }}
+              helperText="Enter the amount being paid"
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => set_payment_dialog_open(false)}>Cancel</Button>
+          <Button onClick={handle_process_payment} variant="contained">
+            Process Payment
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Receipt Dialog */}
       {receipt_data && (
