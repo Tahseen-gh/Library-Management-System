@@ -790,6 +790,9 @@ export const HomePage = () => {
             <Typography variant="body2">
               ID: {patron_data.id} | Active Checkouts: {patron_data.active_checkouts}
             </Typography>
+            <Typography variant="body2">
+              Card Expiration: {patron_data.card_expiration_date ? format_date(patron_data.card_expiration_date) : 'N/A'} | Fines: ${(patron_data.balance || 0).toFixed(2)}
+            </Typography>
           </Alert>
         )}
 

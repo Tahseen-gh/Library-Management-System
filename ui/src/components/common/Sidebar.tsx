@@ -37,7 +37,7 @@ export const Sidebar = ({ sidebarOpen }: { sidebarOpen: boolean }) => {
   const menu_items = [
     { text: 'Home', path: '/', icon: <Home /> },
     { text: 'Library Items', path: '/library-items', icon: <Book /> },
-    { text: 'Search', path: '/search', icon: <Search /> },
+    { text: 'Search Item', path: '/search', icon: <Search /> },
     { text: 'Patrons', path: '/patrons', icon: <Groups2 /> },
     { text: 'Transactions', path: '/transactions', icon: <SsidChart /> },
     { text: 'Reservations', path: '/reservations', icon: <Event /> },

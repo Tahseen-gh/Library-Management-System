@@ -223,20 +223,6 @@ router.post(
         [library_item.id]
       );
 
-      // Step 9-10: Check if item is already reserved by this patron
-      const existing_patron_reservation = await db.execute_query(
-        'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND patron_id = ? AND status IN ("waiting", "ready")',
-        [library_item.id, patron_id]
-      );
-
-      if (existing_patron_reservation.length > 0) {
-        return res.status(400).json({
-          error: 'Item already reserved',
-          message: 'Patron already has a reservation for this item',
-          already_reserved: true,
-        });
-      }
-
       // Check if patron already has a copy of this item checked out
       const patron_active_checkouts = await db.execute_query(
         `SELECT t.* FROM TRANSACTIONS t
