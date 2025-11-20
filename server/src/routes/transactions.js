@@ -585,9 +585,9 @@ router.post(
       });
 
       // Update item copy - use owning_branch_id as default if no new location specified
-      // Status set to 'returned' so it can be reshelved later
+      // Status set to 'Returned' so it can be reshelved later
       const update_data = {
-        status: 'returned',
+        status: 'Returned',
         checked_out_by: null,
         due_date: null,
         current_branch_id: new_location_id || item_copy.owning_branch_id,
