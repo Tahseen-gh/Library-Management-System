@@ -12,6 +12,7 @@ import { MarkAvailablePage } from './pages/MarkAvailablePage';
 import { CheckInItem } from './pages/CheckInItem';
 import { RenewItem } from './pages/RenewItem';
 import Search from './pages/Search';
+import Reserve from './pages/Reserve';
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ function App() {
           <Route path="transactions" element={<TransactionsPage />} />
           <Route path="reservations" element={<ReservationsPage />} />
           <Route path="search" element={<Search />} />
+          <Route path="reserve" element={<Reserve />} />
           <Route path="checkin" element={<CheckInItem />} />
           <Route path="renew" element={<RenewItem />} />
           <Route path="available" element={<MarkAvailablePage />} />
