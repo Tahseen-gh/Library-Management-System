@@ -667,7 +667,7 @@ export const CheckInItem: FC = () => {
 
                       <Alert severity="info" sx={{ mb: 2 }}>
                         After check-in, this item will be marked as "returned" and must be reshelved
-                        using the "Mark Items as Available" page before it can be checked out again.
+                        using the "Reshelve Page" before it can be checked out again.
                       </Alert>
                     </Paper>
                   </Grid>
