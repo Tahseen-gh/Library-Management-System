@@ -83,10 +83,10 @@ export const MarkAvailablePage: React.FC = () => {
     try {
       // Get all returned items
       const returned_response = await fetch(
-        `${API_BASE_URL}/item-copies?status=returned`
+        `${API_BASE_URL}/item-copies?status=Returned`
       );
       const damaged_response = await fetch(
-        `${API_BASE_URL}/item-copies?status=damaged`
+        `${API_BASE_URL}/item-copies?status=Damaged`
       );
 
       if (!returned_response.ok || !damaged_response.ok) {
@@ -162,7 +162,7 @@ export const MarkAvailablePage: React.FC = () => {
       });
 
       // Step 2: Check Item Status
-      if (item.status !== 'returned' && item.status !== 'damaged') {
+      if (item.status !== 'Returned' && item.status !== 'Damaged') {
         throw new Error('item not found or not ready for reshelving');
       }
 
@@ -176,7 +176,7 @@ export const MarkAvailablePage: React.FC = () => {
           // Check if there's a returned transaction for this copy
           const return_transaction = transactions.find((t: any) => t.copy_id === copy_id);
 
-          if (!return_transaction && item.status === 'returned') {
+          if (!return_transaction && item.status === 'Returned') {
             console.warn('[Reshelve] No return transaction found for copy', copy_id, 'but proceeding');
             // Log warning but allow reshelving as item may have been manually marked as returned
           }
@@ -192,7 +192,7 @@ export const MarkAvailablePage: React.FC = () => {
       }
 
       // Step 4: Check if item is damaged
-      if (item.status === 'damaged') {
+      if (item.status === 'Damaged') {
         // Show damaged warning dialog
         set_pending_item({ id: copy_id, method });
         set_show_damaged_warning(true);
@@ -201,7 +201,7 @@ export const MarkAvailablePage: React.FC = () => {
       }
 
       // Step 5: If status is returned, ask for confirmation
-      if (item.status === 'returned') {
+      if (item.status === 'Returned') {
         // Show repair confirmation dialog
         set_pending_item({ id: copy_id, method });
         set_show_repair_dialog(true);
@@ -289,14 +289,14 @@ export const MarkAvailablePage: React.FC = () => {
     set_error(null);
 
     try {
-      // Revert item back to "returned" status
+      // Revert item back to "Returned" status
       const response = await fetch(`${API_BASE_URL}/item-copies/${last_reshelved_item}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          status: 'returned',
+          status: 'Returned',
         }),
       });
 
@@ -520,7 +520,7 @@ export const MarkAvailablePage: React.FC = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      {item.status === 'damaged' ? (
+                      {item.status === 'Damaged' ? (
                         <Chip
                           label="DAMAGED - REPAIRED"
                           color="error"
