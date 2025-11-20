@@ -136,7 +136,10 @@ export const ReshelveItemPage: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to reshelve item');
+        const error_data = await response.json().catch(() => ({}));
+        const error_message = error_data.error || error_data.message || 'Failed to reshelve item';
+        const details = error_data.details ? ` - ${JSON.stringify(error_data.details)}` : '';
+        throw new Error(`${error_message}${details}`);
       }
 
       // Mark as reshelved in local state
@@ -145,7 +148,7 @@ export const ReshelveItemPage: React.FC = () => {
           item.id === item_id ? { ...item, reshelved: true } : item
         )
       );
-      set_success(`Item ${item_id} has been reshelved!`);
+      set_success(`Copy ${item_id} has been reshelved!`);
     } catch (err) {
       set_error(err instanceof Error ? err.message : 'Failed to reshelve');
     } finally {
@@ -169,7 +172,10 @@ export const ReshelveItemPage: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to undo reshelve');
+        const error_data = await response.json().catch(() => ({}));
+        const error_message = error_data.error || error_data.message || 'Failed to undo reshelve';
+        const details = error_data.details ? ` - ${JSON.stringify(error_data.details)}` : '';
+        throw new Error(`${error_message}${details}`);
       }
 
       // Mark as not reshelved
@@ -178,7 +184,7 @@ export const ReshelveItemPage: React.FC = () => {
           item.id === item_id ? { ...item, reshelved: false } : item
         )
       );
-      set_success(`Reshelve undone for item ${item_id}`);
+      set_success(`Reshelve undone for copy ${item_id}`);
     } catch (err) {
       set_error(err instanceof Error ? err.message : 'Failed to undo');
     } finally {
