@@ -45,7 +45,7 @@ interface ItemResult {
   copies: ItemCopyWithDetails[];
 }
 
-type SearchBy = 'Item Name' | 'Item ID';
+type SearchBy = 'Item Name' | 'Copy ID';
 
 export default function Reserve() {
   const [searchBy, setSearchBy] = useState<SearchBy>('Item Name');
@@ -66,8 +66,8 @@ export default function Reserve() {
       setValidationError('Search criteria cannot be empty');
       return false;
     }
-    if (searchBy === 'Item ID' && isNaN(Number(searchInput))) {
-      setValidationError('Item ID must be a number');
+    if (searchBy === 'Copy ID' && isNaN(Number(searchInput))) {
+      setValidationError('Copy ID must be a number');
       return false;
     }
     setValidationError('');
@@ -81,14 +81,22 @@ export default function Reserve() {
     try {
       let items: any[] = [];
 
-      if (searchBy === 'Item ID') {
-        // Search by Item ID - get specific item
-        const response = await fetch(`${API_BASE_URL}/library-items/${searchInput}`);
-        if (!response.ok) {
+      if (searchBy === 'Copy ID') {
+        // Search by Copy ID - get specific copy and its library item
+        const copyResponse = await fetch(`${API_BASE_URL}/item-copies/${searchInput}`);
+        if (!copyResponse.ok) {
+          throw new Error('Copy not found');
+        }
+        const copyData = await copyResponse.json();
+        const copy = copyData.data || copyData;
+
+        // Get the library item for this copy
+        const itemResponse = await fetch(`${API_BASE_URL}/library-items/${copy.library_item_id}`);
+        if (!itemResponse.ok) {
           throw new Error('Item not found');
         }
-        const data = await response.json();
-        const item = data.data || data;
+        const itemData = await itemResponse.json();
+        const item = itemData.data || itemData;
         items = [item];
       } else {
         // Search by Item Name - get all library items
@@ -289,9 +297,9 @@ export default function Reserve() {
               label="Item Name (partial search supported)"
             />
             <FormControlLabel
-              value="Item ID"
+              value="Copy ID"
               control={<Radio />}
-              label="Item ID"
+              label="Copy ID"
             />
           </RadioGroup>
         </FormControl>
@@ -310,9 +318,9 @@ export default function Reserve() {
             placeholder={
               searchBy === 'Item Name'
                 ? 'Item Name (partial search supported)'
-                : 'Enter item ID'
+                : 'Enter copy ID'
             }
-            type={searchBy === 'Item ID' ? 'number' : 'text'}
+            type={searchBy === 'Copy ID' ? 'number' : 'text'}
             onKeyPress={(e) => {
               if (e.key === 'Enter') handleSearch();
             }}
