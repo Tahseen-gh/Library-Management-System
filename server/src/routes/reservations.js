@@ -21,10 +21,20 @@ const process_expired_reservations = async () => {
       });
 
       // Set item back to "returned" status
-      const copies = await db.execute_query(
-        'SELECT * FROM LIBRARY_ITEM_COPIES WHERE library_item_id = ? AND status = "Reserved" LIMIT 1',
-        [reservation.library_item_id]
-      );
+      // For copy-specific reservations, get the specific copy
+      // For item-level reservations, get any reserved copy for that item
+      let copies;
+      if (reservation.copy_id) {
+        copies = await db.execute_query(
+          'SELECT * FROM LIBRARY_ITEM_COPIES WHERE id = ? AND status = "Reserved" LIMIT 1',
+          [reservation.copy_id]
+        );
+      } else {
+        copies = await db.execute_query(
+          'SELECT * FROM LIBRARY_ITEM_COPIES WHERE library_item_id = ? AND status = "Reserved" LIMIT 1',
+          [reservation.library_item_id]
+        );
+      }
 
       if (copies.length > 0) {
         await db.update_record('LIBRARY_ITEM_COPIES', copies[0].id, {
@@ -33,10 +43,20 @@ const process_expired_reservations = async () => {
         });
 
         // Check for next person in queue
-        const next_in_queue = await db.execute_query(
-          'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND status = "waiting" ORDER BY queue_position LIMIT 1',
-          [reservation.library_item_id]
-        );
+        // For copy-specific, get next waiting reservation for that specific copy
+        // For item-level, get next waiting item-level reservation
+        let next_in_queue;
+        if (reservation.copy_id) {
+          next_in_queue = await db.execute_query(
+            'SELECT * FROM RESERVATIONS WHERE copy_id = ? AND status = "waiting" ORDER BY queue_position LIMIT 1',
+            [reservation.copy_id]
+          );
+        } else {
+          next_in_queue = await db.execute_query(
+            'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND copy_id IS NULL AND status = "waiting" ORDER BY queue_position LIMIT 1',
+            [reservation.library_item_id]
+          );
+        }
 
         if (next_in_queue.length > 0) {
           // Move next person to "ready" status
@@ -266,22 +286,15 @@ router.post(
       // Step 11: Check existing reservations
       let existing_reservations;
       if (copy_id) {
-        // Check if this specific copy already has a reservation
+        // For copy-specific reservations, check reservations for this specific copy
         existing_reservations = await db.execute_query(
           'SELECT COUNT(*) as count FROM RESERVATIONS WHERE copy_id = ? AND status IN ("waiting", "ready")',
           [copy_id]
         );
-
-        if (existing_reservations[0].count > 0) {
-          return res.status(400).json({
-            error: 'Copy already reserved',
-            message: 'This specific copy is already reserved by another patron',
-          });
-        }
       } else {
-        // Check item-level reservations
+        // Check item-level reservations (where copy_id IS NULL)
         existing_reservations = await db.execute_query(
-          'SELECT COUNT(*) as count FROM RESERVATIONS WHERE library_item_id = ? AND status IN ("waiting", "ready")',
+          'SELECT COUNT(*) as count FROM RESERVATIONS WHERE library_item_id = ? AND copy_id IS NULL AND status IN ("waiting", "ready")',
           [library_item.id]
         );
       }
@@ -292,17 +305,27 @@ router.post(
       );
 
       // Step 12: Reservation allowed?
-      // For copy-specific: always allowed (already checked above)
+      // For copy-specific: always allowed (can queue for a specific copy)
       // For item-level: If all copies are reserved or checked out, add to waitlist
       const reservation_allowed = copy_id ||
                                   available_copies.length > 0 ||
                                   existing_reservations[0].count < total_copies[0].count;
 
       // Get next queue position
-      const queue_position_result = await db.execute_query(
-        'SELECT COALESCE(MAX(queue_position), 0) + 1 as next_position FROM RESERVATIONS WHERE library_item_id = ? AND status IN ("waiting", "ready")',
-        [library_item.id]
-      );
+      // For copy-specific reservations, queue position is based on that copy only
+      // For item-level reservations, queue position is based on all item-level reservations
+      let queue_position_result;
+      if (copy_id) {
+        queue_position_result = await db.execute_query(
+          'SELECT COALESCE(MAX(queue_position), 0) + 1 as next_position FROM RESERVATIONS WHERE copy_id = ? AND status IN ("waiting", "ready")',
+          [copy_id]
+        );
+      } else {
+        queue_position_result = await db.execute_query(
+          'SELECT COALESCE(MAX(queue_position), 0) + 1 as next_position FROM RESERVATIONS WHERE library_item_id = ? AND copy_id IS NULL AND status IN ("waiting", "ready")',
+          [library_item.id]
+        );
+      }
 
       const queue_position = queue_position_result[0].next_position;
 
@@ -404,15 +427,31 @@ router.put('/:id/fulfill', async (req, res) => {
     }
 
     // Check if item is available
-    const available_copies = await db.execute_query(
-      'SELECT * FROM LIBRARY_ITEM_COPIES WHERE library_item_id = ? AND status = "Available" LIMIT 1',
-      [reservation.library_item_id]
-    );
+    // For copy-specific reservations, check only that specific copy
+    // For item-level reservations, check any available copy
+    let available_copies;
+    if (reservation.copy_id) {
+      available_copies = await db.execute_query(
+        'SELECT * FROM LIBRARY_ITEM_COPIES WHERE id = ? AND status = "Available" LIMIT 1',
+        [reservation.copy_id]
+      );
 
-    if (available_copies.length === 0) {
-      return res.status(400).json({
-        error: 'No available copies to fulfill reservation',
-      });
+      if (available_copies.length === 0) {
+        return res.status(400).json({
+          error: 'The specific copy for this reservation is not available',
+        });
+      }
+    } else {
+      available_copies = await db.execute_query(
+        'SELECT * FROM LIBRARY_ITEM_COPIES WHERE library_item_id = ? AND status = "Available" LIMIT 1',
+        [reservation.library_item_id]
+      );
+
+      if (available_copies.length === 0) {
+        return res.status(400).json({
+          error: 'No available copies to fulfill reservation',
+        });
+      }
     }
 
     // Calculate expiry date: 5 days from now (when item becomes available)
@@ -446,10 +485,19 @@ router.put('/:id/fulfill', async (req, res) => {
     });
 
     // Update queue positions for remaining reservations
-    await db.execute_query(
-      'UPDATE RESERVATIONS SET queue_position = queue_position - 1 WHERE library_item_id = ? AND queue_position > ? AND status = "waiting"',
-      [reservation.library_item_id, reservation.queue_position]
-    );
+    // For copy-specific reservations, only update queue for that specific copy
+    // For item-level reservations, only update queue for item-level reservations
+    if (reservation.copy_id) {
+      await db.execute_query(
+        'UPDATE RESERVATIONS SET queue_position = queue_position - 1 WHERE copy_id = ? AND queue_position > ? AND status = "waiting"',
+        [reservation.copy_id, reservation.queue_position]
+      );
+    } else {
+      await db.execute_query(
+        'UPDATE RESERVATIONS SET queue_position = queue_position - 1 WHERE library_item_id = ? AND copy_id IS NULL AND queue_position > ? AND status = "waiting"',
+        [reservation.library_item_id, reservation.queue_position]
+      );
+    }
 
     res.json({
       success: true,
@@ -539,10 +587,20 @@ router.put('/expire-old', async (req, res) => {
       });
 
       // Get the reserved copy and make it available again
-      const reserved_copies = await db.execute_query(
-        'SELECT * FROM LIBRARY_ITEM_COPIES WHERE library_item_id = ? AND status = "Reserved" LIMIT 1',
-        [reservation.library_item_id]
-      );
+      // For copy-specific reservations, get the specific copy
+      // For item-level reservations, get any reserved copy for that item
+      let reserved_copies;
+      if (reservation.copy_id) {
+        reserved_copies = await db.execute_query(
+          'SELECT * FROM LIBRARY_ITEM_COPIES WHERE id = ? AND status = "Reserved" LIMIT 1',
+          [reservation.copy_id]
+        );
+      } else {
+        reserved_copies = await db.execute_query(
+          'SELECT * FROM LIBRARY_ITEM_COPIES WHERE library_item_id = ? AND status = "Reserved" LIMIT 1',
+          [reservation.library_item_id]
+        );
+      }
 
       if (reserved_copies.length > 0) {
         await db.update_record('LIBRARY_ITEM_COPIES', reserved_copies[0].id, {
@@ -604,16 +662,36 @@ router.delete('/:id', async (req, res) => {
 
     // If there was a reserved copy, we need to handle it carefully
     if (reservation.status === 'ready') {
-      const reserved_copies = await db.execute_query(
-        'SELECT * FROM LIBRARY_ITEM_COPIES WHERE library_item_id = ? AND status = "Reserved"',
-        [reservation.library_item_id]
-      );
+      // For copy-specific reservations, find the specific reserved copy
+      // For item-level reservations, find any reserved copy
+      let reserved_copies;
+      if (reservation.copy_id) {
+        reserved_copies = await db.execute_query(
+          'SELECT * FROM LIBRARY_ITEM_COPIES WHERE id = ? AND status = "Reserved"',
+          [reservation.copy_id]
+        );
+      } else {
+        reserved_copies = await db.execute_query(
+          'SELECT * FROM LIBRARY_ITEM_COPIES WHERE library_item_id = ? AND status = "Reserved"',
+          [reservation.library_item_id]
+        );
+      }
 
       // Check if there are waiting reservations that should be promoted
-      const next_waiting_reservations = await db.execute_query(
-        'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND status = "waiting" ORDER BY queue_position LIMIT 1',
-        [reservation.library_item_id]
-      );
+      let next_waiting_reservations;
+      if (reservation.copy_id) {
+        // For copy-specific, get next waiting reservation for this specific copy
+        next_waiting_reservations = await db.execute_query(
+          'SELECT * FROM RESERVATIONS WHERE copy_id = ? AND status = "waiting" ORDER BY queue_position LIMIT 1',
+          [reservation.copy_id]
+        );
+      } else {
+        // For item-level, get next waiting item-level reservation
+        next_waiting_reservations = await db.execute_query(
+          'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND copy_id IS NULL AND status = "waiting" ORDER BY queue_position LIMIT 1',
+          [reservation.library_item_id]
+        );
+      }
 
       if (next_waiting_reservations.length > 0 && reserved_copies.length > 0) {
         // CRITICAL: Promote the next waiting reservation to "ready" status
@@ -640,10 +718,19 @@ router.delete('/:id', async (req, res) => {
     }
 
     // Update queue positions for remaining reservations
-    await db.execute_query(
-      'UPDATE RESERVATIONS SET queue_position = queue_position - 1 WHERE library_item_id = ? AND queue_position > ? AND status IN ("waiting", "ready")',
-      [reservation.library_item_id, reservation.queue_position]
-    );
+    // For copy-specific reservations, only update queue for that specific copy
+    // For item-level reservations, only update queue for item-level reservations
+    if (reservation.copy_id) {
+      await db.execute_query(
+        'UPDATE RESERVATIONS SET queue_position = queue_position - 1 WHERE copy_id = ? AND queue_position > ? AND status IN ("waiting", "ready")',
+        [reservation.copy_id, reservation.queue_position]
+      );
+    } else {
+      await db.execute_query(
+        'UPDATE RESERVATIONS SET queue_position = queue_position - 1 WHERE library_item_id = ? AND copy_id IS NULL AND queue_position > ? AND status IN ("waiting", "ready")',
+        [reservation.library_item_id, reservation.queue_position]
+      );
+    }
 
     // Log transaction
     await db.create_record('TRANSACTIONS', {
