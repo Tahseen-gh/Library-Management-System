@@ -43,7 +43,15 @@ export const LibraryItemDataGrid = () => {
   );
   const [density, set_density] = useState<GridDensity>('standard');
 
-  const { data: rows, isLoading: loading, error } = useItemCopies();
+  const { data: rawRows, isLoading: loading, error } = useItemCopies();
+
+  // Sort rows by ID (library_item_id) ascending, then by Copy ID (id) ascending
+  const rows = rawRows ? [...rawRows].sort((a, b) => {
+    if (a.library_item_id !== b.library_item_id) {
+      return a.library_item_id - b.library_item_id;
+    }
+    return a.id - b.id;
+  }) : [];
 
   const handle_item_selected = (item: Library_Item) => {
     set_selected_item(item);
