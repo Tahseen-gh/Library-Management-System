@@ -584,8 +584,8 @@ router.post(
         updated_at: new Date(),
       });
 
-      // Update item copy - use owning_branch_id as default if no new location specified
-      // Status set to 'Returned' so it can be reshelved later
+      // Update item copy - always set to 'Returned' after check-in
+      // Reservations will be promoted during the manual reshelving process
       const update_data = {
         status: 'Returned',
         checked_out_by: null,
