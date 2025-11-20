@@ -89,22 +89,23 @@ export const ReshelveItemPage: React.FC = () => {
         throw new Error(`Copy status is "${item.status}", not "Returned". Cannot reshelve.`);
       }
 
-      // Update status to available
+      // Reshelve using the proper endpoint that handles reservation promotion
       const update_response = await fetch(
-        `${API_BASE_URL}/item-copies/${copy_id_input}`,
+        `${API_BASE_URL}/transactions/reshelve`,
         {
-          method: 'PUT',
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            status: 'Available',
+            copy_id: parseInt(copy_id_input),
           }),
         }
       );
 
       if (!update_response.ok) {
-        throw new Error('Failed to reshelve copy');
+        const error_data = await update_response.json().catch(() => ({}));
+        throw new Error(error_data.error || 'Failed to reshelve copy');
       }
 
       set_success(`Copy ${copy_id_input} has been reshelved and is now available!`);
@@ -125,13 +126,14 @@ export const ReshelveItemPage: React.FC = () => {
     set_reshelving(item_id);
     set_error(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/item-copies/${item_id}`, {
-        method: 'PUT',
+      // Use the proper reshelve endpoint that handles reservation promotion
+      const response = await fetch(`${API_BASE_URL}/transactions/reshelve`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          status: 'Available',
+          copy_id: item_id,
         }),
       });
 
@@ -142,13 +144,15 @@ export const ReshelveItemPage: React.FC = () => {
         throw new Error(`${error_message}${details}`);
       }
 
+      const result = await response.json();
+
       // Mark as reshelved in local state
       set_returned_items((prev) =>
         prev.map((item) =>
           item.id === item_id ? { ...item, reshelved: true } : item
         )
       );
-      set_success(`Copy ${item_id} has been reshelved!`);
+      set_success(result.message || `Copy ${item_id} has been reshelved!`);
     } catch (err) {
       set_error(err instanceof Error ? err.message : 'Failed to reshelve');
     } finally {
