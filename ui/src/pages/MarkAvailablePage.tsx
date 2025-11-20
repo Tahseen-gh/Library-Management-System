@@ -415,44 +415,6 @@ export const MarkAvailablePage: React.FC = () => {
         </Alert>
       )}
 
-      {/* Manual ID Entry */}
-      <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h6" gutterBottom fontWeight="bold">
-          Option 1: Manual Entry - Scan Item ID
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Enter or scan the item copy ID to mark it as available
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <TextField
-            fullWidth
-            label="Item Copy ID"
-            value={item_id_input}
-            onChange={(e) => set_item_id_input(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' && item_id_input) {
-                mark_available_by_id();
-              }
-            }}
-            placeholder="Enter or scan item ID"
-            disabled={processing}
-          />
-          <Button
-            variant="contained"
-            onClick={mark_available_by_id}
-            disabled={!item_id_input || processing}
-            startIcon={
-              processing ? <CircularProgress size={20} /> : <CheckCircle />
-            }
-            sx={{ minWidth: 150 }}
-          >
-            {processing ? 'Processing...' : 'Reshelve'}
-          </Button>
-        </Box>
-      </Paper>
-
-      <Divider sx={{ my: 3 }}>OR</Divider>
-
       {/* List of Returned Items */}
       <Paper elevation={2} sx={{ p: 3 }}>
         <Box
@@ -465,7 +427,7 @@ export const MarkAvailablePage: React.FC = () => {
         >
           <Box>
             <Typography variant="h6" fontWeight="bold">
-              Option 2: Select from List
+              Select from List
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Items with status "returned" or "damaged" ready for reshelving ({returned_items.length})

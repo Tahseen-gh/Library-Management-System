@@ -10,13 +10,32 @@ const transaction_cols: GridColDef[] = [
   {
     field: 'id',
     headerName: 'ID',
-    width: 90,
+    width: 70,
     valueGetter: (value) => Number(value),
+  },
+  {
+    field: 'first_name',
+    headerName: 'Patron',
+    width: 150,
+    valueGetter: (value, row) => {
+      if (!value) return '';
+      return `${value} ${row.last_name}`;
+    },
+  },
+  {
+    field: 'copy_id',
+    headerName: 'Copy ID',
+    width: 90,
+  },
+  {
+    field: 'copy_label',
+    headerName: 'Copy',
+    width: 120,
   },
   {
     field: 'title',
     headerName: 'Item',
-    width: 250,
+    width: 200,
     flex: 1,
   },
   {
@@ -26,9 +45,9 @@ const transaction_cols: GridColDef[] = [
     renderCell: (params) => <TransactionTypeChip status={params.value} />,
   },
   {
-    field: 'checkout_date',
+    field: 'created_at',
     headerName: 'Checkout Date',
-    width: 180,
+    width: 130,
     valueFormatter: (value) => {
       return value ? new Date(value).toLocaleDateString() : '-';
     },
@@ -36,7 +55,7 @@ const transaction_cols: GridColDef[] = [
   {
     field: 'due_date',
     headerName: 'Due Date',
-    width: 180,
+    width: 130,
     valueFormatter: (value) => {
       return value ? new Date(value).toLocaleDateString() : '-';
     },
@@ -44,7 +63,7 @@ const transaction_cols: GridColDef[] = [
   {
     field: 'return_date',
     headerName: 'Return Date',
-    width: 180,
+    width: 130,
     valueFormatter: (value) => {
       return value ? new Date(value).toLocaleDateString() : '-';
     },
