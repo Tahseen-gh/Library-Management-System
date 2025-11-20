@@ -302,7 +302,7 @@ router.post(
 
         if (copies.length > 0) {
           await db.update_record('LIBRARY_ITEM_COPIES', copies[0].id, {
-            status: 'returned',
+            status: 'Returned',
             updated_at: new Date().toISOString(),
           });
 
