@@ -105,22 +105,23 @@ export const ReservationsPage = () => {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 100,
+      width: 180,
       sortable: false,
       renderCell: (params) => {
         const status = params.row.status as ReservationStatus;
         const can_cancel = status === 'waiting' || status === 'ready';
 
         return (
-          <IconButton
+          <Button
             onClick={() => handle_cancel_click(params.row as Reservation)}
             disabled={!can_cancel}
             color="error"
+            variant="outlined"
             size="small"
-            title={can_cancel ? 'Cancel reservation' : 'Cannot cancel this reservation'}
+            startIcon={<CancelIcon />}
           >
-            <CancelIcon />
-          </IconButton>
+            Cancel Reservation
+          </Button>
         );
       },
     },
