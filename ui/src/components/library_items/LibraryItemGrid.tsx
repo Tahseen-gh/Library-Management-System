@@ -72,6 +72,9 @@ export const LibraryItemDataGrid = () => {
               csvOptions: { disableToolbarButton: true },
             },
           }}
+          disableColumnMenu
+          disableColumnFilter
+          disableColumnSelector
           showToolbar
         />
       </Box>
