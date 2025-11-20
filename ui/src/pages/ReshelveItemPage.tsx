@@ -35,7 +35,7 @@ interface ReturnedItem {
 }
 
 export const ReshelveItemPage: React.FC = () => {
-  const [item_id_input, set_item_id_input] = useState<string>('');
+  const [copy_id_input, set_copy_id_input] = useState<string>('');
   const [returned_items, set_returned_items] = useState<ReturnedItem[]>([]);
   const [loading, set_loading] = useState(false);
   const [reshelving, set_reshelving] = useState<number | null>(null);
@@ -65,33 +65,33 @@ export const ReshelveItemPage: React.FC = () => {
     }
   };
 
-  // Reshelve a single item by ID
+  // Reshelve a single item by Copy ID
   const reshelve_by_id = async () => {
-    if (!item_id_input.trim()) {
-      set_error('Please enter an Item ID');
+    if (!copy_id_input.trim()) {
+      set_error('Please enter a Copy ID');
       return;
     }
 
-    set_reshelving(parseInt(item_id_input));
+    set_reshelving(parseInt(copy_id_input));
     set_error(null);
     set_success(null);
 
     try {
       // Get item details first
-      const item_response = await fetch(`${API_BASE_URL}/item-copies/${item_id_input}`);
+      const item_response = await fetch(`${API_BASE_URL}/item-copies/${copy_id_input}`);
       if (!item_response.ok) {
-        throw new Error('Item not found');
+        throw new Error('Copy not found');
       }
       const item_data = await item_response.json();
       const item = item_data.data || item_data;
 
       if (item.status !== 'returned') {
-        throw new Error(`Item status is "${item.status}", not "returned". Cannot reshelve.`);
+        throw new Error(`Copy status is "${item.status}", not "returned". Cannot reshelve.`);
       }
 
       // Update status to available
       const update_response = await fetch(
-        `${API_BASE_URL}/item-copies/${item_id_input}`,
+        `${API_BASE_URL}/item-copies/${copy_id_input}`,
         {
           method: 'PUT',
           headers: {
@@ -104,17 +104,17 @@ export const ReshelveItemPage: React.FC = () => {
       );
 
       if (!update_response.ok) {
-        throw new Error('Failed to reshelve item');
+        throw new Error('Failed to reshelve copy');
       }
 
-      set_success(`Item ${item_id_input} has been reshelved and is now available!`);
-      set_item_id_input('');
+      set_success(`Copy ${copy_id_input} has been reshelved and is now available!`);
+      set_copy_id_input('');
       // Refresh list if showing
       if (returned_items.length > 0) {
         fetch_returned_items();
       }
     } catch (err) {
-      set_error(err instanceof Error ? err.message : 'Failed to reshelve item');
+      set_error(err instanceof Error ? err.message : 'Failed to reshelve copy');
     } finally {
       set_reshelving(null);
     }
@@ -226,26 +226,26 @@ export const ReshelveItemPage: React.FC = () => {
         </Alert>
       )}
 
-      {/* Option 1: Reshelve by Item ID */}
+      {/* Option 1: Reshelve by Copy ID */}
       <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6" gutterBottom fontWeight="bold">
-          Option 1: Reshelve by Item ID
+          Option 1: Reshelve by Copy ID
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Enter the item copy ID to mark it as available and ready for checkout.
+          Enter the Copy ID to mark it as available and ready for checkout.
         </Typography>
 
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
           <TextField
-            label="Item Copy ID"
-            value={item_id_input}
-            onChange={(e) => set_item_id_input(e.target.value)}
+            label="Copy ID"
+            value={copy_id_input}
+            onChange={(e) => set_copy_id_input(e.target.value)}
             onKeyPress={(e) => {
-              if (e.key === 'Enter' && item_id_input) {
+              if (e.key === 'Enter' && copy_id_input) {
                 reshelve_by_id();
               }
             }}
-            placeholder="Enter item copy ID"
+            placeholder="Enter copy ID"
             disabled={reshelving !== null}
             size="medium"
             sx={{ flexGrow: 1 }}
@@ -253,7 +253,7 @@ export const ReshelveItemPage: React.FC = () => {
           <Button
             variant="contained"
             onClick={reshelve_by_id}
-            disabled={!item_id_input || reshelving !== null}
+            disabled={!copy_id_input || reshelving !== null}
             startIcon={reshelving !== null ? <CircularProgress size={20} /> : <CheckCircle />}
             size="large"
           >

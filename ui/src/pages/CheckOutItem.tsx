@@ -81,14 +81,14 @@ const columns: GridColDef[] = [
 
 interface CheckOutFormData {
   patron_id: number;
-  item_id: number;
+  copy_id: number;
   due_date: Date;
 }
 
 export const CheckOutItem: React.FC = () => {
   const [form_data, set_form_data] = useState<CheckOutFormData>({
     patron_id: 0,
-    item_id: 0,
+    copy_id: 0,
     due_date: two_weeks_from_now,
   });
 
@@ -105,18 +105,18 @@ export const CheckOutItem: React.FC = () => {
   } = useCheckoutBook();
 
   // Fetch item details to calculate due date
-  const { data: selected_item } = useCopyById(form_data.item_id || 0);
+  const { data: selected_item } = useCopyById(form_data.copy_id || 0);
 
   // Automatically calculate due date when item is selected
   useEffect(() => {
-    if (selected_item && form_data.item_id) {
+    if (selected_item && form_data.copy_id) {
       const item_type = (selected_item as any).item_type || 'BOOK';
       // TODO: Add logic to determine if item is "new" based on publication date or status
       const is_new = false;
       const calculated_due_date = calculate_due_date(item_type, is_new);
       set_form_data((prev) => ({ ...prev, due_date: calculated_due_date }));
     }
-  }, [selected_item, form_data.item_id]);
+  }, [selected_item, form_data.copy_id]);
 
   const handle_retry = useCallback(() => {
     set_error(null);
@@ -132,13 +132,13 @@ export const CheckOutItem: React.FC = () => {
       checkoutBook(
         {
           patron_id: form_data.patron_id,
-          copy_id: form_data.item_id,
+          copy_id: form_data.copy_id,
           due_date: form_data.due_date,
         },
         {
           onSuccess: () => {
             set_success(
-              `Successfully checked out item ${form_data.item_id} to patron ${form_data.patron_id}`
+              `Successfully checked out copy ${form_data.copy_id} to patron ${form_data.patron_id}`
             );
             set_active_step(steps.length);
           },
@@ -167,7 +167,7 @@ export const CheckOutItem: React.FC = () => {
     set_active_step(0);
     set_form_data({
       patron_id: 0,
-      item_id: 0,
+      copy_id: 0,
       due_date: two_weeks_from_now,
     });
     set_error(null);
@@ -177,7 +177,7 @@ export const CheckOutItem: React.FC = () => {
   const is_next_disabled = () => {
     if (active_step === 0 && !form_data.patron_id) return true;
 
-    if (active_step === 1 && !form_data.item_id) return true;
+    if (active_step === 1 && !form_data.copy_id) return true;
 
     // Block on confirmation step if validation fails
     if (active_step === 2 && !is_validation_passing) return true;
@@ -190,7 +190,7 @@ export const CheckOutItem: React.FC = () => {
   };
 
   const handle_copy_selected = (copy_id: number) => {
-    set_form_data((prev) => ({ ...prev, item_id: copy_id }));
+    set_form_data((prev) => ({ ...prev, copy_id: copy_id }));
   };
 
   return (
@@ -299,7 +299,7 @@ export const CheckOutItem: React.FC = () => {
               {active_step === 2 && (
                 <ConfirmCheckoutDetails
                   patron_id={form_data.patron_id}
-                  copy_id={form_data.item_id}
+                  copy_id={form_data.copy_id}
                   due_date={form_data.due_date}
                   on_confirm={() => {}}
                   on_cancel={() => {}}
