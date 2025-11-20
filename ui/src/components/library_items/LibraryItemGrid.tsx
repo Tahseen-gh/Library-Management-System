@@ -8,15 +8,15 @@ import ItemTypeChip from './ItemTypeChip';
 import { CustomToolbar } from '../common/CustomDataGridToolbar';
 
 const columns: GridColDef[] = [
-  { field: 'library_item_id', headerName: 'ID', width: 60 },
-  { field: 'id', headerName: 'Copy ID', width: 80 },
-  { field: 'copy_label', headerName: 'Copy', width: 120 },
-  { field: 'title', headerName: 'Title', width: 150, editable: false },
+  { field: 'library_item_id', headerName: 'ID', width: 60, sortable: false },
+  { field: 'id', headerName: 'Copy ID', width: 80, sortable: false },
+  { field: 'copy_label', headerName: 'Copy', width: 120, sortable: false },
+  { field: 'title', headerName: 'Title', width: 150, sortable: false },
   {
     field: 'item_type',
     headerName: 'Type',
     width: 100,
-    editable: false,
+    sortable: false,
     renderCell: (params) => {
       return <ItemTypeChip item_type={params.value} />;
     },
@@ -25,14 +25,14 @@ const columns: GridColDef[] = [
     field: 'description',
     headerName: 'Description',
     width: 200,
-    editable: false,
+    sortable: false,
     flex: 1,
   },
   {
     field: 'publication_year',
     headerName: 'Publication Year',
     width: 130,
-    editable: false,
+    sortable: false,
   },
 ];
 
@@ -70,14 +70,6 @@ export const LibraryItemDataGrid = () => {
               label: 'Library Items',
               printOptions: { disableToolbarButton: true },
               csvOptions: { disableToolbarButton: true },
-            },
-          }}
-          initialState={{
-            sorting: {
-              sortModel: [
-                { field: 'library_item_id', sort: 'asc' },
-                { field: 'id', sort: 'asc' },
-              ],
             },
           }}
           showToolbar

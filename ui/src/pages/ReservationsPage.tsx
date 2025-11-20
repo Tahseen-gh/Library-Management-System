@@ -66,38 +66,40 @@ export const ReservationsPage = () => {
   };
 
   const columns: GridColDef[] = [
-    { field: 'id', headerName: 'ID', width: 60 },
     {
       field: 'first_name',
       headerName: 'Patron',
-      width: 200,
+      flex: 1,
+      minWidth: 120,
       valueGetter: (value, row) => {
         if (!value) return '';
         return `${value} ${row.last_name}`;
       },
     },
-    { field: 'title', headerName: 'Item', width: 275 },
+    { field: 'title', headerName: 'Item', flex: 2, minWidth: 150 },
     {
       field: 'reservation_date',
-      headerName: 'Reservation Date',
-      width: 150,
+      headerName: 'Reserved',
+      width: 110,
+      valueFormatter: (value) => {
+        return value ? new Date(value).toLocaleDateString() : '-';
+      },
     },
-    { field: 'expiry_date', headerName: 'Expiry Date', width: 150 },
     {
       field: 'status',
       headerName: 'Status',
-      width: 125,
+      width: 100,
       renderCell: (params) => (
         <ReservationStatusChip
           status={params.value as ReservationStatus}
         />
       ),
     },
-    { field: 'queue_position', headerName: 'Queue Spot', width: 100 },
+    { field: 'queue_position', headerName: 'Queue', width: 70 },
     {
       field: 'item_type',
       headerName: 'Type',
-      width: 100,
+      width: 90,
       renderCell: (params) => {
         return <ItemTypeChip item_type={params.value} />;
       },
@@ -105,7 +107,7 @@ export const ReservationsPage = () => {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 180,
+      width: 170,
       sortable: false,
       renderCell: (params) => {
         const status = params.row.status as ReservationStatus;
