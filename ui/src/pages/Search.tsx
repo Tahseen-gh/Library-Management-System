@@ -368,7 +368,7 @@ export default function Search() {
                               {item.itemName}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                              Item ID: {item.itemId} | {item.copyLabel} | Type: {item.itemType}
+                              Item ID: {item.itemId} | {item.copyLabel} (Copy ID: {item.copyId}) | Type: {item.itemType}
                             </Typography>
                           </Box>
                         </CardActionArea>
@@ -448,7 +448,7 @@ export default function Search() {
                   COPY
                 </Typography>
                 <Typography variant="body1">
-                  {selectedItem.copyLabel}
+                  {selectedItem.copyLabel} (Copy ID: {selectedItem.copyId})
                 </Typography>
               </Box>
 
