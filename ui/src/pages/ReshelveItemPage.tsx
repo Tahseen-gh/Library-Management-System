@@ -49,7 +49,7 @@ export const ReshelveItemPage: React.FC = () => {
     set_loading(true);
     set_error(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/item-copies?status=returned`);
+      const response = await fetch(`${API_BASE_URL}/item-copies?status=Returned`);
       if (!response.ok) {
         throw new Error('Failed to fetch returned items');
       }
@@ -85,8 +85,8 @@ export const ReshelveItemPage: React.FC = () => {
       const item_data = await item_response.json();
       const item = item_data.data || item_data;
 
-      if (item.status !== 'returned') {
-        throw new Error(`Copy status is "${item.status}", not "returned". Cannot reshelve.`);
+      if (item.status !== 'Returned') {
+        throw new Error(`Copy status is "${item.status}", not "Returned". Cannot reshelve.`);
       }
 
       // Update status to available
@@ -164,7 +164,7 @@ export const ReshelveItemPage: React.FC = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          status: 'returned',
+          status: 'Returned',
         }),
       });
 

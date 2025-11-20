@@ -23,7 +23,7 @@ const validate_item_copy = [
       'Processing',
       'Damaged',
       'Lost',
-      'returned',
+      'Returned',
     ])
     .withMessage('Invalid status'),
   body('cost')
@@ -55,7 +55,7 @@ const validate_item_copy_update = [
       'Processing',
       'Damaged',
       'Lost',
-      'returned',
+      'Returned',
     ])
     .withMessage('Invalid status'),
   body('cost')
