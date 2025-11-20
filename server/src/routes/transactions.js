@@ -584,60 +584,10 @@ router.post(
         updated_at: new Date(),
       });
 
-      // Check if there are waiting reservations for this copy
-      // Priority: copy-specific reservations first, then item-level reservations
-      const copy_specific_reservations = await db.execute_query(
-        'SELECT * FROM RESERVATIONS WHERE copy_id = ? AND status = "waiting" ORDER BY queue_position LIMIT 1',
-        [copy_id]
-      );
-
-      const item_level_reservations = await db.execute_query(
-        'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND copy_id IS NULL AND status = "waiting" ORDER BY queue_position LIMIT 1',
-        [item_copy.library_item_id]
-      );
-
-      // Prioritize copy-specific reservations
-      const waiting_reservations = copy_specific_reservations.length > 0
-        ? copy_specific_reservations
-        : item_level_reservations;
-
-      let final_status = 'Returned';
-      let reservation_promoted = false;
-
-      if (waiting_reservations.length > 0) {
-        // Promote first waiting reservation to "ready"
-        const next_reservation = waiting_reservations[0];
-        const new_expiry = new Date();
-        new_expiry.setDate(new_expiry.getDate() + 5);
-
-        await db.update_record('RESERVATIONS', next_reservation.id, {
-          status: 'ready',
-          expiry_date: new_expiry.toISOString(),
-          notification_sent: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
-
-        // Set copy to Reserved for the patron
-        final_status = 'Reserved';
-        reservation_promoted = true;
-
-        // Log reservation fulfillment transaction
-        await db.create_record('TRANSACTIONS', {
-          copy_id: copy_id,
-          patron_id: next_reservation.patron_id,
-          location_id: 1,
-          transaction_type: 'Reservation Fulfilled',
-          status: 'Active',
-          notes: `Reservation fulfilled automatically on check-in - item available for pickup. Expires in 5 days.`,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
-      }
-
-      // Update item copy - use owning_branch_id as default if no new location specified
-      // Status set to 'Returned' if no reservations, or 'Reserved' if a reservation was promoted
+      // Update item copy - always set to 'Returned' after check-in
+      // Reservations will be promoted during the manual reshelving process
       const update_data = {
-        status: final_status,
+        status: 'Returned',
         checked_out_by: null,
         due_date: null,
         current_branch_id: new_location_id || item_copy.owning_branch_id,
@@ -657,9 +607,7 @@ router.post(
 
       res.json({
         success: true,
-        message: reservation_promoted
-          ? 'Item checked in successfully and reservation fulfilled'
-          : 'Item checked in successfully',
+        message: 'Item checked in successfully',
         data: {
           transaction_id: transaction.id,
           return_date,
@@ -668,7 +616,6 @@ router.post(
             fine_amount > 0
               ? Math.ceil((return_date - due_date) / (1000 * 60 * 60 * 24))
               : 0,
-          reservation_promoted,
         },
       });
     } catch (error) {
