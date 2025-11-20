@@ -16,7 +16,6 @@ import {
   Stack,
   Card,
   CardContent,
-  Chip,
   Snackbar,
 } from '@mui/material';
 import { BookmarkAdd as ReserveIcon } from '@mui/icons-material';
