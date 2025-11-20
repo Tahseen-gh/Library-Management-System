@@ -6,6 +6,7 @@ export const useTransactions = () => {
   return useQuery({
     queryKey: ['transactions'],
     queryFn: () => data_service.getAllTransactions(),
+    refetchInterval: 5000, // Auto-refresh every 5 seconds
   });
 };
 
