@@ -7,10 +7,8 @@ import {
   Alert,
   AlertTitle,
   Paper,
-  TextField,
   CircularProgress,
   Chip,
-  Divider,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -59,7 +57,6 @@ type MarkMethod = 'manual' | 'list';
 
 export const MarkAvailablePage: React.FC = () => {
   const { selected_branch } = useBranchContext();
-  const [item_id_input, set_item_id_input] = useState<string>('');
   const [returned_items, set_returned_items] = useState<ReturnedItem[]>([]);
   const [loading, set_loading] = useState(false);
   const [processing, set_processing] = useState(false);
@@ -255,11 +252,6 @@ export const MarkAvailablePage: React.FC = () => {
       set_success(`item marked as available`);
       set_last_reshelved_item(pending_item.id);
 
-      // Clear input if it was manual entry
-      if (pending_item.method === 'manual') {
-        set_item_id_input('');
-      }
-
       // Clear pending item and details
       set_pending_item(null);
       set_current_item_details(null);
@@ -331,19 +323,6 @@ export const MarkAvailablePage: React.FC = () => {
     set_pending_item(null);
     set_current_item_details(null);
     set_processing(false);
-  };
-
-  // Mark item by manual ID entry
-  const mark_available_by_id = async () => {
-    if (!item_id_input.trim() || !selected_branch) return;
-
-    const copy_id = parseInt(item_id_input);
-    if (isNaN(copy_id)) {
-      set_error('Invalid Item ID: Please enter a valid numeric ID');
-      return;
-    }
-
-    await validate_and_check_item(copy_id, 'manual');
   };
 
   // Mark single item from list
