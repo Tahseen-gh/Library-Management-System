@@ -4,12 +4,44 @@ import * as db from '../config/database.js';
 
 const router = express.Router();
 
-// Validation middleware
+// Validation middleware for creating new item copies
 const validate_item_copy = [
   body('library_item_id')
     .isInt({ min: 1 })
     .withMessage('Valid library item ID is required'),
   body('owning_branch_id').isInt({ min: 1 }).withMessage('Valid branch ID is required'),
+  body('condition')
+    .optional()
+    .isIn(['New', 'Excellent', 'Good', 'Fair', 'Poor'])
+    .withMessage('Invalid condition'),
+  body('status')
+    .optional()
+    .isIn([
+      'Available',
+      'Checked Out',
+      'Reserved',
+      'Processing',
+      'Damaged',
+      'Lost',
+      'returned',
+    ])
+    .withMessage('Invalid status'),
+  body('cost')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Cost must be a positive number'),
+];
+
+// Validation middleware for updating item copies (all fields optional)
+const validate_item_copy_update = [
+  body('library_item_id')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Valid library item ID is required'),
+  body('owning_branch_id')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Valid branch ID is required'),
   body('condition')
     .optional()
     .isIn(['New', 'Excellent', 'Good', 'Fair', 'Poor'])
@@ -271,7 +303,7 @@ router.post(
 // PUT /api/v1/item-copies/:id - Update item copy
 router.put(
   '/:id',
-  validate_item_copy,
+  validate_item_copy_update,
   handle_validation_errors,
   async (req, res) => {
     try {
