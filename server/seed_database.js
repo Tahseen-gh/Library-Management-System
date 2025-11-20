@@ -366,12 +366,12 @@ async function seed_database() {
 
     console.log('\n📖 Checking out overdue items for late fee testing...');
 
-    // Patron 5: Check out the last copy ID with an overdue due date (book - 30 days overdue)
+    // Patron 5: Check out the last copy ID with an overdue due date (book - 5 days overdue)
     const last_copy_id = all_copy_ids[all_copy_ids.length - 1];
     const overdue_checkout_date = new Date();
-    overdue_checkout_date.setDate(overdue_checkout_date.getDate() - 58); // 58 days ago (4 weeks checkout + 30 days overdue)
+    overdue_checkout_date.setDate(overdue_checkout_date.getDate() - 33); // 33 days ago (4 weeks checkout + 5 days overdue)
     const overdue_due_date = new Date(overdue_checkout_date);
-    overdue_due_date.setDate(overdue_due_date.getDate() + 28); // Due 30 days ago
+    overdue_due_date.setDate(overdue_due_date.getDate() + 28); // Due 5 days ago
 
     await create_record('TRANSACTIONS', {
       copy_id: last_copy_id,
@@ -387,33 +387,7 @@ async function seed_database() {
       'UPDATE LIBRARY_ITEM_COPIES SET status = ?, checked_out_by = ?, due_date = ? WHERE id = ?',
       ['Checked Out', patron5_id, overdue_due_date, last_copy_id]
     );
-    console.log(`✓ Checked out Copy ${last_copy_id} to Michael Brown (30 days overdue - $30 late fee expected)`);
-
-    // Patron 1: Check out a video with a smaller overdue period (7 days overdue)
-    // Find a video copy that's not already checked out
-    const available_video_copy = all_copy_ids.find(copy_id => !copies_to_checkout.includes(copy_id) && copy_id !== last_copy_id);
-    if (available_video_copy) {
-      const video_checkout_date = new Date();
-      video_checkout_date.setDate(video_checkout_date.getDate() - 14); // 14 days ago
-      const video_due_date = new Date(video_checkout_date);
-      video_due_date.setDate(video_due_date.getDate() + 7); // Due 7 days ago (1 week checkout period)
-
-      await create_record('TRANSACTIONS', {
-        copy_id: available_video_copy,
-        patron_id: patron1_id,
-        transaction_type: 'checkout',
-        checkout_date: video_checkout_date,
-        due_date: video_due_date,
-        status: 'Active',
-        fine_amount: 0,
-      });
-
-      await execute_query(
-        'UPDATE LIBRARY_ITEM_COPIES SET status = ?, checked_out_by = ?, due_date = ? WHERE id = ?',
-        ['Checked Out', patron1_id, video_due_date, available_video_copy]
-      );
-      console.log(`✓ Checked out Copy ${available_video_copy} to John Doe (7 days overdue - $7 late fee expected)`);
-    }
+    console.log(`✓ Checked out Copy ${last_copy_id} to Michael Brown (5 days overdue - $5 late fee expected)`);
 
     const total_items = books.length + movies.length + new_movies.length;
     const total_copies = all_copy_ids.length;
@@ -431,16 +405,15 @@ async function seed_database() {
     console.log(`  • ${new_movies.length} new release movies (2 copies each)`);
     console.log(`  • Total: ${total_items} unique titles with ${total_copies} total copies`);
     console.log('  • 20 unique items (1 copy each): Checked out to Patron 4');
-    console.log('  • 2 overdue items: For testing late fee calculation');
-    console.log(`  • Remaining ${total_copies - 22} copies: Available for checkout`);
+    console.log('  • 1 overdue item: For testing late fee calculation');
+    console.log(`  • Remaining ${total_copies - 21} copies: Available for checkout`);
     console.log('\n👥 Test Patrons:');
-    console.log('\n  1. John Doe (ID: 1) ⚠️ OVERDUE');
+    console.log('\n  1. John Doe (ID: 1) ✅');
     console.log('     • Status: Active');
     console.log('     • Card: Valid until 2026-12-31');
     console.log('     • Balance: $0.00');
-    console.log('     • Items: 1 (7 days overdue)');
-    console.log('     • Expected late fee on check-in: $7.00');
-    console.log('     • Can checkout: YES (but has overdue item)');
+    console.log('     • Items: 0');
+    console.log('     • Can checkout: YES');
     console.log('\n  2. Jane Smith (ID: 2) ⚠️');
     console.log('     • Status: Active');
     console.log('     • Card: Valid until 2026-12-31');
@@ -463,14 +436,14 @@ async function seed_database() {
     console.log('     • Status: Active');
     console.log('     • Card: Valid until 2026-12-31');
     console.log('     • Balance: $0.00');
-    console.log(`     • Items: 1 (Copy ${last_copy_id} - LAST COPY ID, 30 days overdue)`);
-    console.log('     • Expected late fee on check-in: $30.00');
+    console.log(`     • Items: 1 (Copy ${last_copy_id} - LAST COPY ID, 5 days overdue)`);
+    console.log('     • Expected late fee on check-in: $5.00');
     console.log('     • Can checkout: YES (but has overdue item)');
     console.log('\n═══════════════════════════════════════════════════');
     console.log('TESTING GUIDE');
     console.log('═══════════════════════════════════════════════════');
     console.log('\n✅ Valid Checkouts:');
-    console.log(`   • Patron 2, 3, or 4 + Any available copy (but will have restrictions)`);
+    console.log(`   • Patron 1 or 5 + Any available copy = Success`);
     console.log('\n📚 Item Types:');
     console.log('   • Books: 4-week checkout period');
     console.log('   • Movies: 1-week checkout period');
@@ -482,8 +455,7 @@ async function seed_database() {
     console.log('\n🚫 Should Show "Too Many Items" (20 limit):');
     console.log('   • Patron 4 (Emily Davis)');
     console.log('\n⏰ OVERDUE ITEMS - Late Fee Testing:');
-    console.log(`   • Patron 1: Check in their item → expect $7.00 late fee`);
-    console.log(`   • Patron 5: Check in Copy ${last_copy_id} → expect $30.00 late fee`);
+    console.log(`   • Patron 5: Check in Copy ${last_copy_id} → expect $5.00 late fee`);
     console.log('   • Late fees are $1.00 per day overdue');
     console.log('   • Late fees are capped at the item\'s cost');
     console.log('\n📥 Check-In & Reshelve:');
