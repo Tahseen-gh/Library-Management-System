@@ -345,58 +345,89 @@ router.post(
         });
       }
 
-      // Check if there are any waiting/ready reservations for this library item by other patrons
-      // Only block if another patron has a BETTER queue position (lower number)
-      // This allows multiple patrons to check out different copies of the same item
+      // Check for copy-specific and item-level reservations
+      // Priority: copy-specific reservations must be fulfilled first for this specific copy
 
-      // First, check if THIS patron has a reservation
-      const patron_reservation = await db.execute_query(
-        'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND patron_id = ? AND status IN ("waiting", "ready") ORDER BY queue_position LIMIT 1',
-        [item_copy.library_item_id, patron_id]
+      // Check if there are copy-specific reservations for THIS specific copy
+      const copy_specific_reservations = await db.execute_query(
+        'SELECT * FROM RESERVATIONS WHERE copy_id = ? AND status IN ("waiting", "ready") ORDER BY queue_position',
+        [copy_id]
       );
 
-      // If patron has no reservation, check if there are ANY other active reservations
-      // If patron HAS a reservation, only block if someone else has a BETTER queue position
-      let other_patron_reservations = [];
+      if (copy_specific_reservations.length > 0) {
+        // There are copy-specific reservations for this copy
+        // Only allow checkout if this patron has the first (ready) reservation
+        const first_reservation = copy_specific_reservations[0];
 
-      if (patron_reservation.length === 0) {
-        // Patron has no reservation - block if there are ANY other reservations
-        other_patron_reservations = await db.execute_query(
-          'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND status IN ("waiting", "ready") ORDER BY queue_position LIMIT 1',
-          [item_copy.library_item_id]
-        );
+        if (first_reservation.patron_id !== patron_id || first_reservation.status !== 'ready') {
+          return res.status(400).json({
+            error: 'Item is reserved for another patron',
+            message: 'This specific copy has a reservation that must be fulfilled first',
+          });
+        }
+        // If we get here, this patron has the ready reservation for this copy - allow checkout
       } else {
-        // Patron has a reservation - only block if someone else has a better queue position
-        const patron_queue_pos = patron_reservation[0].queue_position;
-        other_patron_reservations = await db.execute_query(
-          'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND patron_id != ? AND status IN ("waiting", "ready") AND queue_position < ? ORDER BY queue_position LIMIT 1',
-          [item_copy.library_item_id, patron_id, patron_queue_pos]
+        // No copy-specific reservations, check item-level reservations
+        // First, check if THIS patron has a reservation
+        const patron_reservation = await db.execute_query(
+          'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND copy_id IS NULL AND patron_id = ? AND status IN ("waiting", "ready") ORDER BY queue_position LIMIT 1',
+          [item_copy.library_item_id, patron_id]
         );
-      }
 
-      if (other_patron_reservations.length > 0) {
-        return res.status(400).json({
-          error: 'Item is reserved for another patron',
-          message: 'This item has reservations that must be fulfilled first',
-        });
+        // If patron has no reservation, check if there are ANY other active item-level reservations
+        // If patron HAS a reservation, only block if someone else has a BETTER queue position
+        let other_patron_reservations = [];
+
+        if (patron_reservation.length === 0) {
+          // Patron has no reservation - block if there are ANY other item-level reservations
+          other_patron_reservations = await db.execute_query(
+            'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND copy_id IS NULL AND status IN ("waiting", "ready") ORDER BY queue_position LIMIT 1',
+            [item_copy.library_item_id]
+          );
+        } else {
+          // Patron has a reservation - only block if someone else has a better queue position
+          const patron_queue_pos = patron_reservation[0].queue_position;
+          other_patron_reservations = await db.execute_query(
+            'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND copy_id IS NULL AND patron_id != ? AND status IN ("waiting", "ready") AND queue_position < ? ORDER BY queue_position LIMIT 1',
+            [item_copy.library_item_id, patron_id, patron_queue_pos]
+          );
+        }
+
+        if (other_patron_reservations.length > 0) {
+          return res.status(400).json({
+            error: 'Item is reserved for another patron',
+            message: 'This item has reservations that must be fulfilled first',
+          });
+        }
       }
 
       // If item is reserved, verify the patron has a reservation for it
       let reservation_to_fulfill = null;
       if (item_copy.status === 'Reserved') {
-        const reservations = await db.execute_query(
-          'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND patron_id = ? AND status IN ("waiting", "ready") ORDER BY queue_position LIMIT 1',
-          [item_copy.library_item_id, patron_id]
+        // Check copy-specific reservations first
+        const copy_specific_res = await db.execute_query(
+          'SELECT * FROM RESERVATIONS WHERE copy_id = ? AND patron_id = ? AND status IN ("waiting", "ready") ORDER BY queue_position LIMIT 1',
+          [copy_id, patron_id]
         );
 
-        if (reservations.length === 0) {
-          return res.status(400).json({
-            error: 'Item is reserved for another patron',
-            message: 'This item is reserved and you do not have an active reservation for it',
-          });
-        }
+        if (copy_specific_res.length > 0) {
+          reservation_to_fulfill = copy_specific_res[0];
+        } else {
+          // Check item-level reservations
+          const item_level_res = await db.execute_query(
+            'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND copy_id IS NULL AND patron_id = ? AND status IN ("waiting", "ready") ORDER BY queue_position LIMIT 1',
+            [item_copy.library_item_id, patron_id]
+          );
 
-        reservation_to_fulfill = reservations[0];
+          if (item_level_res.length === 0) {
+            return res.status(400).json({
+              error: 'Item is reserved for another patron',
+              message: 'This item is reserved and you do not have an active reservation for it',
+            });
+          }
+
+          reservation_to_fulfill = item_level_res[0];
+        }
       }
 
       // Verify patron exists and is active

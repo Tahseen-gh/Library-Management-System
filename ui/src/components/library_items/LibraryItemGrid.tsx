@@ -72,6 +72,14 @@ export const LibraryItemDataGrid = () => {
               csvOptions: { disableToolbarButton: true },
             },
           }}
+          initialState={{
+            sorting: {
+              sortModel: [
+                { field: 'library_item_id', sort: 'asc' },
+                { field: 'id', sort: 'asc' },
+              ],
+            },
+          }}
           showToolbar
         />
       </Box>
