@@ -68,6 +68,10 @@ const validate_reservation = [
     .isInt({ min: 1 })
     .withMessage('Valid library item ID is required'),
   body('patron_id').isInt({ min: 1 }).withMessage('Valid patron ID is required'),
+  body('copy_id')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Valid copy ID is required'),
 ];
 
 // Helper function to handle validation errors
@@ -187,7 +191,7 @@ router.post(
   handle_validation_errors,
   async (req, res) => {
     try {
-      const { library_item_id, patron_id } = req.body;
+      const { library_item_id, patron_id, copy_id } = req.body;
 
       // Step 4: Lookup patron record
       const patron = await db.get_by_id('PATRONS', patron_id);
@@ -218,10 +222,30 @@ router.post(
       }
 
       // Step 8: Check item availability
-      const available_copies = await db.execute_query(
-        'SELECT * FROM LIBRARY_ITEM_COPIES WHERE library_item_id = ? AND status = "Available"',
-        [library_item.id]
-      );
+      let available_copies = [];
+      if (copy_id) {
+        // Check if the specific copy is available
+        const specific_copy = await db.get_by_id('LIBRARY_ITEM_COPIES', copy_id);
+        if (!specific_copy) {
+          return res.status(400).json({
+            error: 'Copy not found',
+          });
+        }
+        if (specific_copy.library_item_id !== library_item.id) {
+          return res.status(400).json({
+            error: 'Copy does not belong to this item',
+          });
+        }
+        if (specific_copy.status === 'Available') {
+          available_copies = [specific_copy];
+        }
+      } else {
+        // Check any available copy
+        available_copies = await db.execute_query(
+          'SELECT * FROM LIBRARY_ITEM_COPIES WHERE library_item_id = ? AND status = "Available"',
+          [library_item.id]
+        );
+      }
 
       // Check if patron already has a copy of this item checked out
       const patron_active_checkouts = await db.execute_query(
@@ -240,10 +264,27 @@ router.post(
       }
 
       // Step 11: Check existing reservations
-      const existing_reservations = await db.execute_query(
-        'SELECT COUNT(*) as count FROM RESERVATIONS WHERE library_item_id = ? AND status IN ("waiting", "ready")',
-        [library_item.id]
-      );
+      let existing_reservations;
+      if (copy_id) {
+        // Check if this specific copy already has a reservation
+        existing_reservations = await db.execute_query(
+          'SELECT COUNT(*) as count FROM RESERVATIONS WHERE copy_id = ? AND status IN ("waiting", "ready")',
+          [copy_id]
+        );
+
+        if (existing_reservations[0].count > 0) {
+          return res.status(400).json({
+            error: 'Copy already reserved',
+            message: 'This specific copy is already reserved by another patron',
+          });
+        }
+      } else {
+        // Check item-level reservations
+        existing_reservations = await db.execute_query(
+          'SELECT COUNT(*) as count FROM RESERVATIONS WHERE library_item_id = ? AND status IN ("waiting", "ready")',
+          [library_item.id]
+        );
+      }
 
       const total_copies = await db.execute_query(
         'SELECT COUNT(*) as count FROM LIBRARY_ITEM_COPIES WHERE library_item_id = ?',
@@ -251,8 +292,10 @@ router.post(
       );
 
       // Step 12: Reservation allowed?
-      // If all copies are reserved or checked out, add to waitlist
-      const reservation_allowed = available_copies.length > 0 ||
+      // For copy-specific: always allowed (already checked above)
+      // For item-level: If all copies are reserved or checked out, add to waitlist
+      const reservation_allowed = copy_id ||
+                                  available_copies.length > 0 ||
                                   existing_reservations[0].count < total_copies[0].count;
 
       // Get next queue position
@@ -264,8 +307,9 @@ router.post(
       const queue_position = queue_position_result[0].next_position;
 
       // Determine reservation status
-      // If item is available now, mark as "ready" (ready for pickup)
-      // Otherwise, mark as "waiting" (in queue)
+      // For copy-specific reservations: only "ready" if that specific copy is available
+      // For item-level reservations: "ready" if any copy is available
+      // Otherwise: "waiting" (in queue)
       const reservation_status = (reservation_allowed && available_copies.length > 0) ? 'ready' : 'waiting';
 
       // Set expiry date to 5 days from now (only applies when status is "ready")
@@ -276,6 +320,7 @@ router.post(
       const reservation_data = {
         library_item_id: library_item.id,
         patron_id,
+        copy_id: copy_id || null,
         reservation_date: reservation_date.toISOString(),
         expiry_date: expiry_date.toISOString(),
         status: reservation_status,
@@ -288,8 +333,11 @@ router.post(
       const reservation_id = await db.create_record('RESERVATIONS', reservation_data);
 
       // Step 14: Update item status to Reserved (ready for pickup) if reservation is ready
-      if (reservation_status === 'ready') {
-        await db.update_record('LIBRARY_ITEM_COPIES', available_copies[0].id, {
+      if (reservation_status === 'ready' && available_copies.length > 0) {
+        // For copy-specific reservations, use the specific copy
+        // For item-level reservations, use the first available copy
+        const copy_to_reserve = copy_id ? available_copies[0] : available_copies[0];
+        await db.update_record('LIBRARY_ITEM_COPIES', copy_to_reserve.id, {
           status: 'Reserved',
           updated_at: new Date().toISOString(),
         });

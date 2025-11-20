@@ -32,6 +32,7 @@ interface ReservationDialogProps {
   onClose: () => void;
   itemId: number;
   itemName: string;
+  copyId?: number;
   onSuccess?: (message: string, onWaitlist: boolean) => void;
 }
 
@@ -40,6 +41,7 @@ export const ReservationDialog = ({
   onClose,
   itemId,
   itemName,
+  copyId,
   onSuccess,
 }: ReservationDialogProps) => {
   const [step, setStep] = useState<'enter_patron' | 'display_patron' | 'processing'>('enter_patron');
@@ -106,6 +108,7 @@ export const ReservationDialog = ({
         body: JSON.stringify({
           library_item_id: itemId,
           patron_id: patron.id,
+          copy_id: copyId,
         }),
       });
 
@@ -162,10 +165,10 @@ export const ReservationDialog = ({
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle>
-        Reserve Item
+        Reserve {copyId ? 'Copy' : 'Item'}
         {itemName && (
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            {itemName}
+            {itemName}{copyId ? ` (Copy ID: ${copyId})` : ''}
           </Typography>
         )}
       </DialogTitle>
