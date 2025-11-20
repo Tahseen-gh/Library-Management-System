@@ -40,7 +40,7 @@ export const Sidebar = ({ sidebarOpen }: { sidebarOpen: boolean }) => {
     { text: 'Search Item', path: '/search', icon: <Search /> },
     { text: 'Patrons', path: '/patrons', icon: <Groups2 /> },
     { text: 'Transactions', path: '/transactions', icon: <SsidChart /> },
-    { text: 'Reservations', path: '/reservations', icon: <Event /> },
+    { text: 'Reservation List', path: '/reservations', icon: <Event /> },
   ];
 
   const circulation_items = [
