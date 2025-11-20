@@ -364,6 +364,31 @@ async function seed_database() {
     }
     console.log(`✓ Checked out 20 unique items to Emily Davis (one of each)`);
 
+    console.log('\n📖 Checking out overdue items for late fee testing...');
+
+    // Patron 5: Check out the last copy ID with an overdue due date (book - 5 days overdue)
+    const last_copy_id = all_copy_ids[all_copy_ids.length - 1];
+    const overdue_checkout_date = new Date();
+    overdue_checkout_date.setDate(overdue_checkout_date.getDate() - 33); // 33 days ago (4 weeks checkout + 5 days overdue)
+    const overdue_due_date = new Date(overdue_checkout_date);
+    overdue_due_date.setDate(overdue_due_date.getDate() + 28); // Due 5 days ago
+
+    await create_record('TRANSACTIONS', {
+      copy_id: last_copy_id,
+      patron_id: patron5_id,
+      transaction_type: 'checkout',
+      checkout_date: overdue_checkout_date,
+      due_date: overdue_due_date,
+      status: 'Active',
+      fine_amount: 0,
+    });
+
+    await execute_query(
+      'UPDATE LIBRARY_ITEM_COPIES SET status = ?, checked_out_by = ?, due_date = ? WHERE id = ?',
+      ['Checked Out', patron5_id, overdue_due_date, last_copy_id]
+    );
+    console.log(`✓ Checked out Copy ${last_copy_id} to Michael Brown (5 days overdue - $5 late fee expected)`);
+
     const total_items = books.length + movies.length + new_movies.length;
     const total_copies = all_copy_ids.length;
 
@@ -380,7 +405,8 @@ async function seed_database() {
     console.log(`  • ${new_movies.length} new release movies (2 copies each)`);
     console.log(`  • Total: ${total_items} unique titles with ${total_copies} total copies`);
     console.log('  • 20 unique items (1 copy each): Checked out to Patron 4');
-    console.log(`  • Remaining ${total_copies - 20} copies: Available for checkout`);
+    console.log('  • 1 overdue item: For testing late fee calculation');
+    console.log(`  • Remaining ${total_copies - 21} copies: Available for checkout`);
     console.log('\n👥 Test Patrons:');
     console.log('\n  1. John Doe (ID: 1) ✅');
     console.log('     • Status: Active');
@@ -406,12 +432,13 @@ async function seed_database() {
     console.log('     • Balance: $0.00');
     console.log('     • Items: 20 unique items (MAXIMUM LIMIT REACHED)');
     console.log('     • Can checkout: NO - Has 20 items already');
-    console.log('\n  5. Michael Brown (ID: 5) ✅');
+    console.log('\n  5. Michael Brown (ID: 5) ⚠️ OVERDUE');
     console.log('     • Status: Active');
     console.log('     • Card: Valid until 2026-12-31');
     console.log('     • Balance: $0.00');
-    console.log('     • Items: 0');
-    console.log('     • Can checkout: YES');
+    console.log(`     • Items: 1 (Copy ${last_copy_id} - LAST COPY ID, 5 days overdue)`);
+    console.log('     • Expected late fee on check-in: $5.00');
+    console.log('     • Can checkout: YES (but has overdue item)');
     console.log('\n═══════════════════════════════════════════════════');
     console.log('TESTING GUIDE');
     console.log('═══════════════════════════════════════════════════');
@@ -427,10 +454,14 @@ async function seed_database() {
     console.log('   • Patron 3 (Robert Johnson)');
     console.log('\n🚫 Should Show "Too Many Items" (20 limit):');
     console.log('   • Patron 4 (Emily Davis)');
+    console.log('\n⏰ OVERDUE ITEMS - Late Fee Testing:');
+    console.log(`   • Patron 5: Check in Copy ${last_copy_id} → expect $5.00 late fee`);
+    console.log('   • Late fees are $1.00 per day overdue');
+    console.log('   • Late fees are capped at the item\'s cost');
     console.log('\n📥 Check-In & Reshelve:');
-    console.log('   • Items checked in will have status "returned"');
-    console.log('   • Use "Mark Items as Available" to reshelve them');
-    console.log('   • Reshelving changes status from "returned" to "Available"');
+    console.log('   • Items checked in will have status "Returned"');
+    console.log('   • Use "Reshelve" page to mark items as "Available"');
+    console.log('   • Reshelving changes status from "Returned" to "Available"');
     console.log('\n═══════════════════════════════════════════════════\n');
 
     process.exit(0);
