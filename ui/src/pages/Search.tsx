@@ -73,7 +73,7 @@ interface FullItemDetails {
   totalCopies: number;
 }
 
-type SearchBy = 'Item Name' | 'Item ID';
+type SearchBy = 'Item Name' | 'Copy ID';
 type Step = 'Display search options' | 'Search Results' | 'Full Item Record';
 
 export default function Search() {
@@ -87,7 +87,7 @@ export default function Search() {
 
   // Reservation dialog state
   const [reservationDialogOpen, setReservationDialogOpen] = useState(false);
-  const [reservationItem, setReservationItem] = useState<{ id: number; name: string } | null>(null);
+  const [reservationItem, setReservationItem] = useState<{ id: number; name: string; copyId?: number } | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [showSuccessSnackbar, setShowSuccessSnackbar] = useState(false);
 
@@ -105,26 +105,15 @@ export default function Search() {
     try {
       let copies: ItemCopyWithDetails[] = [];
 
-      if (searchBy === 'Item ID') {
-        // Search by library item ID - get all copies of that item
-        const response = await fetch(`${API_BASE_URL}/item-copies/item/${searchInput}`);
+      if (searchBy === 'Copy ID') {
+        // Search by copy ID - get the specific copy
+        const response = await fetch(`${API_BASE_URL}/item-copies/${searchInput}`);
         if (!response.ok) {
-          throw new Error('Item not found');
+          throw new Error('Copy not found');
         }
         const data = await response.json();
-        copies = data.data || data;
-
-        // Get library item details
-        const itemResponse = await fetch(`${API_BASE_URL}/library-items/${searchInput}`);
-        if (itemResponse.ok) {
-          const itemData = await itemResponse.json();
-          const item = itemData.data || itemData;
-          copies = copies.map(copy => ({
-            ...copy,
-            title: item.title,
-            item_type: item.item_type,
-          }));
-        }
+        const copy = data.data || data;
+        copies = [copy];
       } else {
         // Search by item name - get all library items matching the search
         const itemsResponse = await fetch(`${API_BASE_URL}/library-items`);
@@ -263,8 +252,8 @@ export default function Search() {
   };
 
   // Step 1: Click reserve button
-  const handleReserveClick = (itemId: number, itemName: string) => {
-    setReservationItem({ id: itemId, name: itemName });
+  const handleReserveClick = (itemId: number, itemName: string, copyId?: number) => {
+    setReservationItem({ id: itemId, name: itemName, copyId });
     setReservationDialogOpen(true);
   };
 
@@ -302,9 +291,9 @@ export default function Search() {
                   label="Item Name (partial search supported)"
                 />
                 <FormControlLabel
-                  value="Item ID"
+                  value="Copy ID"
                   control={<Radio />}
-                  label="Item ID"
+                  label="Copy ID"
                 />
               </RadioGroup>
             </FormControl>
@@ -320,8 +309,8 @@ export default function Search() {
                 fullWidth
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder={searchBy === 'Item Name' ? 'Enter item name or part of it......' : 'Enter item ID'}
-                type={searchBy === 'Item ID' ? 'number' : 'text'}
+                placeholder={searchBy === 'Item Name' ? 'Enter item name or part of it......' : 'Enter copy ID'}
+                type={searchBy === 'Copy ID' ? 'number' : 'text'}
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') handleSearchItems();
                 }}
@@ -390,7 +379,7 @@ export default function Search() {
                             variant={item.status === 'Reserved' ? 'contained' : 'outlined'}
                             size="small"
                             startIcon={<ReserveIcon />}
-                            onClick={() => handleReserveClick(item.itemId, item.itemName)}
+                            onClick={() => handleReserveClick(item.itemId, item.itemName, item.copyId)}
                             color={item.status === 'Reserved' ? 'success' : 'primary'}
                             disabled={item.status === 'Reserved'}
                           >
@@ -528,11 +517,11 @@ export default function Search() {
               <Button
                 variant="contained"
                 startIcon={<ReserveIcon />}
-                onClick={() => handleReserveClick(selectedItem.itemId, selectedItem.itemName)}
+                onClick={() => handleReserveClick(selectedItem.itemId, selectedItem.itemName, selectedItem.copyId)}
                 color={selectedItem.status === 'Reserved' ? 'success' : 'primary'}
                 disabled={selectedItem.status === 'Reserved'}
               >
-                {selectedItem.status === 'Reserved' ? 'Copy Reserved' : 'Reserve Item'}
+                {selectedItem.status === 'Reserved' ? 'Copy Reserved' : 'Reserve This Copy'}
               </Button>
             </Box>
           </Paper>
@@ -554,6 +543,7 @@ export default function Search() {
           onClose={() => setReservationDialogOpen(false)}
           itemId={reservationItem.id}
           itemName={reservationItem.name}
+          copyId={reservationItem.copyId}
           onSuccess={handleReservationSuccess}
         />
       )}

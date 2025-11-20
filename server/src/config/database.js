@@ -322,6 +322,19 @@ async function create_tables() {
       console.error(pico.bgYellow(pico.bold('Migration warning: ')), migrationError.message);
     }
 
+    // Migration: Add copy_id column to existing RESERVATIONS table for copy-specific reservations
+    try {
+      const reservationTableInfo = await db.all('PRAGMA table_info(RESERVATIONS)');
+      const reservationColumnNames = reservationTableInfo.map(col => col.name);
+
+      if (!reservationColumnNames.includes('copy_id')) {
+        await db.exec('ALTER TABLE RESERVATIONS ADD COLUMN copy_id INTEGER REFERENCES LIBRARY_ITEM_COPIES(id) ON DELETE CASCADE');
+        console.log(pico.bgYellow(pico.bold('✓ Added copy_id column to RESERVATIONS')));
+      }
+    } catch (migrationError) {
+      console.error(pico.bgYellow(pico.bold('Migration warning: ')), migrationError.message);
+    }
+
     // Create optimized indexes for better performance
     await db.exec(`
       -- Core entity indexes
@@ -358,6 +371,7 @@ async function create_tables() {
       CREATE INDEX IF NOT EXISTS idx_reservations_patron ON RESERVATIONS(patron_id);
       CREATE INDEX IF NOT EXISTS idx_reservations_dates ON RESERVATIONS(reservation_date, expiry_date);
       CREATE INDEX IF NOT EXISTS idx_reservations_active ON RESERVATIONS(status, expiry_date) WHERE status IN ('pending', 'ready');
+      CREATE INDEX IF NOT EXISTS idx_reservations_copy ON RESERVATIONS(copy_id, status);
       
       -- Fine indexes for patron balance management
       CREATE INDEX IF NOT EXISTS idx_fines_patron ON FINES(patron_id);

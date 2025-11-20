@@ -880,14 +880,25 @@ router.post(
         });
       }
 
-      // Check if there are "waiting" reservations for this item
-      const waiting_reservations = await db.execute_query(
-        'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND status = "waiting" ORDER BY queue_position LIMIT 1',
+      // Check if there are "waiting" reservations for this specific copy or for the item
+      // Priority: copy-specific reservations first, then item-level reservations
+      const copy_specific_reservations = await db.execute_query(
+        'SELECT * FROM RESERVATIONS WHERE copy_id = ? AND status = "waiting" ORDER BY queue_position LIMIT 1',
+        [copy_id]
+      );
+
+      const item_level_reservations = await db.execute_query(
+        'SELECT * FROM RESERVATIONS WHERE library_item_id = ? AND copy_id IS NULL AND status = "waiting" ORDER BY queue_position LIMIT 1',
         [item_copy.library_item_id]
       );
 
       let final_status = 'Available';
       let promotion_message = '';
+
+      // Prioritize copy-specific reservations
+      const waiting_reservations = copy_specific_reservations.length > 0
+        ? copy_specific_reservations
+        : item_level_reservations;
 
       if (waiting_reservations.length > 0) {
         // Promote first waiting reservation to "ready"
