@@ -9,8 +9,9 @@ import {
 import { useState } from 'react';
 import { useAllPatrons } from '../../hooks/usePatrons';
 import { format_date, is_overdue } from '../../utils/dateUtils';
-import { Alert, Box, Chip, Snackbar, Typography } from '@mui/material';
+import { Alert, Box, Chip, Snackbar, Typography, TextField, InputAdornment } from '@mui/material';
 import { Link } from 'react-router-dom';
+import { Search } from '@mui/icons-material';
 import { CustomToolbar } from '../common/CustomDataGridToolbar';
 
 const NoResultsOverlay = () => {
@@ -140,18 +141,40 @@ interface PatronsDataGridProps {
   cols?: GridColDef[];
   onPatronSelected?: (patronId: string) => void;
   check_overdue?: boolean;
+  patrons?: any[];
+  loading?: boolean;
 }
 
 export const PatronsDataGrid: React.FC<PatronsDataGridProps> = ({
   cols = columns,
   onPatronSelected = undefined,
   check_overdue: check_card_and_blanance = false,
+  patrons: patronsProp = [],
+  loading: loadingProp = false,
 }) => {
-  const { data: patrons, isLoading: loading } = useAllPatrons();
+  const { data: allPatrons, isLoading: isLoadingPatrons } = useAllPatrons();
 
   const [snack, set_snack] = useState<boolean>(false);
-
+  const [searchTerm, setSearchTerm] = useState('');
   const [density, set_density] = useState<GridDensity>('standard');
+
+  // Get all patrons if not provided
+  const patronsData = patronsProp.length > 0 ? patronsProp : (allPatrons || []);
+  const isLoadingData = loadingProp || isLoadingPatrons;
+
+  // Filter patrons based on search term
+  const filteredPatrons = patronsData.filter((patron) => {
+    const trimmedSearch = searchTerm.trim();
+    if (!trimmedSearch) return true;
+
+    const search = trimmedSearch.toLowerCase();
+    const idMatch = patron.id.toString().includes(search);
+    const firstNameMatch = patron.first_name?.toLowerCase().includes(search);
+    const lastNameMatch = patron.last_name?.toLowerCase().includes(search);
+    const fullNameMatch = `${patron.first_name} ${patron.last_name}`.toLowerCase().includes(search);
+
+    return idMatch || firstNameMatch || lastNameMatch || fullNameMatch;
+  });
 
   const patron_can_be_selected = (row: {
     card_expiration_date: Date;
@@ -167,15 +190,32 @@ export const PatronsDataGrid: React.FC<PatronsDataGridProps> = ({
 
   return (
     <>
+      {/* Search Bar */}
+      <Box sx={{ mb: 2 }}>
+        <TextField
+          fullWidth
+          placeholder="Search by name or ID..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search />
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Box>
+
       <DataGrid
         showToolbar
         density={density}
         onRowDoubleClick={(params) =>
           !patron_can_be_selected(params.row) && set_snack(true)
         }
-        rows={patrons || []}
+        rows={filteredPatrons}
         columns={cols}
-        loading={loading}
+        loading={isLoadingData}
         pageSizeOptions={[50, 20, 15, 10, 5]}
         initialState={{
           pagination: {
