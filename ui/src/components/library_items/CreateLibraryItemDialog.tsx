@@ -51,7 +51,6 @@ export const CreateLibraryItemDialog = ({
     condition: 'Good' as Condition,
     notes: '',
     number_of_copies: 1,
-    copy_id_prefix: '', // For generating copy IDs
   });
 
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -215,15 +214,6 @@ export const CreateLibraryItemDialog = ({
       // Create the specified number of copies
       const copy_promises = [];
       for (let i = 0; i < copy_data.number_of_copies; i++) {
-        const copy_number = i + 1;
-        const copy_id = copy_data.copy_id_prefix
-          ? `${copy_data.copy_id_prefix}-${copy_number}`
-          : `COPY-${copy_number}`;
-
-        const copy_notes = copy_data.notes
-          ? `Copy ID: ${copy_id}\n${copy_data.notes}`
-          : `Copy ID: ${copy_id}`;
-
         copy_promises.push(
           data_service.create_copy({
             library_item_id: created_item.id,
@@ -231,7 +221,7 @@ export const CreateLibraryItemDialog = ({
             condition: copy_data.condition,
             status: 'Available',
             cost: copy_data.cost,
-            notes: copy_notes,
+            notes: copy_data.notes || undefined,
           })
         );
       }
@@ -260,7 +250,6 @@ export const CreateLibraryItemDialog = ({
         condition: 'Good',
         notes: '',
         number_of_copies: 1,
-        copy_id_prefix: '',
       });
 
       setDuplicateWarning(null);
@@ -298,7 +287,6 @@ export const CreateLibraryItemDialog = ({
         condition: 'Good',
         notes: '',
         number_of_copies: 1,
-        copy_id_prefix: '',
       });
 
       setErrors({});
@@ -406,14 +394,16 @@ export const CreateLibraryItemDialog = ({
             value={form_data.congress_code || ''}
             onChange={handleInputChange('congress_code')}
             disabled={isSubmitting}
-            helperText="Custom catalog or barcode ID for this item (optional)"
+            helperText="Format: BOOK-1001, VIDEO-2001, CD-3001, etc. (optional)"
+            placeholder="e.g., BOOK-1001, VIDEO-2001"
           />
 
           <Divider sx={{ my: 2 }} />
 
           <Typography variant="h6">Copy Details</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            Add physical copies of this item to your library
+            Add physical copies of this item to your library. Copy IDs will be
+            auto-generated.
           </Typography>
 
           <FormControl fullWidth required>
@@ -432,16 +422,6 @@ export const CreateLibraryItemDialog = ({
               ))}
             </Select>
           </FormControl>
-
-          <TextField
-            fullWidth
-            label="Copy ID Prefix"
-            value={copy_data.copy_id_prefix}
-            onChange={handleCopyInputChange('copy_id_prefix')}
-            disabled={isSubmitting}
-            helperText="Prefix for copy IDs (e.g., 'BK-2024'). Copies will be numbered: PREFIX-1, PREFIX-2, etc."
-            placeholder="e.g., BK-2024, DVD-001"
-          />
 
           <TextField
             required
