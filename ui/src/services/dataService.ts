@@ -438,11 +438,26 @@ export const data_service = {
     status?: string;
     cost?: number;
     notes?: string;
+    id?: number; // Optional custom Copy ID
   }): Promise<Item_Copy> {
     return await api_request<Item_Copy>('/item-copies', {
       method: 'POST',
       body: JSON.stringify(copy_data),
     });
+  },
+
+  async get_next_copy_id(): Promise<number> {
+    const result = await api_request<{ next_id: number }>('/item-copies/next-id');
+    return result.next_id;
+  },
+
+  async check_duplicate_copy_id(copy_id: number): Promise<boolean> {
+    try {
+      const copy = await this.get_copy_by_id(copy_id);
+      return copy !== null;
+    } catch {
+      return false;
+    }
   },
 
   async check_duplicate_library_item(title: string): Promise<Library_Item[]> {

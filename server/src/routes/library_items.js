@@ -111,6 +111,21 @@ router.post(
   handle_validation_errors,
   async (req, res) => {
     try {
+      // Check for duplicate Item ID (congress_code) if provided
+      if (req.body.congress_code) {
+        const existing_items = await db.execute_query(
+          'SELECT id, title FROM LIBRARY_ITEMS WHERE congress_code = ?',
+          [req.body.congress_code]
+        );
+
+        if (existing_items && existing_items.length > 0) {
+          return res.status(400).json({
+            error: 'Duplicate Item ID',
+            message: `Item ID "${req.body.congress_code}" already exists (used by: "${existing_items[0].title}")`,
+          });
+        }
+      }
+
       const library_item_data = {
         ...req.body,
         created_at: new Date(),

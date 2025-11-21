@@ -53,6 +53,8 @@ export const CreateLibraryItemDialog = ({
     number_of_copies: 1,
   });
 
+  const [copyIds, setCopyIds] = useState<number[]>([]);
+  const [copyIdErrors, setCopyIdErrors] = useState<Record<number, string>>({});
   const [branches, setBranches] = useState<Branch[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, set_is_submitting] = useState(false);
@@ -134,6 +136,30 @@ export const CreateLibraryItemDialog = ({
     return () => clearTimeout(debounceTimer);
   }, [form_data.congress_code]);
 
+  // Generate Copy IDs when number of copies changes
+  useEffect(() => {
+    const generateCopyIds = async () => {
+      if (copy_data.number_of_copies > 0 && open) {
+        try {
+          const nextId = await data_service.get_next_copy_id();
+          const newIds = Array.from(
+            { length: copy_data.number_of_copies },
+            (_, i) => nextId + i
+          );
+          setCopyIds(newIds);
+          setCopyIdErrors({});
+        } catch (error) {
+          console.error('Error generating Copy IDs:', error);
+        }
+      } else {
+        setCopyIds([]);
+        setCopyIdErrors({});
+      }
+    };
+
+    generateCopyIds();
+  }, [copy_data.number_of_copies, open]);
+
   const handleInputChange =
     (field: keyof Create_Library_Item_Form_Data) =>
     (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -198,6 +224,46 @@ export const CreateLibraryItemDialog = ({
     }));
   };
 
+  const handleCopyIdChange = (index: number) => async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const newId = parseInt(event.target.value);
+    const newCopyIds = [...copyIds];
+    newCopyIds[index] = newId;
+    setCopyIds(newCopyIds);
+
+    // Check for duplicates within the list
+    const duplicateInList = newCopyIds.filter((id) => id === newId).length > 1;
+    if (duplicateInList) {
+      setCopyIdErrors((prev) => ({
+        ...prev,
+        [index]: 'Duplicate Copy ID in this form',
+      }));
+      return;
+    }
+
+    // Check for duplicates in database
+    if (newId) {
+      try {
+        const isDuplicate = await data_service.check_duplicate_copy_id(newId);
+        if (isDuplicate) {
+          setCopyIdErrors((prev) => ({
+            ...prev,
+            [index]: 'This Copy ID already exists',
+          }));
+        } else {
+          setCopyIdErrors((prev) => {
+            const newErrors = { ...prev };
+            delete newErrors[index];
+            return newErrors;
+          });
+        }
+      } catch (error) {
+        console.error('Error checking Copy ID:', error);
+      }
+    }
+  };
+
   const validate_form = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -228,6 +294,11 @@ export const CreateLibraryItemDialog = ({
       newErrors.number_of_copies = 'Number of copies must be between 0 and 50';
     }
 
+    // Check for Copy ID errors
+    if (Object.keys(copyIdErrors).length > 0) {
+      newErrors.copyIds = 'Please fix Copy ID errors';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -253,6 +324,7 @@ export const CreateLibraryItemDialog = ({
         for (let i = 0; i < copy_data.number_of_copies; i++) {
           copy_promises.push(
             data_service.create_copy({
+              id: copyIds[i], // Use the custom Copy ID
               library_item_id: created_item.id,
               owning_branch_id: copy_data.owning_branch_id,
               condition: copy_data.condition,
@@ -295,6 +367,8 @@ export const CreateLibraryItemDialog = ({
 
       setDuplicateWarning(null);
       setItemIdError(null);
+      setCopyIds([]);
+      setCopyIdErrors({});
 
       // Close after a brief delay to show success message
       setTimeout(() => {
@@ -336,6 +410,8 @@ export const CreateLibraryItemDialog = ({
       setSubmitSuccess(null);
       setDuplicateWarning(null);
       setItemIdError(null);
+      setCopyIds([]);
+      setCopyIdErrors({});
       on_close();
     }
   };
@@ -484,6 +560,38 @@ export const CreateLibraryItemDialog = ({
               max: 50,
             }}
           />
+
+          {copy_data.number_of_copies > 0 && copyIds.length > 0 && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Copy IDs (editable):
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {copyIds.map((copyId, index) => (
+                  <TextField
+                    key={index}
+                    fullWidth
+                    size="small"
+                    label={`Copy ${index + 1} ID`}
+                    type="number"
+                    value={copyId}
+                    onChange={handleCopyIdChange(index)}
+                    error={!!copyIdErrors[index]}
+                    helperText={
+                      copyIdErrors[index] || `Auto-assigned Copy ID for copy ${index + 1}`
+                    }
+                    disabled={isSubmitting}
+                    inputProps={{ min: 1 }}
+                  />
+                ))}
+              </Box>
+              {errors.copyIds && (
+                <Typography variant="caption" color="error" sx={{ mt: 1 }}>
+                  {errors.copyIds}
+                </Typography>
+              )}
+            </Box>
+          )}
 
           <TextField
             required
