@@ -113,9 +113,10 @@ router.post(
     try {
       // Check for duplicate Item ID (congress_code) if provided
       if (req.body.congress_code) {
+        // Check if Item ID conflicts with existing congress_code OR library item id
         const existing_items = await db.execute_query(
-          'SELECT id, title FROM LIBRARY_ITEMS WHERE congress_code = ?',
-          [req.body.congress_code]
+          'SELECT id, title FROM LIBRARY_ITEMS WHERE congress_code = ? OR CAST(id AS TEXT) = ?',
+          [req.body.congress_code, req.body.congress_code]
         );
 
         if (existing_items && existing_items.length > 0) {

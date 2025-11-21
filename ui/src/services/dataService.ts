@@ -469,8 +469,11 @@ export const data_service = {
 
   async check_duplicate_item_id(item_id: string): Promise<boolean> {
     const items = await this.get_all_library_items();
+    // Check if Item ID conflicts with existing congress_code OR library_item_id
     return items.some(
-      (item) => item.congress_code && item.congress_code === item_id
+      (item) =>
+        (item.congress_code && item.congress_code === item_id) ||
+        item.id.toString() === item_id
     );
   },
 };
