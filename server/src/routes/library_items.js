@@ -132,12 +132,15 @@ router.post(
         updated_at: new Date(),
       };
 
-      await db.create_record('LIBRARY_ITEMS', library_item_data);
+      const created_id = await db.create_record('LIBRARY_ITEMS', library_item_data);
 
       res.status(201).json({
         success: true,
         message: 'Library item created successfully',
-        data: library_item_data,
+        data: {
+          ...library_item_data,
+          id: created_id,
+        },
       });
     } catch (error) {
       res.status(500).json({
