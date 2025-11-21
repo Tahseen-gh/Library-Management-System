@@ -76,6 +76,26 @@ const handle_validation_errors = (req, res, next) => {
   next();
 };
 
+// GET /api/v1/item-copies/next-id - Get next available copy ID
+router.get('/next-id', async (req, res) => {
+  try {
+    const result = await db.execute_query(
+      'SELECT MAX(id) as max_id FROM LIBRARY_ITEM_COPIES'
+    );
+    const next_id = (result[0]?.max_id || 0) + 1;
+
+    res.json({
+      success: true,
+      data: { next_id },
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to get next copy ID',
+      message: error.message,
+    });
+  }
+});
+
 // GET /api/v1/item-copies - Get all item copies
 router.get('/', async (req, res) => {
   try {
@@ -255,6 +275,20 @@ router.post(
   handle_validation_errors,
   async (req, res) => {
     try {
+      // Check for duplicate Copy ID if provided
+      if (req.body.id) {
+        const existing_copy = await db.get_by_id(
+          'LIBRARY_ITEM_COPIES',
+          req.body.id
+        );
+        if (existing_copy) {
+          return res.status(400).json({
+            error: 'Duplicate Copy ID',
+            message: `Copy ID ${req.body.id} already exists`,
+          });
+        }
+      }
+
       // Verify library item exists
       const library_item = await db.get_by_id(
         'LIBRARY_ITEMS',
@@ -284,7 +318,21 @@ router.post(
         updated_at: new Date(),
       };
 
-      await db.create_record('LIBRARY_ITEM_COPIES', item_copy_data);
+      // If custom ID is provided, use direct INSERT to specify it
+      if (req.body.id) {
+        const columns = Object.keys(item_copy_data).join(', ');
+        const placeholders = Object.keys(item_copy_data)
+          .map(() => '?')
+          .join(', ');
+        const values = Object.values(item_copy_data);
+
+        await db.execute_query(
+          `INSERT INTO LIBRARY_ITEM_COPIES (${columns}) VALUES (${placeholders})`,
+          values
+        );
+      } else {
+        await db.create_record('LIBRARY_ITEM_COPIES', item_copy_data);
+      }
 
       res.status(201).json({
         success: true,
