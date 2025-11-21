@@ -18,6 +18,13 @@ interface RegisterPatronDialogProps {
   onSuccess: () => void;
 }
 
+// Set default card expiration date to 1 day from today
+const getDefaultCardExpiration = () => {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  return date.toISOString().split('T')[0];
+};
+
 export const RegisterPatronDialog = ({
   open,
   onClose,
@@ -29,7 +36,7 @@ export const RegisterPatronDialog = ({
     email: '',
     phone: '',
     birthday: '',
-    card_expiration_date: '',
+    card_expiration_date: getDefaultCardExpiration(),
     balance: '',
   });
 
@@ -97,7 +104,7 @@ export const RegisterPatronDialog = ({
         email: '',
         phone: '',
         birthday: '',
-        card_expiration_date: '',
+        card_expiration_date: getDefaultCardExpiration(),
         balance: '',
       });
       setLoading(false);
@@ -117,19 +124,12 @@ export const RegisterPatronDialog = ({
         email: '',
         phone: '',
         birthday: '',
-        card_expiration_date: '',
+        card_expiration_date: getDefaultCardExpiration(),
         balance: '',
       });
       setError('');
       onClose();
     }
-  };
-
-  // Set default card expiration date to 2 years from today
-  const getDefaultCardExpiration = () => {
-    const date = new Date();
-    date.setFullYear(date.getFullYear() + 2);
-    return date.toISOString().split('T')[0];
   };
 
   return (
@@ -171,7 +171,7 @@ export const RegisterPatronDialog = ({
           <TextField
             label="Expiry Date"
             type="date"
-            value={formData.card_expiration_date || getDefaultCardExpiration()}
+            value={formData.card_expiration_date}
             onChange={handleChange('card_expiration_date')}
             required
             fullWidth
