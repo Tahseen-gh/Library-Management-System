@@ -59,6 +59,7 @@ export const CreateLibraryItemDialog = ({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+  const [itemIdError, setItemIdError] = useState<string | null>(null);
 
   // Load branches on mount
   useEffect(() => {
@@ -108,6 +109,31 @@ export const CreateLibraryItemDialog = ({
     return () => clearTimeout(debounceTimer);
   }, [form_data.title]);
 
+  // Check for duplicate Item IDs when congress_code changes
+  useEffect(() => {
+    const checkItemId = async () => {
+      if (form_data.congress_code && form_data.congress_code.trim().length > 0) {
+        try {
+          const isDuplicate = await data_service.check_duplicate_item_id(
+            form_data.congress_code.trim()
+          );
+          if (isDuplicate) {
+            setItemIdError('This Item ID already exists');
+          } else {
+            setItemIdError(null);
+          }
+        } catch (error) {
+          console.error('Error checking Item ID:', error);
+        }
+      } else {
+        setItemIdError(null);
+      }
+    };
+
+    const debounceTimer = setTimeout(checkItemId, 500);
+    return () => clearTimeout(debounceTimer);
+  }, [form_data.congress_code]);
+
   const handleInputChange =
     (field: keyof Create_Library_Item_Form_Data) =>
     (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -129,6 +155,11 @@ export const CreateLibraryItemDialog = ({
           delete newErrors[field];
           return newErrors;
         });
+      }
+
+      // Clear Item ID error when user starts typing
+      if (field === 'congress_code' && itemIdError) {
+        setItemIdError(null);
       }
     };
 
@@ -183,13 +214,18 @@ export const CreateLibraryItemDialog = ({
       newErrors.publication_year = 'Invalid year';
     }
 
+    // Check for Item ID error
+    if (itemIdError) {
+      newErrors.congress_code = itemIdError;
+    }
+
     // Validate copy data
     if (copy_data.cost < 0) {
       newErrors.cost = 'Cost must be a positive number';
     }
 
-    if (copy_data.number_of_copies < 1 || copy_data.number_of_copies > 50) {
-      newErrors.number_of_copies = 'Number of copies must be between 1 and 50';
+    if (copy_data.number_of_copies < 0 || copy_data.number_of_copies > 50) {
+      newErrors.number_of_copies = 'Number of copies must be between 0 and 50';
     }
 
     setErrors(newErrors);
@@ -211,29 +247,34 @@ export const CreateLibraryItemDialog = ({
       // Create the library item first
       const created_item = await data_service.create_library_item(form_data);
 
-      // Create the specified number of copies
-      const copy_promises = [];
-      for (let i = 0; i < copy_data.number_of_copies; i++) {
-        copy_promises.push(
-          data_service.create_copy({
-            library_item_id: created_item.id,
-            owning_branch_id: copy_data.owning_branch_id,
-            condition: copy_data.condition,
-            status: 'Available',
-            cost: copy_data.cost,
-            notes: copy_data.notes || undefined,
-          })
-        );
+      // Create the specified number of copies (if any)
+      if (copy_data.number_of_copies > 0) {
+        const copy_promises = [];
+        for (let i = 0; i < copy_data.number_of_copies; i++) {
+          copy_promises.push(
+            data_service.create_copy({
+              library_item_id: created_item.id,
+              owning_branch_id: copy_data.owning_branch_id,
+              condition: copy_data.condition,
+              status: 'Available',
+              cost: copy_data.cost,
+              notes: copy_data.notes || undefined,
+            })
+          );
+        }
+
+        await Promise.all(copy_promises);
       }
 
-      await Promise.all(copy_promises);
-
       // Show success message
-      setSubmitSuccess(
-        `Successfully created "${form_data.title}" with ${copy_data.number_of_copies} ${
-          copy_data.number_of_copies === 1 ? 'copy' : 'copies'
-        } (all marked as Available)`
-      );
+      const successMessage =
+        copy_data.number_of_copies > 0
+          ? `Successfully created "${form_data.title}" with ${copy_data.number_of_copies} ${
+              copy_data.number_of_copies === 1 ? 'copy' : 'copies'
+            } (all marked as Available)`
+          : `Successfully created "${form_data.title}" with no physical copies`;
+
+      setSubmitSuccess(successMessage);
 
       // Reset form
       set_form_data({
@@ -253,6 +294,7 @@ export const CreateLibraryItemDialog = ({
       });
 
       setDuplicateWarning(null);
+      setItemIdError(null);
 
       // Close after a brief delay to show success message
       setTimeout(() => {
@@ -293,6 +335,7 @@ export const CreateLibraryItemDialog = ({
       setSubmitError(null);
       setSubmitSuccess(null);
       setDuplicateWarning(null);
+      setItemIdError(null);
       on_close();
     }
   };
@@ -393,9 +436,10 @@ export const CreateLibraryItemDialog = ({
             label="Item ID"
             value={form_data.congress_code || ''}
             onChange={handleInputChange('congress_code')}
+            error={!!itemIdError}
+            helperText={itemIdError || 'Unique identifier for this item (optional)'}
             disabled={isSubmitting}
-            helperText="Format: BOOK-1001, VIDEO-2001, CD-3001, etc. (optional)"
-            placeholder="e.g., BOOK-1001, VIDEO-2001"
+            placeholder="e.g., 1, 2, 3"
           />
 
           <Divider sx={{ my: 2 }} />
@@ -432,11 +476,11 @@ export const CreateLibraryItemDialog = ({
             onChange={handleCopyInputChange('number_of_copies')}
             error={!!errors.number_of_copies}
             helperText={
-              errors.number_of_copies || 'Number of copies to create (1-50)'
+              errors.number_of_copies || 'Number of copies to create (0-50). Use 0 to create item without physical copies.'
             }
             disabled={isSubmitting}
             inputProps={{
-              min: 1,
+              min: 0,
               max: 50,
             }}
           />
@@ -499,9 +543,11 @@ export const CreateLibraryItemDialog = ({
         >
           {isSubmitting
             ? 'Creating...'
-            : `Create Item & ${copy_data.number_of_copies} ${
-                copy_data.number_of_copies === 1 ? 'Copy' : 'Copies'
-              }`}
+            : copy_data.number_of_copies === 0
+              ? 'Create Item'
+              : `Create Item & ${copy_data.number_of_copies} ${
+                  copy_data.number_of_copies === 1 ? 'Copy' : 'Copies'
+                }`}
         </Button>
       </DialogActions>
     </Dialog>

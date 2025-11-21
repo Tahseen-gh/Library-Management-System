@@ -451,4 +451,11 @@ export const data_service = {
       (item) => item.title.toLowerCase() === title.toLowerCase()
     );
   },
+
+  async check_duplicate_item_id(item_id: string): Promise<boolean> {
+    const items = await this.get_all_library_items();
+    return items.some(
+      (item) => item.congress_code && item.congress_code === item_id
+    );
+  },
 };
