@@ -42,7 +42,7 @@ export const CreateLibraryItemDialog = ({
     item_type: Library_Item_Type.Book,
     description: '',
     publication_year: undefined,
-    congress_code: '',
+    congress_code: '', // Will store Item ID
   });
 
   const [copy_data, set_copy_data] = useState({
@@ -51,6 +51,7 @@ export const CreateLibraryItemDialog = ({
     condition: 'Good' as Condition,
     notes: '',
     number_of_copies: 1,
+    copy_id_prefix: '', // For generating copy IDs
   });
 
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -214,6 +215,15 @@ export const CreateLibraryItemDialog = ({
       // Create the specified number of copies
       const copy_promises = [];
       for (let i = 0; i < copy_data.number_of_copies; i++) {
+        const copy_number = i + 1;
+        const copy_id = copy_data.copy_id_prefix
+          ? `${copy_data.copy_id_prefix}-${copy_number}`
+          : `COPY-${copy_number}`;
+
+        const copy_notes = copy_data.notes
+          ? `Copy ID: ${copy_id}\n${copy_data.notes}`
+          : `Copy ID: ${copy_id}`;
+
         copy_promises.push(
           data_service.create_copy({
             library_item_id: created_item.id,
@@ -221,7 +231,7 @@ export const CreateLibraryItemDialog = ({
             condition: copy_data.condition,
             status: 'Available',
             cost: copy_data.cost,
-            notes: copy_data.notes || undefined,
+            notes: copy_notes,
           })
         );
       }
@@ -250,6 +260,7 @@ export const CreateLibraryItemDialog = ({
         condition: 'Good',
         notes: '',
         number_of_copies: 1,
+        copy_id_prefix: '',
       });
 
       setDuplicateWarning(null);
@@ -287,6 +298,7 @@ export const CreateLibraryItemDialog = ({
         condition: 'Good',
         notes: '',
         number_of_copies: 1,
+        copy_id_prefix: '',
       });
 
       setErrors({});
@@ -390,11 +402,11 @@ export const CreateLibraryItemDialog = ({
 
           <TextField
             fullWidth
-            label="Congress Code"
+            label="Item ID"
             value={form_data.congress_code || ''}
             onChange={handleInputChange('congress_code')}
             disabled={isSubmitting}
-            helperText="Library of Congress classification code (optional)"
+            helperText="Custom catalog or barcode ID for this item (optional)"
           />
 
           <Divider sx={{ my: 2 }} />
@@ -420,6 +432,16 @@ export const CreateLibraryItemDialog = ({
               ))}
             </Select>
           </FormControl>
+
+          <TextField
+            fullWidth
+            label="Copy ID Prefix"
+            value={copy_data.copy_id_prefix}
+            onChange={handleCopyInputChange('copy_id_prefix')}
+            disabled={isSubmitting}
+            helperText="Prefix for copy IDs (e.g., 'BK-2024'). Copies will be numbered: PREFIX-1, PREFIX-2, etc."
+            placeholder="e.g., BK-2024, DVD-001"
+          />
 
           <TextField
             required
