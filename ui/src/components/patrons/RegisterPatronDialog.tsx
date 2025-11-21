@@ -18,10 +18,10 @@ interface RegisterPatronDialogProps {
   onSuccess: () => void;
 }
 
-// Set default card expiration date to 1 day from today
+// Set default card expiration date to 2 years from today
 const getDefaultCardExpiration = () => {
   const date = new Date();
-  date.setDate(date.getDate() + 1);
+  date.setFullYear(date.getFullYear() + 2);
   return date.toISOString().split('T')[0];
 };
 
