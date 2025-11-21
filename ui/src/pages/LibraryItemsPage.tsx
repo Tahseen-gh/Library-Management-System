@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Container, Fab } from '@mui/material';
+import { Container, Box, Button, Typography } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import { LibraryItemDataGrid } from '../components/library_items/LibraryItemGrid';
 import { CreateLibraryItemDialog } from '../components/library_items/CreateLibraryItemDialog';
@@ -26,20 +26,28 @@ export const LibraryItemsPage = () => {
       }}
     >
       <>
-        <LibraryItemDataGrid />
-        <Fab
-          color="primary"
-          onClick={handle_create_library_item}
-          aria-label="Add library item"
-          title="Add library item"
+        <Box
           sx={{
-            position: 'fixed',
-            bottom: '3vh',
-            right: '3vh',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 3,
           }}
         >
-          <Add />
-        </Fab>
+          <Typography variant="h5" component="h1">
+            Library Items
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<Add />}
+            onClick={handle_create_library_item}
+            aria-label="Add library item"
+          >
+            Add Item
+          </Button>
+        </Box>
+        <LibraryItemDataGrid />
         <CreateLibraryItemDialog
           open={dialog_open}
           on_close={handle_create_library_item_close}

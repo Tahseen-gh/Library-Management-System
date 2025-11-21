@@ -430,4 +430,25 @@ export const data_service = {
       reserved: 0,
     };
   },
+
+  async create_copy(copy_data: {
+    library_item_id: number;
+    owning_branch_id: number;
+    condition?: Condition;
+    status?: string;
+    cost?: number;
+    notes?: string;
+  }): Promise<Item_Copy> {
+    return await api_request<Item_Copy>('/item-copies', {
+      method: 'POST',
+      body: JSON.stringify(copy_data),
+    });
+  },
+
+  async check_duplicate_library_item(title: string): Promise<Library_Item[]> {
+    const items = await this.get_all_library_items();
+    return items.filter(
+      (item) => item.title.toLowerCase() === title.toLowerCase()
+    );
+  },
 };
