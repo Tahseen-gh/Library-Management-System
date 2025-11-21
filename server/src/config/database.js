@@ -77,7 +77,7 @@ async function create_tables() {
         item_type TEXT NOT NULL,
         description TEXT,
         publication_year INTEGER,
-        congress_code TEXT DEFAULT '0000-0000',
+        congress_code TEXT,
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
       )

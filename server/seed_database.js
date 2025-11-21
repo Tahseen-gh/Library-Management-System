@@ -101,7 +101,6 @@ async function seed_database() {
         item_type: 'BOOK',  // Uppercase for frontend
         description: `${book.genre} novel by ${book.author}`,
         publication_year: book.year,
-        congress_code: `BOOK-${1000 + i}`,
       });
 
       // Create book details
@@ -155,7 +154,6 @@ async function seed_database() {
         item_type: 'VIDEO',  // Uppercase for frontend
         description: `${movie.genre} film directed by ${movie.director}`,
         publication_year: movie.year,
-        congress_code: `VIDEO-${2000 + i}`,
       });
 
       // Create video details
@@ -212,7 +210,6 @@ async function seed_database() {
         item_type: 'VIDEO',  // Still VIDEO type, but marked as new release
         description: `NEW RELEASE - ${movie.genre} film directed by ${movie.director}`,
         publication_year: movie.year,
-        congress_code: `VIDEO-NEW-${3000 + i}`,
       });
 
       // Create video details with is_new_release flag
